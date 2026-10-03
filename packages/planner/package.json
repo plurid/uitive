@@ -1,0 +1,60 @@
+{
+  "name": "@plurid/aptuitive-planner",
+  "version": "0.1.0",
+  "description": "Aptuitive's model planner: contracts compiled to structured outputs, prompts and Claude, wherever JavaScript runs",
+  "keywords": [
+    "aptuitive",
+    "adaptive-ui",
+    "llm"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/planner#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plurid/aptuitive.git",
+    "directory": "packages/planner"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js",
+      "default": "./dist/schema.js"
+    },
+    "./prompt": {
+      "types": "./dist/prompt.d.ts",
+      "import": "./dist/prompt.js",
+      "default": "./dist/prompt.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node ../../tools/build/clean.mjs planner && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@plurid/aptuitive-core": "workspace:^"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "zod": "^4.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/sdk": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "zod": "^4.6.5"
+  }
+}

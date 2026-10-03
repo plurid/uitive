@@ -1,0 +1,51 @@
+{
+  "name": "@plurid/aptuitive-cli",
+  "version": "0.1.0",
+  "description": "Aptuitive for coding agents: detect, scaffold, generate sources and blocks, discover, and check an integration",
+  "keywords": [
+    "aptuitive",
+    "adaptive-ui",
+    "llm"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plurid/aptuitive.git",
+    "directory": "packages/cli"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "aptuitive": "./dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node ../../tools/build/clean.mjs cli && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@plurid/aptuitive-adapter": "workspace:^",
+    "@plurid/aptuitive-core": "workspace:^",
+    "@plurid/aptuitive-planner": "workspace:^",
+    "@scalar/openapi-parser": "^0.29.10",
+    "jiti": "^2.7.0",
+    "typescript": "6.0.3",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "playwright-core": "1.63.0"
+  }
+}

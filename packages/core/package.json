@@ -1,0 +1,40 @@
+{
+  "name": "@plurid/aptuitive-core",
+  "version": "0.1.0",
+  "description": "Typed contracts, usage learning and policy for interfaces that adapt to each user",
+  "keywords": [
+    "aptuitive",
+    "adaptive-ui",
+    "llm"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plurid/aptuitive.git",
+    "directory": "packages/core"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node ../../tools/build/clean.mjs core && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "zod": "^4.6.5"
+  }
+}

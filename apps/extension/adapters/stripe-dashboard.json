@@ -1,0 +1,1777 @@
+{
+  "format": "aptuitive.adapter",
+  "formatVersion": 1,
+  "id": "stripe-dashboard",
+  "label": "Stripe Dashboard",
+  "origins": [
+    "https://dashboard.stripe.com"
+  ],
+  "contract": {
+    "format": "aptuitive.contract",
+    "formatVersion": 2,
+    "id": "stripe-dashboard",
+    "version": "1",
+    "description": "A payments dashboard, as the extension sees it: its sidebar, its pages, and data from the payments API with the person's own restricted key.",
+    "actions": {
+      "nav.home": {
+        "label": "Home",
+        "description": "Opens Home from the sidebar",
+        "group": "Sidebar"
+      },
+      "nav.balances": {
+        "label": "Balances",
+        "description": "Opens Balances from the sidebar",
+        "group": "Sidebar"
+      },
+      "nav.transactions": {
+        "label": "Transactions",
+        "description": "Opens Transactions from the sidebar",
+        "group": "Sidebar"
+      },
+      "nav.customers": {
+        "label": "Customers",
+        "description": "Opens Customers from the sidebar",
+        "group": "Sidebar"
+      },
+      "nav.products": {
+        "label": "Product catalog",
+        "description": "Opens Product catalog from the sidebar",
+        "group": "Sidebar"
+      },
+      "nav.connect": {
+        "label": "Connect",
+        "description": "Opens Connect from the sidebar",
+        "group": "Sidebar"
+      },
+      "nav.billing": {
+        "label": "Billing",
+        "description": "Opens Billing from the sidebar",
+        "group": "Sidebar"
+      },
+      "nav.reporting": {
+        "label": "Reporting",
+        "description": "Opens Reporting from the sidebar",
+        "group": "Sidebar"
+      }
+    },
+    "contexts": {},
+    "sources": {
+      "balance-transactions": {
+        "label": "Balance transactions",
+        "description": "Balance transactions represent funds moving through your Stripe account. Stripe creates them for every type of transaction that enters or leaves your Stripe account balance. Related guide: Balance transaction types",
+        "keywords": [
+          "fee",
+          "net",
+          "balance"
+        ],
+        "row": {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Amount",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "available_on": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Available on",
+                "unit": "s"
+              }
+            },
+            "created": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Created",
+                "unit": "s"
+              }
+            },
+            "currency": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Currency"
+              }
+            },
+            "description": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Description"
+              }
+            },
+            "fee": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Fee",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "id": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Id"
+              }
+            },
+            "net": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Net",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "reporting_category": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Reporting category"
+              }
+            },
+            "status": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Status"
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "adjustment",
+                "advance",
+                "advance_funding",
+                "anticipation_repayment",
+                "application_fee",
+                "application_fee_refund",
+                "charge",
+                "climate_order_purchase",
+                "climate_order_refund",
+                "connect_collection_transfer",
+                "contribution",
+                "fee_credit_funding",
+                "inbound_transfer",
+                "inbound_transfer_reversal",
+                "issuing_authorization_hold",
+                "issuing_authorization_release",
+                "issuing_dispute",
+                "issuing_dispute_provisional_credit",
+                "issuing_dispute_provisional_credit_reversal",
+                "issuing_transaction",
+                "obligation_outbound",
+                "obligation_reversal_inbound",
+                "payment",
+                "payment_failure_refund",
+                "payment_network_reserve_hold",
+                "payment_network_reserve_release",
+                "payment_refund",
+                "payment_reversal",
+                "payment_unreconciled",
+                "payout",
+                "payout_cancel",
+                "payout_failure",
+                "payout_minimum_balance_hold",
+                "payout_minimum_balance_release",
+                "refund",
+                "refund_failure",
+                "reserve_hold",
+                "reserve_release",
+                "reserve_transaction",
+                "reserved_funds",
+                "stripe_balance_payment_debit",
+                "stripe_balance_payment_debit_reversal",
+                "stripe_fee",
+                "stripe_fx_fee",
+                "tax_fee",
+                "tax_fund",
+                "topup",
+                "topup_reversal",
+                "transfer",
+                "transfer_cancel",
+                "transfer_failure",
+                "transfer_refund"
+              ],
+              "x-aptuitive": {
+                "type": "enum",
+                "label": "Type"
+              }
+            }
+          },
+          "required": [
+            "amount",
+            "available_on",
+            "created",
+            "currency",
+            "fee",
+            "id",
+            "net",
+            "reporting_category",
+            "status",
+            "type"
+          ]
+        },
+        "key": "id",
+        "title": "description",
+        "summary": [
+          "description",
+          "amount",
+          "created"
+        ],
+        "capabilities": {
+          "filter": {
+            "created": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "currency": [
+              "eq"
+            ],
+            "type": [
+              "eq"
+            ],
+            "id": [
+              "eq",
+              "in"
+            ]
+          },
+          "sort": [],
+          "search": false,
+          "pagination": "cursor"
+        },
+        "scan": 500,
+        "maxLimit": 100,
+        "ttl": 30
+      },
+      "charges": {
+        "label": "Payments",
+        "description": "Attempts to move money into the account, one per charge: amount, status, customer and card.",
+        "keywords": [
+          "charge",
+          "transaction",
+          "sale"
+        ],
+        "row": {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Amount",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "amount_refunded": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Amount refunded",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "captured": {
+              "type": "boolean",
+              "x-aptuitive": {
+                "type": "bool",
+                "label": "Captured"
+              }
+            },
+            "created": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Created",
+                "unit": "s"
+              }
+            },
+            "currency": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Currency"
+              }
+            },
+            "customer": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "ref",
+                "label": "Customer",
+                "source": "customers"
+              }
+            },
+            "description": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Description"
+              }
+            },
+            "disputed": {
+              "type": "boolean",
+              "x-aptuitive": {
+                "type": "bool",
+                "label": "Disputed"
+              }
+            },
+            "failure_code": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Failure code"
+              }
+            },
+            "failure_message": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Failure message"
+              }
+            },
+            "id": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Id"
+              }
+            },
+            "payment_intent": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Payment intent"
+              }
+            },
+            "receipt_email": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Receipt email"
+              }
+            },
+            "refunded": {
+              "type": "boolean",
+              "x-aptuitive": {
+                "type": "bool",
+                "label": "Refunded"
+              }
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "failed",
+                "pending",
+                "succeeded"
+              ],
+              "x-aptuitive": {
+                "type": "enum",
+                "label": "Status"
+              }
+            },
+            "card_brand": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Card brand"
+              }
+            },
+            "card_last4": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Card last4"
+              }
+            }
+          },
+          "required": [
+            "amount",
+            "amount_refunded",
+            "captured",
+            "created",
+            "currency",
+            "disputed",
+            "id",
+            "refunded",
+            "status"
+          ]
+        },
+        "key": "id",
+        "title": "description",
+        "summary": [
+          "description",
+          "amount",
+          "status",
+          "created"
+        ],
+        "capabilities": {
+          "filter": {
+            "created": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "customer": [
+              "eq"
+            ],
+            "payment_intent": [
+              "eq"
+            ],
+            "id": [
+              "eq",
+              "in"
+            ]
+          },
+          "sort": [],
+          "search": false,
+          "pagination": "cursor"
+        },
+        "scan": 500,
+        "maxLimit": 100,
+        "ttl": 30
+      },
+      "customers": {
+        "label": "Customers",
+        "description": "This object represents a customer of your business. Use it to create recurring charges, save payment and contact information, and track payments that belong to the same customer.",
+        "keywords": [],
+        "row": {
+          "type": "object",
+          "properties": {
+            "balance": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Balance",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "created": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Created",
+                "unit": "s"
+              }
+            },
+            "currency": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Currency"
+              }
+            },
+            "delinquent": {
+              "type": "boolean",
+              "x-aptuitive": {
+                "type": "bool",
+                "label": "Delinquent"
+              }
+            },
+            "description": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Description"
+              }
+            },
+            "email": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Email"
+              }
+            },
+            "id": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Id"
+              }
+            },
+            "name": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Name"
+              }
+            },
+            "phone": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Phone"
+              }
+            }
+          },
+          "required": [
+            "balance",
+            "created",
+            "id"
+          ]
+        },
+        "key": "id",
+        "title": "name",
+        "summary": [
+          "name",
+          "balance",
+          "created"
+        ],
+        "capabilities": {
+          "filter": {
+            "created": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "email": [
+              "eq"
+            ],
+            "id": [
+              "eq",
+              "in"
+            ]
+          },
+          "sort": [],
+          "search": false,
+          "pagination": "cursor"
+        },
+        "scan": 500,
+        "maxLimit": 100,
+        "ttl": 30
+      },
+      "disputes": {
+        "label": "Disputes",
+        "description": "A dispute occurs when a customer questions your charge with their card issuer. When this happens, you have the opportunity to respond to the dispute with evidence that shows that the charge is legitimate. Related guide: Disputes and fraud",
+        "keywords": [
+          "chargeback"
+        ],
+        "row": {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Amount",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "charge": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "ref",
+                "label": "Charge",
+                "source": "charges"
+              }
+            },
+            "created": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Created",
+                "unit": "s"
+              }
+            },
+            "currency": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Currency"
+              }
+            },
+            "id": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Id"
+              }
+            },
+            "is_charge_refundable": {
+              "type": "boolean",
+              "x-aptuitive": {
+                "type": "bool",
+                "label": "Is charge refundable"
+              }
+            },
+            "payment_intent": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Payment intent"
+              }
+            },
+            "reason": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Reason"
+              }
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "lost",
+                "needs_response",
+                "prevented",
+                "under_review",
+                "warning_closed",
+                "warning_needs_response",
+                "warning_under_review",
+                "won"
+              ],
+              "x-aptuitive": {
+                "type": "enum",
+                "label": "Status"
+              }
+            }
+          },
+          "required": [
+            "amount",
+            "charge",
+            "created",
+            "currency",
+            "id",
+            "is_charge_refundable",
+            "reason",
+            "status"
+          ]
+        },
+        "key": "id",
+        "title": "id",
+        "summary": [
+          "id",
+          "amount",
+          "status",
+          "created"
+        ],
+        "capabilities": {
+          "filter": {
+            "charge": [
+              "eq"
+            ],
+            "created": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "payment_intent": [
+              "eq"
+            ],
+            "id": [
+              "eq",
+              "in"
+            ]
+          },
+          "sort": [],
+          "search": false,
+          "pagination": "cursor"
+        },
+        "scan": 500,
+        "maxLimit": 100,
+        "ttl": 30
+      },
+      "invoices": {
+        "label": "Invoices",
+        "description": "Invoices are statements of amounts owed by a customer, and are either generated one-off, or generated periodically from a subscription.",
+        "keywords": [],
+        "row": {
+          "type": "object",
+          "properties": {
+            "amount_due": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Amount due",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "amount_paid": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Amount paid",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "created": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Created",
+                "unit": "s"
+              }
+            },
+            "currency": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Currency"
+              }
+            },
+            "customer": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "ref",
+                "label": "Customer",
+                "source": "customers"
+              }
+            },
+            "customer_email": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Customer email"
+              }
+            },
+            "due_date": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Due date",
+                "unit": "s"
+              }
+            },
+            "id": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Id"
+              }
+            },
+            "number": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Number"
+              }
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "open",
+                "paid",
+                "uncollectible",
+                "void"
+              ],
+              "x-aptuitive": {
+                "type": "enum",
+                "label": "Status"
+              }
+            },
+            "amount_remaining": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Amount remaining",
+                "currency": "currency",
+                "minor": true
+              }
+            }
+          },
+          "required": [
+            "amount_due",
+            "amount_paid",
+            "created",
+            "currency",
+            "customer",
+            "id",
+            "amount_remaining"
+          ]
+        },
+        "key": "id",
+        "title": "number",
+        "summary": [
+          "number",
+          "status",
+          "created"
+        ],
+        "capabilities": {
+          "filter": {
+            "created": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "customer": [
+              "eq"
+            ],
+            "due_date": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "status": [
+              "eq"
+            ],
+            "id": [
+              "eq",
+              "in"
+            ]
+          },
+          "sort": [],
+          "search": false,
+          "pagination": "cursor"
+        },
+        "scan": 500,
+        "maxLimit": 100,
+        "ttl": 30
+      },
+      "payouts": {
+        "label": "Payouts",
+        "description": "A Payout object is created when you receive funds from Stripe, or when you initiate a payout to either a bank account or debit card of a connected Stripe account. You can retrieve individual payouts, and list all payouts.",
+        "keywords": [],
+        "row": {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Amount",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "arrival_date": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Arrival date",
+                "unit": "s"
+              }
+            },
+            "created": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Created",
+                "unit": "s"
+              }
+            },
+            "currency": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Currency"
+              }
+            },
+            "description": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Description"
+              }
+            },
+            "failure_message": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Failure message"
+              }
+            },
+            "id": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Id"
+              }
+            },
+            "method": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Method"
+              }
+            },
+            "status": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Status"
+              }
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "bank_account",
+                "card"
+              ],
+              "x-aptuitive": {
+                "type": "enum",
+                "label": "Type"
+              }
+            }
+          },
+          "required": [
+            "amount",
+            "arrival_date",
+            "created",
+            "currency",
+            "id",
+            "method",
+            "status",
+            "type"
+          ]
+        },
+        "key": "id",
+        "title": "description",
+        "summary": [
+          "description",
+          "amount",
+          "created"
+        ],
+        "capabilities": {
+          "filter": {
+            "arrival_date": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "created": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "status": [
+              "eq"
+            ],
+            "id": [
+              "eq",
+              "in"
+            ]
+          },
+          "sort": [],
+          "search": false,
+          "pagination": "cursor"
+        },
+        "scan": 500,
+        "maxLimit": 100,
+        "ttl": 30
+      },
+      "refunds": {
+        "label": "Refunds",
+        "description": "Refund objects allow you to refund a previously created charge that isn't refunded yet. Funds are refunded to the credit or debit card that's initially charged. Related guide: Refunds",
+        "keywords": [],
+        "row": {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "money",
+                "label": "Amount",
+                "currency": "currency",
+                "minor": true
+              }
+            },
+            "charge": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "ref",
+                "label": "Charge",
+                "source": "charges"
+              }
+            },
+            "created": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Created",
+                "unit": "s"
+              }
+            },
+            "currency": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Currency"
+              }
+            },
+            "id": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Id"
+              }
+            },
+            "payment_intent": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Payment intent"
+              }
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "duplicate",
+                "expired_uncaptured_charge",
+                "fraudulent",
+                "requested_by_customer"
+              ],
+              "x-aptuitive": {
+                "type": "enum",
+                "label": "Reason"
+              }
+            },
+            "status": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Status"
+              }
+            }
+          },
+          "required": [
+            "amount",
+            "created",
+            "currency",
+            "id"
+          ]
+        },
+        "key": "id",
+        "title": "id",
+        "summary": [
+          "amount",
+          "created"
+        ],
+        "capabilities": {
+          "filter": {
+            "charge": [
+              "eq"
+            ],
+            "created": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "payment_intent": [
+              "eq"
+            ],
+            "id": [
+              "eq",
+              "in"
+            ]
+          },
+          "sort": [],
+          "search": false,
+          "pagination": "cursor"
+        },
+        "scan": 500,
+        "maxLimit": 100,
+        "ttl": 30
+      },
+      "subscriptions": {
+        "label": "Subscriptions",
+        "description": "Subscriptions allow you to charge a customer on a recurring basis. Related guide: Creating subscriptions",
+        "keywords": [],
+        "row": {
+          "type": "object",
+          "properties": {
+            "cancel_at_period_end": {
+              "type": "boolean",
+              "x-aptuitive": {
+                "type": "bool",
+                "label": "Cancel at period end"
+              }
+            },
+            "created": {
+              "type": "number",
+              "x-aptuitive": {
+                "type": "time",
+                "label": "Created",
+                "unit": "s"
+              }
+            },
+            "currency": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Currency"
+              }
+            },
+            "customer": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "ref",
+                "label": "Customer",
+                "source": "customers"
+              }
+            },
+            "description": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Description"
+              }
+            },
+            "id": {
+              "type": "string",
+              "x-aptuitive": {
+                "type": "text",
+                "label": "Id"
+              }
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "canceled",
+                "incomplete",
+                "incomplete_expired",
+                "past_due",
+                "paused",
+                "trialing",
+                "unpaid"
+              ],
+              "x-aptuitive": {
+                "type": "enum",
+                "label": "Status"
+              }
+            }
+          },
+          "required": [
+            "cancel_at_period_end",
+            "created",
+            "currency",
+            "customer",
+            "id",
+            "status"
+          ]
+        },
+        "key": "id",
+        "title": "description",
+        "summary": [
+          "description",
+          "status",
+          "created"
+        ],
+        "capabilities": {
+          "filter": {
+            "created": [
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ],
+            "customer": [
+              "eq"
+            ],
+            "status": [
+              "eq"
+            ],
+            "id": [
+              "eq",
+              "in"
+            ]
+          },
+          "sort": [],
+          "search": false,
+          "pagination": "cursor"
+        },
+        "scan": 500,
+        "maxLimit": 100,
+        "ttl": 30
+      }
+    },
+    "regions": {
+      "home.original": {
+        "label": "Home as it is",
+        "description": "The dashboard's home page, unchanged"
+      },
+      "payments.original": {
+        "label": "Transactions as they are",
+        "description": "The list of payments, unchanged"
+      },
+      "customer.original": {
+        "label": "Customer page as it is",
+        "description": "One customer's page, unchanged",
+        "entity": "customers"
+      }
+    },
+    "routes": {
+      "home": {
+        "path": "/dashboard",
+        "page": "home"
+      },
+      "payments": {
+        "path": "/payments",
+        "page": "payments"
+      },
+      "payment": {
+        "path": "/payments/:id",
+        "entity": "charges",
+        "key": "id"
+      },
+      "customers": {
+        "path": "/customers"
+      },
+      "customer": {
+        "path": "/customers/:id",
+        "entity": "customers",
+        "key": "id",
+        "page": "customer"
+      },
+      "balances": {
+        "path": "/balance/overview"
+      }
+    },
+    "surfaces": {
+      "sidebar": {
+        "kind": "list",
+        "label": "Sidebar",
+        "description": "The links down the side of the dashboard; links moved out wait in a More list",
+        "items": [
+          "nav.home",
+          "nav.balances",
+          "nav.transactions",
+          "nav.customers",
+          "nav.products",
+          "nav.connect",
+          "nav.billing",
+          "nav.reporting"
+        ],
+        "capacity": 8,
+        "reorderable": true
+      },
+      "home": {
+        "kind": "page",
+        "label": "Home",
+        "description": "The first page of the dashboard: anything the person wants to check first",
+        "blocks": {},
+        "standard": {
+          "page": {
+            "root": "region-1",
+            "elements": [
+              {
+                "id": "region-1",
+                "block": "region",
+                "props": {
+                  "name": "home.original"
+                },
+                "children": []
+              }
+            ],
+            "data": []
+          }
+        }
+      },
+      "payments": {
+        "kind": "page",
+        "label": "Transactions",
+        "description": "The payments page: the payments the person wants to see, and how",
+        "blocks": {},
+        "standard": {
+          "page": {
+            "root": "region-1",
+            "elements": [
+              {
+                "id": "region-1",
+                "block": "region",
+                "props": {
+                  "name": "payments.original"
+                },
+                "children": []
+              }
+            ],
+            "data": []
+          }
+        }
+      },
+      "customer": {
+        "kind": "page",
+        "label": "Customer page",
+        "description": "One customer's page, redesigned once for every customer",
+        "entity": "customers",
+        "blocks": {},
+        "standard": {
+          "page": {
+            "root": "region-1",
+            "elements": [
+              {
+                "id": "region-1",
+                "block": "region",
+                "props": {
+                  "name": "customer.original"
+                },
+                "children": []
+              }
+            ],
+            "data": []
+          }
+        }
+      }
+    },
+    "hash": "m12xv7flx7"
+  },
+  "anchors": {
+    "sidebar": {
+      "match": [
+        {
+          "role": "navigation",
+          "name": [
+            "Main",
+            "Navigation",
+            "Sidebar"
+          ]
+        },
+        {
+          "role": "navigation"
+        }
+      ]
+    },
+    "main": {
+      "match": [
+        {
+          "role": "main"
+        }
+      ]
+    },
+    "notices": {
+      "required": true,
+      "match": [
+        {
+          "role": "alert"
+        }
+      ]
+    },
+    "nav.home": {
+      "within": "sidebar",
+      "match": [
+        {
+          "href": "^/(test/)?dashboard/?$"
+        },
+        {
+          "role": "link",
+          "name": [
+            "Home",
+            "Accueil",
+            "Startseite"
+          ]
+        }
+      ]
+    },
+    "nav.balances": {
+      "within": "sidebar",
+      "match": [
+        {
+          "href": "^/(test/)?balance(/overview)?/?$"
+        },
+        {
+          "role": "link",
+          "name": [
+            "Balances",
+            "Soldes",
+            "Salden"
+          ]
+        }
+      ]
+    },
+    "nav.transactions": {
+      "within": "sidebar",
+      "match": [
+        {
+          "href": "^/(test/)?payments/?$"
+        },
+        {
+          "role": "link",
+          "name": [
+            "Transactions",
+            "Transaktionen"
+          ]
+        }
+      ]
+    },
+    "nav.customers": {
+      "within": "sidebar",
+      "match": [
+        {
+          "href": "^/(test/)?customers/?$"
+        },
+        {
+          "role": "link",
+          "name": [
+            "Customers",
+            "Clients",
+            "Kunden"
+          ]
+        }
+      ]
+    },
+    "nav.products": {
+      "within": "sidebar",
+      "match": [
+        {
+          "href": "^/(test/)?products"
+        },
+        {
+          "role": "link",
+          "name": [
+            "Product catalog",
+            "Catalogue de produits",
+            "Produktkatalog"
+          ]
+        }
+      ]
+    },
+    "nav.connect": {
+      "within": "sidebar",
+      "match": [
+        {
+          "href": "^/(test/)?connect"
+        },
+        {
+          "role": "link",
+          "name": [
+            "Connect"
+          ]
+        }
+      ]
+    },
+    "nav.billing": {
+      "within": "sidebar",
+      "match": [
+        {
+          "href": "^/(test/)?billing"
+        },
+        {
+          "role": "link",
+          "name": [
+            "Billing",
+            "Facturation",
+            "Abrechnung"
+          ]
+        }
+      ]
+    },
+    "nav.reporting": {
+      "within": "sidebar",
+      "match": [
+        {
+          "href": "^/(test/)?(reports|reporting)"
+        },
+        {
+          "role": "link",
+          "name": [
+            "Reporting",
+            "Rapports",
+            "Berichte"
+          ]
+        }
+      ]
+    }
+  },
+  "routes": [
+    {
+      "path": "^/(test/)?dashboard/?$",
+      "route": "home"
+    },
+    {
+      "path": "^/(test/)?payments/(?<id>(ch|py|pi)_\\w+)/?$",
+      "route": "payment"
+    },
+    {
+      "path": "^/(test/)?payments/?$",
+      "route": "payments"
+    },
+    {
+      "path": "^/(test/)?customers/(?<id>cus_\\w+)/?$",
+      "route": "customer"
+    },
+    {
+      "path": "^/(test/)?customers/?$",
+      "route": "customers"
+    },
+    {
+      "path": "^/(test/)?balance(/overview)?/?$",
+      "route": "balances"
+    }
+  ],
+  "lists": {
+    "sidebar": {
+      "container": "sidebar",
+      "items": {
+        "nav.home": "nav.home",
+        "nav.balances": "nav.balances",
+        "nav.transactions": "nav.transactions",
+        "nav.customers": "nav.customers",
+        "nav.products": "nav.products",
+        "nav.connect": "nav.connect",
+        "nav.billing": "nav.billing",
+        "nav.reporting": "nav.reporting"
+      }
+    }
+  },
+  "regions": {
+    "home.original": {
+      "anchor": "main"
+    },
+    "payments.original": {
+      "anchor": "main"
+    },
+    "customer.original": {
+      "anchor": "main"
+    }
+  },
+  "pages": {
+    "home": {
+      "route": "home",
+      "region": "home.original"
+    },
+    "payments": {
+      "route": "payments",
+      "region": "payments.original"
+    },
+    "customer": {
+      "route": "customer",
+      "region": "customer.original"
+    }
+  },
+  "connectors": {
+    "stripe": {
+      "label": "Stripe API",
+      "base": "https://api.stripe.com",
+      "keys": {
+        "test": "^rk_test_",
+        "live": "^rk_live_"
+      },
+      "testMode": "^/test/",
+      "sources": {
+        "balance-transactions": {
+          "path": "/v1/balance_transactions",
+          "rows": "/data",
+          "filters": {
+            "created:gt": "created[gt]",
+            "created:gte": "created[gte]",
+            "created:lt": "created[lt]",
+            "created:lte": "created[lte]",
+            "currency:eq": "currency",
+            "source:eq": "source",
+            "type:eq": "type"
+          },
+          "limit": "limit",
+          "pagination": {
+            "kind": "cursor",
+            "param": "starting_after"
+          },
+          "more": "/has_more",
+          "item": {
+            "path": "/v1/balance_transactions/{id}"
+          },
+          "permission": "Balance: read"
+        },
+        "charges": {
+          "path": "/v1/charges",
+          "rows": "/data",
+          "filters": {
+            "created:gt": "created[gt]",
+            "created:gte": "created[gte]",
+            "created:lt": "created[lt]",
+            "created:lte": "created[lte]",
+            "customer:eq": "customer",
+            "payment_intent:eq": "payment_intent",
+            "transfer_group:eq": "transfer_group"
+          },
+          "limit": "limit",
+          "pagination": {
+            "kind": "cursor",
+            "param": "starting_after"
+          },
+          "more": "/has_more",
+          "pick": {
+            "card_brand": "/payment_method_details/card/brand",
+            "card_last4": "/payment_method_details/card/last4"
+          },
+          "item": {
+            "path": "/v1/charges/{charge}"
+          },
+          "permission": "Charges and refunds: read"
+        },
+        "customers": {
+          "path": "/v1/customers",
+          "rows": "/data",
+          "filters": {
+            "created:gt": "created[gt]",
+            "created:gte": "created[gte]",
+            "created:lt": "created[lt]",
+            "created:lte": "created[lte]",
+            "email:eq": "email",
+            "test_clock:eq": "test_clock"
+          },
+          "limit": "limit",
+          "pagination": {
+            "kind": "cursor",
+            "param": "starting_after"
+          },
+          "more": "/has_more",
+          "item": {
+            "path": "/v1/customers/{customer}"
+          },
+          "permission": "Customers: read"
+        },
+        "disputes": {
+          "path": "/v1/disputes",
+          "rows": "/data",
+          "filters": {
+            "charge:eq": "charge",
+            "created:gt": "created[gt]",
+            "created:gte": "created[gte]",
+            "created:lt": "created[lt]",
+            "created:lte": "created[lte]",
+            "payment_intent:eq": "payment_intent"
+          },
+          "limit": "limit",
+          "pagination": {
+            "kind": "cursor",
+            "param": "starting_after"
+          },
+          "more": "/has_more",
+          "item": {
+            "path": "/v1/disputes/{dispute}"
+          },
+          "permission": "Disputes: read"
+        },
+        "invoices": {
+          "path": "/v1/invoices",
+          "rows": "/data",
+          "filters": {
+            "collection_method:eq": "collection_method",
+            "created:gt": "created[gt]",
+            "created:gte": "created[gte]",
+            "created:lt": "created[lt]",
+            "created:lte": "created[lte]",
+            "customer:eq": "customer",
+            "customer_account:eq": "customer_account",
+            "due_date:gt": "due_date[gt]",
+            "due_date:gte": "due_date[gte]",
+            "due_date:lt": "due_date[lt]",
+            "due_date:lte": "due_date[lte]",
+            "status:eq": "status"
+          },
+          "limit": "limit",
+          "pagination": {
+            "kind": "cursor",
+            "param": "starting_after"
+          },
+          "more": "/has_more",
+          "item": {
+            "path": "/v1/invoices/{invoice}"
+          },
+          "permission": "Invoices: read"
+        },
+        "payouts": {
+          "path": "/v1/payouts",
+          "rows": "/data",
+          "filters": {
+            "arrival_date:gt": "arrival_date[gt]",
+            "arrival_date:gte": "arrival_date[gte]",
+            "arrival_date:lt": "arrival_date[lt]",
+            "arrival_date:lte": "arrival_date[lte]",
+            "created:gt": "created[gt]",
+            "created:gte": "created[gte]",
+            "created:lt": "created[lt]",
+            "created:lte": "created[lte]",
+            "destination:eq": "destination",
+            "status:eq": "status"
+          },
+          "limit": "limit",
+          "pagination": {
+            "kind": "cursor",
+            "param": "starting_after"
+          },
+          "more": "/has_more",
+          "item": {
+            "path": "/v1/payouts/{payout}"
+          },
+          "permission": "Payouts: read"
+        },
+        "refunds": {
+          "path": "/v1/refunds",
+          "rows": "/data",
+          "filters": {
+            "charge:eq": "charge",
+            "created:gt": "created[gt]",
+            "created:gte": "created[gte]",
+            "created:lt": "created[lt]",
+            "created:lte": "created[lte]",
+            "payment_intent:eq": "payment_intent"
+          },
+          "limit": "limit",
+          "pagination": {
+            "kind": "cursor",
+            "param": "starting_after"
+          },
+          "more": "/has_more",
+          "item": {
+            "path": "/v1/refunds/{refund}"
+          },
+          "permission": "Charges and refunds: read"
+        },
+        "subscriptions": {
+          "path": "/v1/subscriptions",
+          "rows": "/data",
+          "filters": {
+            "collection_method:eq": "collection_method",
+            "created:gt": "created[gt]",
+            "created:gte": "created[gte]",
+            "created:lt": "created[lt]",
+            "created:lte": "created[lte]",
+            "customer:eq": "customer",
+            "customer_account:eq": "customer_account",
+            "status:eq": "status",
+            "test_clock:eq": "test_clock"
+          },
+          "limit": "limit",
+          "pagination": {
+            "kind": "cursor",
+            "param": "starting_after"
+          },
+          "more": "/has_more",
+          "item": {
+            "path": "/v1/subscriptions/{subscription_exposed_id}"
+          },
+          "permission": "Subscriptions: read"
+        }
+      },
+      "rate": {
+        "perSecond": 5,
+        "concurrent": 2
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "extends": "../../tools/config/tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "declaration": false,
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@plurid/aptuitive-core": ["../../packages/core/src/index.ts"],
+      "@plurid/aptuitive-react": ["../../packages/react/src/index.ts"],
+      "@plurid/aptuitive-dom": ["../../packages/dom/src/index.ts"],
+      "@plurid/aptuitive-dom/*": ["../../packages/dom/src/*"],
+      "@plurid/aptuitive-server": ["../../packages/server/src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

@@ -1,0 +1,114 @@
+{
+  "default": "exclude",
+  "readOnly": true,
+  "sources": {
+    "charges": {
+      "include": true,
+      "label": "Payments",
+      "description": "Attempts to move money into the account, one per charge: amount, status, customer and card.",
+      "keywords": ["charge", "transaction", "sale"],
+      "fields": [
+        "amount",
+        "amount_refunded",
+        "currency",
+        "status",
+        "created",
+        "customer",
+        "description",
+        "receipt_email",
+        "refunded",
+        "disputed",
+        "payment_intent",
+        "failure_message",
+        "failure_code",
+        "captured"
+      ],
+      "pick": {
+        "card_brand": "/payment_method_details/card/brand",
+        "card_last4": "/payment_method_details/card/last4"
+      }
+    },
+    "customers": {
+      "include": true,
+      "fields": [
+        "email",
+        "name",
+        "created",
+        "balance",
+        "currency",
+        "delinquent",
+        "description",
+        "phone"
+      ]
+    },
+    "disputes": {
+      "include": true,
+      "keywords": ["chargeback"],
+      "fields": [
+        "amount",
+        "currency",
+        "status",
+        "reason",
+        "created",
+        "charge",
+        "payment_intent",
+        "is_charge_refundable"
+      ]
+    },
+    "payouts": {
+      "include": true,
+      "fields": [
+        "amount",
+        "currency",
+        "status",
+        "arrival_date",
+        "created",
+        "method",
+        "type",
+        "description",
+        "failure_message"
+      ]
+    },
+    "refunds": {
+      "include": true,
+      "fields": ["amount", "currency", "status", "reason", "created", "charge", "payment_intent"]
+    },
+    "balance-transactions": {
+      "include": true,
+      "label": "Balance transactions",
+      "keywords": ["fee", "net", "balance"],
+      "fields": [
+        "amount",
+        "fee",
+        "net",
+        "currency",
+        "type",
+        "status",
+        "created",
+        "available_on",
+        "description",
+        "reporting_category"
+      ]
+    },
+    "invoices": {
+      "include": true,
+      "fields": [
+        "amount_due",
+        "amount_paid",
+        "amount_remaining",
+        "currency",
+        "status",
+        "created",
+        "due_date",
+        "customer",
+        "number",
+        "customer_email"
+      ]
+    },
+    "subscriptions": {
+      "include": true,
+      "fields": ["status", "created", "customer", "currency", "cancel_at_period_end", "description"]
+    }
+  },
+  "actions": {}
+}

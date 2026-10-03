@@ -1,0 +1,337 @@
+openapi: 3.1.0
+info:
+  title: Shop Admin API
+  version: 1.4.0
+servers:
+  - url: http://localhost:9000
+tags:
+  - name: Orders
+    description: |
+      An order is a purchase a customer made in the store. These routes let staff find, update,
+      fulfil and cancel orders.
+  - name: Customers
+    description: People who bought from the store or registered an account.
+  - name: Products
+    description: What the store sells, with its variants and prices.
+paths:
+  /admin/orders:
+    get:
+      operationId: GetOrders
+      tags: [Orders]
+      summary: List Orders
+      parameters:
+        - $ref: '#/components/parameters/fields'
+        - name: offset
+          in: query
+          schema: { type: number }
+        - name: limit
+          in: query
+          schema: { type: number }
+        - name: order
+          in: query
+          schema:
+            { type: string, description: 'The field to sort by; prefix with - to sort descending.' }
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: id
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items: { type: string }
+        - name: status
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items: { type: string }
+        - name: customer_id
+          in: query
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items: { type: string }
+        - name: created_at
+          in: query
+          schema:
+            type: object
+            properties:
+              $gt: { type: string }
+              $gte: { type: string }
+              $lt: { type: string }
+              $lte: { type: string }
+              $and: { type: array, items: { type: object } }
+        - name: $or
+          in: query
+          schema: { type: array, items: { type: object } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    required: [limit, offset, count]
+                    properties:
+                      limit: { type: number }
+                      offset: { type: number }
+                      count: { type: number }
+                  - type: object
+                    required: [orders]
+                    properties:
+                      orders:
+                        type: array
+                        items: { $ref: '#/components/schemas/AdminOrder' }
+  /admin/orders/{id}:
+    get:
+      operationId: GetOrdersId
+      tags: [Orders]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminOrderResponse' }
+    post:
+      operationId: PostOrdersId
+      tags: [Orders]
+      summary: Update Order
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                metadata: { type: object }
+      responses:
+        '200': { description: OK }
+  /admin/orders/{id}/cancel:
+    post:
+      operationId: PostOrdersIdCancel
+      tags: [Orders]
+      summary: Cancel Order
+      description: Cancel an order. Cancelling fails if the order has captured payments.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /admin/orders/{id}/fulfillments:
+    post:
+      operationId: PostOrdersIdFulfillments
+      tags: [Orders]
+      summary: Create an Order Fulfillment
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items, location_id]
+              properties:
+                items:
+                  type: array
+                  items: { type: object }
+                location_id: { type: string }
+                no_notification: { type: boolean }
+      responses:
+        '200': { description: OK }
+  /admin/customers:
+    get:
+      operationId: GetCustomers
+      tags: [Customers]
+      parameters:
+        - { name: offset, in: query, schema: { type: number } }
+        - { name: limit, in: query, schema: { type: number } }
+        - { name: email, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      limit: { type: number }
+                      offset: { type: number }
+                      count: { type: number }
+                  - type: object
+                    properties:
+                      # Declared as one object, as published specs sometimes do; the API returns a list.
+                      customers: { $ref: '#/components/schemas/AdminCustomer' }
+  /admin/customers/{id}:
+    get:
+      operationId: GetCustomersId
+      tags: [Customers]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer: { $ref: '#/components/schemas/AdminCustomer' }
+    delete:
+      operationId: DeleteCustomersId
+      tags: [Customers]
+      summary: Delete a Customer
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /admin/products:
+    get:
+      operationId: GetProducts
+      tags: [Products]
+      parameters:
+        - { name: offset, in: query, schema: { type: number } }
+        - { name: limit, in: query, schema: { type: number } }
+        - name: status
+          in: query
+          schema:
+            type: array
+            items: { type: string, enum: [draft, proposed, published, rejected] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: number }
+                  # Untyped rows: the endpoint for one product says what they hold.
+                  products:
+                    type: array
+                    items: { type: object }
+    post:
+      operationId: PostProducts
+      tags: [Products]
+      summary: Create Product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                status: { type: string, enum: [draft, proposed, published, rejected] }
+                collection_id: { type: string }
+                type_id: { type: string }
+      responses:
+        '200': { description: OK }
+  /admin/products/{id}:
+    get:
+      operationId: GetProductsId
+      tags: [Products]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product: { $ref: '#/components/schemas/AdminProduct' }
+  /admin/product-types:
+    get:
+      operationId: GetProductTypes
+      parameters:
+        - { name: offset, in: query, schema: { type: number } }
+        - { name: limit, in: query, schema: { type: number } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: number }
+                  product_types:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        value: { type: string }
+  /admin/uploads:
+    post:
+      operationId: PostUploads
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files: { type: array, items: { type: string, format: binary } }
+      responses:
+        '200': { description: OK }
+components:
+  parameters:
+    fields:
+      name: fields
+      in: query
+      schema: { type: string }
+  schemas:
+    AdminOrderResponse:
+      type: object
+      required: [order]
+      properties:
+        order: { $ref: '#/components/schemas/AdminOrder' }
+    AdminOrder:
+      type: object
+      description: The order's details.
+      properties:
+        id: { type: string }
+        display_id: { type: number }
+        email: { type: string, format: email }
+        customer_id: { type: string }
+        currency_code: { type: string }
+        total: { type: number }
+        subtotal: { type: number }
+        status: { type: string }
+        payment_status:
+          type: string
+          enum: [not_paid, awaiting, captured, refunded, canceled]
+        created_at: { type: string, format: date-time }
+        items:
+          type: array
+          items: { type: object }
+        customer: { $ref: '#/components/schemas/AdminCustomer' }
+    AdminCustomer:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        first_name: { type: [string, 'null'] }
+        last_name: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+    AdminProduct:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status:
+          type: string
+          enum: [draft, proposed, published, rejected]
+        collection_id: { type: [string, 'null'] }
+        type_id: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }

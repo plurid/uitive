@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aptuitive": {
+      "command": "npx",
+      "args": ["-y", "@plurid/aptuitive-mcp", "--root", "${CLAUDE_PROJECT_DIR}"]
+    }
+  }
+}

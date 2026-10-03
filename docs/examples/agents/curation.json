@@ -1,0 +1,27 @@
+{
+  "default": "exclude",
+  "sources": {
+    "orders": {
+      "include": true,
+      "label": "Orders",
+      "description": "Orders placed by customers, with their payment and fulfilment status",
+      "keywords": ["purchase", "sale"],
+      "fields": ["display_id", "email", "total", "currency_code", "payment_status", "created_at"],
+      "labels": { "display_id": "Order", "created_at": "Placed" },
+      "pick": { "customer_name": "/customer/first_name" },
+      "query": { "fields": "*customer" },
+      "title": "display_id",
+      "summary": ["total", "payment_status"],
+      "scan": 500,
+      "ttl": 30
+    }
+  },
+  "actions": {
+    "orders.cancel": { "confirm": "cancel order" },
+    "fulfillments.create": {
+      "effect": "write",
+      "reason": "Fulfilments can be cancelled until they ship"
+    },
+    "orders.archive": { "include": false }
+  }
+}

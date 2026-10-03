@@ -1,0 +1,421 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Payments API", "version": "2026-10-01" },
+  "servers": [{ "url": "https://api.payments.test/" }],
+  "paths": {
+    "/v1/charges": {
+      "get": {
+        "operationId": "GetCharges",
+        "description": "<p>Returns a list of charges you've previously created.</p>",
+        "parameters": [
+          {
+            "name": "created",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "title": "range_query_specs",
+                  "properties": {
+                    "gt": { "type": "integer" },
+                    "gte": { "type": "integer" },
+                    "lt": { "type": "integer" },
+                    "lte": { "type": "integer" }
+                  }
+                },
+                { "type": "integer" }
+              ]
+            }
+          },
+          { "name": "customer", "in": "query", "style": "form", "schema": { "type": "string" } },
+          { "name": "ending_before", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "expand",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "schema": { "type": "array", "items": { "type": "string" } }
+          },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "starting_after", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "ChargeList",
+                  "required": ["data", "has_more", "object", "url"],
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/charge" } },
+                    "has_more": { "type": "boolean" },
+                    "object": { "type": "string", "enum": ["list"] },
+                    "url": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "PostCharges",
+        "summary": "Create a charge",
+        "description": "<p>Charges a payment source. Use payment intents for new integrations.</p>",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["amount", "currency"],
+                "properties": {
+                  "amount": { "type": "integer", "description": "In the smallest currency unit." },
+                  "currency": { "type": "string", "format": "currency" },
+                  "customer": { "type": "string", "maxLength": 5000 },
+                  "description": { "type": "string" },
+                  "metadata": {
+                    "anyOf": [
+                      { "type": "object", "additionalProperties": { "type": "string" } },
+                      { "type": "string", "enum": [""] }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Successful response." } }
+      }
+    },
+    "/v1/charges/search": {
+      "get": {
+        "operationId": "GetChargesSearch",
+        "parameters": [
+          { "name": "query", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/charge" } },
+                    "has_more": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/charges/{charge}": {
+      "get": {
+        "operationId": "GetChargesCharge",
+        "parameters": [
+          { "name": "charge", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/charge" } }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "PostChargesCharge",
+        "summary": "Update a charge",
+        "parameters": [
+          { "name": "charge", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": { "type": "string" },
+                  "receipt_email": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Successful response." } }
+      }
+    },
+    "/v1/charges/{charge}/capture": {
+      "post": {
+        "operationId": "PostChargesChargeCapture",
+        "parameters": [
+          { "name": "charge", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "type": "object", "properties": { "amount": { "type": "integer" } } }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Successful response." } }
+      }
+    },
+    "/v1/charges/{charge}/refunds": {
+      "get": {
+        "operationId": "GetChargesChargeRefunds",
+        "parameters": [
+          { "name": "charge", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/refund" } },
+                    "has_more": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers": {
+      "get": {
+        "operationId": "GetCustomers",
+        "parameters": [
+          { "name": "email", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "starting_after", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/customer" }
+                    },
+                    "has_more": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "PostCustomers",
+        "summary": "Create a customer",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": { "email": { "type": "string" }, "name": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Successful response." } }
+      }
+    },
+    "/v1/customers/{customer}": {
+      "get": {
+        "operationId": "GetCustomersCustomer",
+        "parameters": [
+          { "name": "customer", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/customer" } }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteCustomersCustomer",
+        "summary": "Delete a customer",
+        "parameters": [
+          { "name": "customer", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Successful response." } }
+      }
+    },
+    "/v1/refunds": {
+      "get": {
+        "operationId": "GetRefunds",
+        "parameters": [
+          { "name": "charge", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "starting_after", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/refund" } },
+                    "has_more": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "PostRefunds",
+        "summary": "Create a refund",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": { "type": "integer" },
+                  "charge": { "type": "string" },
+                  "reason": {
+                    "type": "string",
+                    "enum": ["duplicate", "fraudulent", "requested_by_customer"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Successful response." } }
+      }
+    },
+    "/v1/files": {
+      "post": {
+        "operationId": "PostFiles",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": { "file": { "type": "string", "format": "binary" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Successful response." } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "charge": {
+        "type": "object",
+        "title": "Charge",
+        "description": "The Charge object represents a single attempt to move money into your account. A payment intent creates charges as it tries to collect.",
+        "properties": {
+          "id": { "type": "string" },
+          "object": { "type": "string", "enum": ["charge"] },
+          "amount": {
+            "type": "integer",
+            "description": "Amount intended to be collected. A positive integer in the smallest currency unit (e.g., 100 cents to charge $1.00). The minimum amount is $0.50 US."
+          },
+          "amount_refunded": { "type": "integer" },
+          "currency": { "type": "string", "format": "currency" },
+          "created": { "type": "integer", "format": "unix-time" },
+          "customer": {
+            "anyOf": [
+              { "type": "string" },
+              { "$ref": "#/components/schemas/customer" },
+              { "$ref": "#/components/schemas/deleted_customer" }
+            ],
+            "nullable": true
+          },
+          "application": {
+            "anyOf": [{ "type": "string" }, { "$ref": "#/components/schemas/application" }],
+            "nullable": true
+          },
+          "description": { "type": "string", "nullable": true },
+          "status": { "type": "string", "enum": ["failed", "pending", "succeeded"] },
+          "paid": { "type": "boolean" },
+          "billing_details": { "$ref": "#/components/schemas/billing_details" },
+          "metadata": { "type": "object", "additionalProperties": { "type": "string" } },
+          "payment_method_details": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "card": { "type": "object", "properties": { "brand": { "type": "string" } } }
+            }
+          }
+        }
+      },
+      "customer": {
+        "type": "object",
+        "description": "A customer of your business, with saved payment and contact details.",
+        "properties": {
+          "id": { "type": "string" },
+          "object": { "type": "string", "enum": ["customer"] },
+          "email": { "type": "string", "nullable": true },
+          "name": { "type": "string", "nullable": true },
+          "created": { "type": "integer", "format": "unix-time" },
+          "balance": { "type": "integer" },
+          "currency": { "type": "string", "nullable": true },
+          "delinquent": { "type": "boolean", "nullable": true }
+        }
+      },
+      "deleted_customer": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "deleted": { "type": "boolean", "enum": [true] }
+        }
+      },
+      "application": {
+        "type": "object",
+        "properties": { "id": { "type": "string" }, "name": { "type": "string" } }
+      },
+      "refund": {
+        "type": "object",
+        "description": "Refund objects let you refund a previously created charge that isn't refunded yet.",
+        "properties": {
+          "id": { "type": "string" },
+          "amount": { "type": "integer" },
+          "charge": {
+            "anyOf": [{ "type": "string" }, { "$ref": "#/components/schemas/charge" }],
+            "nullable": true
+          },
+          "currency": { "type": "string" },
+          "created": { "type": "integer", "format": "unix-time" },
+          "reason": {
+            "type": "string",
+            "nullable": true,
+            "enum": ["duplicate", "fraudulent", "requested_by_customer"]
+          },
+          "status": { "type": "string", "nullable": true }
+        }
+      },
+      "billing_details": {
+        "type": "object",
+        "properties": { "email": { "type": "string", "nullable": true } }
+      }
+    }
+  }
+}

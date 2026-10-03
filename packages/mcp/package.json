@@ -1,0 +1,46 @@
+{
+  "name": "@plurid/aptuitive-mcp",
+  "version": "0.1.0",
+  "description": "Aptuitive over the Model Context Protocol: the agent kit's steps as tools any coding agent can call",
+  "keywords": [
+    "aptuitive",
+    "adaptive-ui",
+    "llm"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plurid/aptuitive.git",
+    "directory": "packages/mcp"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "aptuitive-mcp": "./dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node ../../tools/build/clean.mjs mcp && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "@plurid/aptuitive-cli": "workspace:^",
+    "@plurid/aptuitive-core": "workspace:^",
+    "@plurid/aptuitive-planner": "workspace:^",
+    "zod": "^4.6.5"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "declaration": false,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
+    "paths": {
+      "@plurid/aptuitive-core": ["../../packages/core/src/index.ts"],
+      "@plurid/aptuitive-react": ["../../packages/react/src/index.ts"],
+      "@plurid/aptuitive-dom": ["../../packages/dom/src/index.ts"],
+      "@plurid/aptuitive-dom/*": ["../../packages/dom/src/*"],
+      "@plurid/aptuitive-planner": ["../../packages/planner/src/index.ts"],
+      "@plurid/aptuitive-planner/*": ["../../packages/planner/src/*"],
+      "@plurid/aptuitive-adapter": ["../../packages/adapter/src/index.ts"],
+      "@plurid/aptuitive-server": ["../../packages/server/src/index.ts"],
+      "@plurid/aptuitive-server/*": ["../../packages/server/src/*"],
+      "@plurid/aptuitive-cli": ["../../packages/cli/src/index.ts"],
+      "@plurid/aptuitive-mcp": ["../../packages/mcp/src/index.ts"]
+    }
+  },
+  "include": [
+    "../**/*.ts",
+    "../**/*.tsx",
+    "../../packages/*/src/**/*.test.ts",
+    "../../packages/*/src/**/*.test.tsx",
+    "../../docs/examples/**/*.ts",
+    "../../docs/examples/**/*.tsx"
+  ]
+}

@@ -1,0 +1,27 @@
+- navigation "Main":
+    - link "Orders":
+        - /url: /app/orders
+    - link "Products":
+        - /url: /app/products
+    - link "Customers":
+        - /url: /app/customers
+    - link "Settings":
+        - /url: /app/settings
+- main:
+    - heading "Customers" [level=1]
+    - button "Add customer"
+    - table "Customers":
+        - rowgroup:
+            - row "Name Email Orders":
+                - columnheader "Name"
+                - columnheader "Email"
+                - columnheader "Orders"
+        - rowgroup:
+            - row "Ada Lovelace ada@example.test 12 Delete":
+                - cell "Ada Lovelace":
+                    - link "Ada Lovelace":
+                        - /url: /app/customers/cus_01J9ZJ8S2D4F6G8H0J2K4L6M8N
+                - cell "ada@example.test"
+                - cell "12"
+                - cell "Delete":
+                    - button "Delete"
