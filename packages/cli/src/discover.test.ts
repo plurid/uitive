@@ -49,7 +49,7 @@ describe.skipIf(!chrome)('discover', () => {
     });
     await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
     const { port } = server.address() as AddressInfo;
-    const cwd = await mkdtemp(join(tmpdir(), 'aptuitive-'));
+    const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
     await writeFile(join(cwd, 'package.json'), '{}');
     try {
       const result = await discover({ url: `http://127.0.0.1:${port}/`, cwd, chrome: true });

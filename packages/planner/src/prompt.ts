@@ -8,7 +8,7 @@ import {
   type GenericName,
   type PlanRequest,
   type Subset,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 
 /** The frozen part of every request: how to work. */
 export const RULES = `You adapt the interface of one application for one person, strictly within the application's contract below. You never write code or markup: you return operations, which the application validates against its own rules and applies.

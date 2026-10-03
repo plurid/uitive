@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createAptuitive, type PlanProgress } from '@plurid/aptuitive-core';
+import { createUitive, type PlanProgress } from '@plurid/uitive-core';
 import { scale } from '../../core/src/__fixtures__/scale.js';
 import { ops } from './__fixtures__/ops.js';
 import { PlannerError, type Model, type ModelCall, type ModelReply } from './model.js';
@@ -39,8 +39,7 @@ const answer = {
   ],
 };
 
-const request = () =>
-  createAptuitive({ contract: ops, now: () => 0 }).request('command', 'tidy up');
+const request = () => createUitive({ contract: ops, now: () => 0 }).request('command', 'tidy up');
 
 /** A model that answers with these replies in turn, keeping each call it was given. */
 function scripted(
@@ -183,7 +182,7 @@ describe('modelPlanner', () => {
       new PlannerError('Schema too complex', 502, 'too-complex'),
       { text: empty },
     ]);
-    const ask = createAptuitive({ contract: scale, now: () => 0 }).request(
+    const ask = createUitive({ contract: scale, now: () => 0 }).request(
       'command',
       'refund the disputed charges',
     );

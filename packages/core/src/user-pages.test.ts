@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NOW, payments, rows } from './__fixtures__/payments.js';
-import { createAptuitive } from './client.js';
+import { createUitive } from './client.js';
 import { action, defineApp, page } from './contract.js';
 import { fromRows } from './data.js';
 import { ui } from './page.js';
@@ -11,7 +11,7 @@ import { route } from './route.js';
 function setup(planner?: Planner) {
   const navigate = vi.fn();
   const onError = vi.fn();
-  const client = createAptuitive({
+  const client = createUitive({
     contract: payments,
     now: () => NOW * 1000,
     onError,
@@ -57,9 +57,9 @@ describe('location', () => {
       params: { id: 'ch_001' },
       entity: { source: 'payments', key: 'ch_001' },
     });
-    client.setLocation('/apt/morning-check');
+    client.setLocation('/uitive/morning-check');
     expect(client.getSnapshot().location).toEqual({
-      path: '/apt/morning-check',
+      path: '/uitive/morning-check',
       params: {},
       userPage: 'morning-check',
     });
@@ -92,7 +92,7 @@ describe('location', () => {
         }),
       },
     });
-    const client = createAptuitive({ contract: console, now: () => 0 });
+    const client = createUitive({ contract: console, now: () => 0 });
     client.setLocation('/services/DB');
     expect(client.getSnapshot().contexts).toEqual({ service: 'db' });
   });
@@ -205,7 +205,7 @@ describe('user pages', () => {
   it('tell planners which pages exist and which route is in view, never the row', () => {
     const { client } = setup();
     client.createPage('Morning check', failedTable);
-    client.setLocation('/apt/morning-check');
+    client.setLocation('/uitive/morning-check');
     const request = client.request('command', 'add a chart');
     expect(request.state.userPages).toEqual([{ slug: 'morning-check', title: 'Morning check' }]);
     expect(request.state.userPage?.slug).toBe('morning-check');

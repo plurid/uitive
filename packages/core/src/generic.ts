@@ -21,7 +21,7 @@ export const GENERIC = [
   'note',
   'links',
 ] as const;
-/** Blocks Aptuitive draws itself from the contract's sources and actions. */
+/** Blocks Uitive draws itself from the contract's sources and actions. */
 export type GenericName = (typeof GENERIC)[number];
 
 /** Blocks that show the result of one of the page's named queries. */

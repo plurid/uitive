@@ -3,7 +3,7 @@ import { generateBlocks } from './blocks.js';
 import { check, checkText } from './check.js';
 import { detect, detectText } from './detect.js';
 import { discover } from './discover.js';
-import { discoveryText } from '@plurid/aptuitive-adapter';
+import { discoveryText } from '@plurid/uitive-adapter';
 import { generateSources, surveySpec } from './generate.js';
 import { init, initText } from './init.js';
 import { surveyText } from './survey.js';
@@ -24,14 +24,14 @@ export interface RunContext {
   err: Writable;
 }
 
-const HELP = `Usage: aptuitive <command> [options]
+const HELP = `Usage: uitive <command> [options]
 
-Integrates Aptuitive into an application, step by step. Every command takes --json, for agents.
+Integrates Uitive into an application, step by step. Every command takes --json, for agents.
 
 Commands:
   detect                             What the project uses: framework, router, design system,
                                      API description and coding agents.
-  init                               Sets Aptuitive up: packages, its folder, MCP servers and the
+  init                               Sets Uitive up: packages, its folder, MCP servers and the
                                      integration skill. Never overwrites a file.
   survey --openapi <spec>            A compact inventory of an API description, to curate from.
   generate sources --openapi <spec>  Sources, actions and REST endpoints from the description and
@@ -49,43 +49,43 @@ Options:
   -h, --help      This help.
   -v, --version   The version.
 
-Files go in the project's Aptuitive folder, recorded in package.json as aptuitive.dir: by
-default src/aptuitive when there is a src folder, else aptuitive.
+Files go in the project's Uitive folder, recorded in package.json as uitive.dir: by
+default src/uitive when there is a src folder, else uitive.
 `;
 
 /** Each command's help: what it does, and every option. */
 const HELPS: Readonly<Record<string, string>> = {
-  detect: `Usage: aptuitive detect [--cwd <dir>] [--json]
+  detect: `Usage: uitive detect [--cwd <dir>] [--json]
 
 What the project uses: package manager, UI library, framework, router, design system, server,
 API descriptions and coding agents. At a workspace root, it lists the packages with an interface:
-set Aptuitive up in one of those.
+set Uitive up in one of those.
 `,
-  init: `Usage: aptuitive init [options]
+  init: `Usage: uitive init [options]
 
-Sets Aptuitive up in the package: its folder (a contract with every page as a region, bindings,
+Sets Uitive up in the package: its folder (a contract with every page as a region, bindings,
 client, kit, and a server handler when there is a server), sources from a small API description
 or a curation file for a large one, and the coding agents' configuration at the repository root.
 Never overwrites a file.
 
 Options:
-  --dir <folder>        Where Aptuitive's files go, such as app/aptuitive when the build only
-                        compiles app. Recorded in package.json. Default: src/aptuitive when
-                        there is a src folder, else aptuitive.
+  --dir <folder>        Where Uitive's files go, such as app/uitive when the build only
+                        compiles app. Recorded in package.json. Default: src/uitive when
+                        there is a src folder, else uitive.
   --openapi <spec>      The API description to use. Default: the first one found.
   --packages <folder>   Installs from package tarballs (pnpm pack), such as a local build.
   --no-install          Writes the files and prints the install command instead.
   --no-agents           Leaves coding agents' configuration alone.
-  --mcp <command>       How agents start the MCP server. Default: npx -y @plurid/aptuitive-mcp
+  --mcp <command>       How agents start the MCP server. Default: npx -y @plurid/uitive-mcp
   --cwd <dir>, --json
 `,
-  survey: `Usage: aptuitive survey --openapi <path or URL> [--curation <file>] [--cwd <dir>] [--json]
+  survey: `Usage: uitive survey --openapi <path or URL> [--curation <file>] [--cwd <dir>] [--json]
 
 One line per source an OpenAPI 2.0, 3.0 or 3.1 description yields: fields kept and left out,
 filters, search, sorting, paging, reading by key, and its actions; then what was skipped and why.
 With a curation file (default <folder>/curation.json), marks what it keeps.
 `,
-  generate: `Usage: aptuitive generate <what> [options]
+  generate: `Usage: uitive generate <what> [options]
 
   generate sources --openapi <spec>    Sources, actions and REST endpoints, from the description
                                        and <folder>/curation.json, into <folder>/api.generated.ts.
@@ -94,7 +94,7 @@ With a curation file (default <folder>/curation.json), marks what it keeps.
 
 Run either with --help for its options.
 `,
-  'generate sources': `Usage: aptuitive generate sources --openapi <path or URL> [options]
+  'generate sources': `Usage: uitive generate sources --openapi <path or URL> [options]
 
 Writes sources, actions with effect levels, and REST endpoints for restFetch and restPerform.
 Rerun after every curation change; never edit the generated file. Past 40 sources or 200 actions,
@@ -106,7 +106,7 @@ Options:
   --dry-run           Reports without writing.
   --cwd <dir>, --json
 `,
-  'generate blocks': `Usage: aptuitive generate blocks <file#Component>... [options]
+  'generate blocks': `Usage: uitive generate blocks <file#Component>... [options]
 
 Block specs whose props schemas come from components' TypeScript props: literal unions become
 enums, optional props become required with the component's default described, and functions,
@@ -117,7 +117,7 @@ Options:
   --check        Reports whether the file is up to date, without writing it.
   --cwd <dir>, --json
 `,
-  discover: `Usage: aptuitive discover --url <url> [options]
+  discover: `Usage: uitive discover --url <url> [options]
 
 Crawls the running application with Playwright, following same-origin links and never pressing
 anything, and writes <folder>/discovery.json: routes, a region per route, lists from navigation
@@ -131,7 +131,7 @@ Options:
   --out <file>             Default: <folder>/discovery.json.
   --cwd <dir>, --json
 `,
-  check: `Usage: aptuitive check [--contract <file>] [--bindings <file>] [--cwd <dir>] [--json]
+  check: `Usage: uitive check [--contract <file>] [--bindings <file>] [--cwd <dir>] [--json]
 
 Whether the integration holds: the contract loads (tsconfig paths resolve) and validates, its
 JSON round-trips, every request schema fits structured outputs, labels are distinct and find what
@@ -152,7 +152,7 @@ const print = (context: RunContext, json: boolean, value: unknown, text: string)
 };
 
 const problems = (context: RunContext, list: readonly string[]) => {
-  for (const problem of list) context.err.write(`aptuitive: ${problem}\n`);
+  for (const problem of list) context.err.write(`uitive: ${problem}\n`);
 };
 
 const survey: Handler = async (args, context) => {
@@ -286,7 +286,7 @@ const generateBlocksCommand: Handler = async (args, context) => {
   });
   const text = values.check
     ? result.drift
-      ? `${result.file} is out of date: run \`aptuitive generate blocks\`.`
+      ? `${result.file} is out of date: run \`uitive generate blocks\`.`
       : `${result.file} is up to date.`
     : result.written
       ? `Wrote ${result.file}: ${result.blocks.map((entry) => entry.name).join(', ')}.`
@@ -360,9 +360,7 @@ export async function run(argv: readonly string[], context: RunContext): Promise
   if (pair) return pair(rest, context);
   const single = COMMANDS[first];
   if (single) return single(argv.slice(1), context);
-  context.err.write(
-    `aptuitive: unknown command "${[first, second].filter(Boolean).join(' ')}"\n\n`,
-  );
+  context.err.write(`uitive: unknown command "${[first, second].filter(Boolean).join(' ')}"\n\n`);
   context.out.write(HELP);
   return 1;
 }

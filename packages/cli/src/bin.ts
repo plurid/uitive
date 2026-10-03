@@ -11,7 +11,7 @@ run(process.argv.slice(2), { version, out: process.stdout, err: process.stderr }
     process.exitCode = code;
   },
   (error: unknown) => {
-    process.stderr.write(`aptuitive: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(`uitive: ${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
   },
 );

@@ -1,11 +1,11 @@
 import {
-  createAptuitive,
+  createUitive,
   fromRows,
   heuristicPlanner,
   localStore,
   remotePlanner,
   type Fetch,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import { byId, verbs } from './catalogue.ts';
 import { cloud } from './contract.ts';
 import {
@@ -48,11 +48,11 @@ const metrics = generated((service) =>
 );
 const logs = generated(logRows);
 
-export const aptuitive = createAptuitive({
+export const uitive = createUitive({
   contract: cloud,
-  store: localStore('aptuitive:cloud-console'),
-  // Claude on the server; the deterministic planner whenever it can't answer.
-  planner: remotePlanner({ url: '/api/aptuitive', fallback: heuristicPlanner() }),
+  store: localStore('uitive:cloud-console'),
+  // A model on the server; the deterministic planner whenever it can't answer.
+  planner: remotePlanner({ url: '/api/uitive', fallback: heuristicPlanner() }),
   bindings: {
     fetch: (request, context) =>
       request.source === 'metrics'
@@ -67,10 +67,10 @@ export const aptuitive = createAptuitive({
     },
     navigate: (href) => handlers.navigate(href),
   },
-  onError: (error) => console.warn('[aptuitive]', error),
+  onError: (error) => console.warn('[uitive]', error),
 });
 
-export type Client = typeof aptuitive;
+export type Client = typeof uitive;
 
 // In development only: reach the client from the browser's console.
-if (import.meta.env.DEV) (globalThis as { aptuitive?: Client }).aptuitive = aptuitive;
+if (import.meta.env.DEV) (globalThis as { uitive?: Client }).uitive = uitive;

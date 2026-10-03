@@ -1,4 +1,4 @@
-import { action, defineApp, list } from '@plurid/aptuitive-core';
+import { action, defineApp, list } from '@plurid/uitive-core';
 
 export const contract = defineApp({
   id: 'editor',

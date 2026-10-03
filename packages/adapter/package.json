@@ -1,17 +1,17 @@
 {
-  "name": "@plurid/aptuitive-adapter",
+  "name": "@plurid/uitive-adapter",
   "version": "0.1.0",
-  "description": "Aptuitive for pages it doesn't own: role trees, discovery, and adapters as data, wherever JavaScript runs",
+  "description": "Uitive for pages it doesn't own: role trees, discovery, and adapters as data, wherever JavaScript runs",
   "keywords": [
-    "aptuitive",
+    "uitive",
     "adaptive-ui",
     "accessibility"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/adapter#readme",
+  "homepage": "https://github.com/plurid/uitive/tree/master/packages/adapter#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plurid/aptuitive.git",
+    "url": "git+https://github.com/plurid/uitive.git",
     "directory": "packages/adapter"
   },
   "type": "module",
@@ -32,7 +32,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@plurid/aptuitive-core": "workspace:^"
+    "@plurid/uitive-core": "workspace:^"
   },
   "peerDependencies": {
     "zod": "^4.2.0"

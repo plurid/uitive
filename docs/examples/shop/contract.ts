@@ -8,7 +8,7 @@ import {
   route,
   source,
   ui,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import { z } from 'zod';
 
 // #region sources
@@ -29,7 +29,7 @@ export const sources = {
     key: 'id',
     title: 'number',
     summary: ['total', 'status'],
-    // What the API does itself; Aptuitive does the rest on the client.
+    // What the API does itself; Uitive does the rest on the client.
     capabilities: {
       filter: { status: ['eq', 'in'], placed: ['gte', 'lt'], customer: ['eq'] },
       sort: ['placed'],

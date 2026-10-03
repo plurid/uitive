@@ -1,4 +1,4 @@
-import { createKit } from '@plurid/aptuitive-react';
+import { createKit } from '@plurid/uitive-react';
 
 // #region kit
 // The design system's parts, mapped one at a time; the rest of the default kit stays.

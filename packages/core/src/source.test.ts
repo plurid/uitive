@@ -83,7 +83,7 @@ describe('fields', () => {
   });
 
   it('rejects metadata that contradicts the zod type', () => {
-    const bad = z.boolean().meta({ 'x-aptuitive': { type: 'money' } });
+    const bad = z.boolean().meta({ 'x-uitive': { type: 'money' } });
     expect(() => describeFields(z.object({ bad }))).toThrow(/can't be money/);
   });
 

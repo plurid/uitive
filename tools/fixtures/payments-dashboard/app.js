@@ -1,4 +1,4 @@
-// A fictional payments dashboard, for testing Aptuitive's extension. A single-page app that
+// A fictional payments dashboard, for testing Uitive's extension. A single-page app that
 // re-renders its sidebar and content on every navigation, the way framework-built pages do.
 
 const money = (amount, currency) =>

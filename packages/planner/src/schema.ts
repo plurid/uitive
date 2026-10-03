@@ -17,7 +17,7 @@ import {
   type ResolvedSource,
   type Subset,
   USER_PAGES,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 
 type Json = Record<string, unknown>;
 

@@ -4,24 +4,24 @@
  */
 export const base = `
 :host {
-  --_accent: var(--apt-accent, #3e63dd);
-  --_surface: var(--apt-surface, #ffffff);
-  --_text: var(--apt-text, #1c2024);
-  --_muted: var(--apt-muted, #60646c);
-  --_border: var(--apt-border, #dfe1e6);
-  --_radius: var(--apt-radius, 10px);
+  --_accent: var(--uitive-accent, #3e63dd);
+  --_surface: var(--uitive-surface, #ffffff);
+  --_text: var(--uitive-text, #1c2024);
+  --_muted: var(--uitive-muted, #60646c);
+  --_border: var(--uitive-border, #dfe1e6);
+  --_radius: var(--uitive-radius, 10px);
   --_danger: #c62a2f;
   display: block;
   color: var(--_text);
-  font: 13px/1.45 var(--apt-font, inherit);
+  font: 13px/1.45 var(--uitive-font, inherit);
 }
 @media (prefers-color-scheme: dark) {
   :host {
-    --_accent: var(--apt-accent, #9eb1ff);
-    --_surface: var(--apt-surface, #18191b);
-    --_text: var(--apt-text, #edeef0);
-    --_muted: var(--apt-muted, #b0b4ba);
-    --_border: var(--apt-border, #363a3f);
+    --_accent: var(--uitive-accent, #9eb1ff);
+    --_surface: var(--uitive-surface, #18191b);
+    --_text: var(--uitive-text, #edeef0);
+    --_muted: var(--uitive-muted, #b0b4ba);
+    --_border: var(--uitive-border, #363a3f);
     --_danger: #ff9592;
   }
 }

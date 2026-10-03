@@ -2,11 +2,11 @@ import {
   action,
   choice,
   collection,
-  createAptuitive,
+  createUitive,
   defineApp,
   list,
   type Planner,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import { z } from 'zod';
 
 export const notes = defineApp({
@@ -46,7 +46,7 @@ export const notes = defineApp({
 /** A client with a clock that only moves when told to. */
 export function client(planner?: Planner) {
   let time = 0;
-  return createAptuitive({
+  return createUitive({
     contract: notes,
     now: () => (time += 1000),
     ...(planner === undefined ? {} : { planner }),

@@ -142,7 +142,7 @@ describe.skipIf(!existsSync(CHROME))(
         { cwd: here },
       );
       // Branded Chrome loads unpacked extensions over the DevTools protocol, in a throwaway profile.
-      const profile = mkdtempSync(join(tmpdir(), 'aptuitive-chrome-'));
+      const profile = mkdtempSync(join(tmpdir(), 'uitive-chrome-'));
       processHandle = spawn(
         CHROME,
         [
@@ -244,7 +244,7 @@ describe.skipIf(!existsSync(CHROME))(
       await site.waitForURL(/\/test\/connect$/);
       expect(await site.locator('main h1').textContent()).toBe('Connect');
       await tab({ kind: 'reset' });
-      await expect.poll(() => site.locator('[data-aptuitive-more]').count()).toBe(0);
+      await expect.poll(() => site.locator('[data-uitive-more]').count()).toBe(0);
     });
 
     it('keeps the More list last when a link moves to the top', async () => {
@@ -262,7 +262,7 @@ describe.skipIf(!existsSync(CHROME))(
             .filter(({ style }) => style.display !== 'none')
             .sort((a, b) => Number(a.style.order) - Number(b.style.order) || a.index - b.index)
             .map(({ child }) =>
-              child.hasAttribute('data-aptuitive-more') ? 'More' : child.textContent,
+              child.hasAttribute('data-uitive-more') ? 'More' : child.textContent,
             ),
         );
       await expect
@@ -290,7 +290,7 @@ describe.skipIf(!existsSync(CHROME))(
         strategy: unknown;
         report: { anchors: Record<string, string>; repairs: string[] };
       }>({ kind: 'pick', anchor: 'nav.customers' });
-      await site.waitForSelector('[data-aptuitive-pick]', { state: 'attached' });
+      await site.waitForSelector('[data-uitive-pick]', { state: 'attached' });
       await site.locator('nav a', { hasText: 'Buyers' }).click();
       const repaired = await picking;
       if (!repaired.ok) throw new Error(repaired.problem);
@@ -336,7 +336,7 @@ describe.skipIf(!existsSync(CHROME))(
         value: morning,
       });
       expect(applied.ok && applied.value).toMatchObject({ applied: 1, rejected: [] });
-      await site.waitForSelector('[data-aptuitive-overlay]', { state: 'attached' });
+      await site.waitForSelector('[data-uitive-overlay]', { state: 'attached' });
       // The original page is replaced, the redesign drawn where it was.
       expect(
         await site.locator('main').evaluate((element) => getComputedStyle(element).display),
@@ -354,7 +354,7 @@ describe.skipIf(!existsSync(CHROME))(
       expect(reads.length).toBeGreaterThan(0);
       expect(reads.every((entry) => entry.authorization === 'Bearer rk_test_e2e')).toBe(true);
       await tab({ kind: 'reset' });
-      await expect.poll(() => site.locator('[data-aptuitive-overlay]').count()).toBe(0);
+      await expect.poll(() => site.locator('[data-uitive-overlay]').count()).toBe(0);
     });
 
     it('forgets everything it keeps, keys included, on request', async () => {

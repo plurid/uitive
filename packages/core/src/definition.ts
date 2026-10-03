@@ -100,7 +100,7 @@ export interface PageChange {
 /** User pages share this reserved surface name: they belong to no surface the application declares. */
 export const USER_PAGES = 'userPages';
 
-/** A page the user made themselves, served at `/apt/<slug>`. */
+/** A page the user made themselves, served at `/uitive/<slug>`. */
 export interface UserPageChange {
   /** Says the change is to one of the person's own pages. */
   kind: 'userPage';
@@ -508,7 +508,7 @@ export function redesigned(
 
 /** A page the user made. */
 export interface UserPage {
-  /** Its slug: the page lives at `/apt/<slug>`. */
+  /** Its slug: the page lives at `/uitive/<slug>`. */
   slug: string;
   /** Its title, as the person named it. */
   title: string;

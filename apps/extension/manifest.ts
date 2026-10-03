@@ -15,12 +15,12 @@ export const pattern = (origin: string) => {
  */
 export const manifest = (options: ManifestOptions = {}) => ({
   manifest_version: 3,
-  name: 'Aptuitive',
+  name: 'Uitive',
   version: '0.1.0',
   description:
     'Reshape the work apps you use by asking, within what each app allows. A private prototype.',
   minimum_chrome_version: '116',
-  action: { default_title: 'Aptuitive' },
+  action: { default_title: 'Uitive' },
   side_panel: { default_path: 'panel/index.html' },
   background: { service_worker: 'worker.js', type: 'module' },
   permissions: ['storage', 'sidePanel', 'scripting', 'activeTab'],

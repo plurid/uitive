@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Adaptation, View, Via } from '@plurid/aptuitive-core';
+import type { Adaptation, View, Via } from '@plurid/uitive-core';
 import type { Verb } from './catalogue.ts';
 import type { QuickAction } from './contract.ts';
 

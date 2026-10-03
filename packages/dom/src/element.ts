@@ -12,22 +12,22 @@ const ARMED_FOR = 4000;
 type Trigger = 'click' | 'change' | 'submit';
 
 /**
- * The lifecycle shared by Aptuitive's elements: subscribes to the client while connected,
+ * The lifecycle shared by Uitive's elements: subscribes to the client while connected,
  * renders into a shadow root only when what it shows changes, and keeps focus and typing
  * across renders. Interactive markup declares `data-act` (and `data-on` for `change` or
  * `submit`); `data-arg` carries a value to the handler.
  */
-export abstract class AptElement<Client extends ClientLike = ClientLike> extends Base {
+export abstract class UitiveElement<Client extends ClientLike = ClientLike> extends Base {
   static #fallback: ClientLike | undefined;
-  static readonly #connected = new Set<AptElement<ClientLike>>();
+  static readonly #connected = new Set<UitiveElement<ClientLike>>();
 
   /**
    * The client every element uses when none is set on it, such as elements a framework renders
-   * later. `startAptuitive` sets it.
+   * later. `startUitive` sets it.
    */
   static useClient(client: ClientLike | undefined): void {
-    AptElement.#fallback = client;
-    for (const element of AptElement.#connected) {
+    UitiveElement.#fallback = client;
+    for (const element of UitiveElement.#connected) {
       if (element.#client !== undefined) continue;
       element.#detach();
       element.#attach();
@@ -59,7 +59,7 @@ export abstract class AptElement<Client extends ClientLike = ClientLike> extends
 
   /** The client this element shows and acts on: its own, or the one every element uses. */
   get client(): Client | undefined {
-    return this.#client ?? (AptElement.#fallback as Client | undefined);
+    return this.#client ?? (UitiveElement.#fallback as Client | undefined);
   }
 
   set client(client: Client | undefined) {
@@ -71,13 +71,13 @@ export abstract class AptElement<Client extends ClientLike = ClientLike> extends
   }
 
   connectedCallback(): void {
-    AptElement.#connected.add(this as unknown as AptElement<ClientLike>);
+    UitiveElement.#connected.add(this as unknown as UitiveElement<ClientLike>);
     this.#attach();
     this.update(true);
   }
 
   disconnectedCallback(): void {
-    AptElement.#connected.delete(this as unknown as AptElement<ClientLike>);
+    UitiveElement.#connected.delete(this as unknown as UitiveElement<ClientLike>);
     this.#detach();
   }
 
@@ -181,7 +181,7 @@ export abstract class AptElement<Client extends ClientLike = ClientLike> extends
     if (!target || !this.client || (target.dataset.on ?? 'click') !== trigger) return;
     if (trigger === 'submit') event.preventDefault();
     Promise.resolve(this.act(target.dataset.act ?? '', target.dataset.arg, target)).catch(
-      (error: unknown) => this.emit('apt-error', { error }),
+      (error: unknown) => this.emit('uitive-error', { error }),
     );
   }
 }

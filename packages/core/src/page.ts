@@ -265,10 +265,10 @@ export function userPageSpec(): AnyPageSpec {
 }
 
 /** Where a user's page lives in the application. */
-export const USER_PAGE_PATH = '/apt/:slug';
+export const USER_PAGE_PATH = '/uitive/:slug';
 
 /** Where one of the user's pages lives. */
-export const userPagePath = (slug: string) => `/apt/${encodeURIComponent(slug)}`;
+export const userPagePath = (slug: string) => `/uitive/${encodeURIComponent(slug)}`;
 
 /** The regions a page may embed: those about nothing in particular, or about its entity. */
 export function regionsFor(contract: AnyContract, spec: AnyPageSpec): string[] {

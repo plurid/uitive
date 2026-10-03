@@ -1,22 +1,22 @@
-import type { Aptuitive } from '@plurid/aptuitive-core';
+import type { Uitive } from '@plurid/uitive-core';
 import type { ClientLike } from './client-like.js';
-import { AptElement } from './element.js';
+import { UitiveElement } from './element.js';
 import { escape } from './html.js';
 import { forward, movedOut } from './markup.js';
 
-/** What `<apt-more>` needs from a client. */
-export type MoreClientLike = ClientLike & Pick<Aptuitive, 'surface' | 'standard' | 'record'>;
+/** What `<uitive-more>` needs from a client. */
+export type MoreClientLike = ClientLike & Pick<Uitive, 'surface' | 'standard' | 'record'>;
 
 const quote = (value: string) => JSON.stringify(value);
 
 /**
- * `<apt-more list="toolbar">`: a menu of the items the person moved out of a list adapted with
+ * `<uitive-more list="toolbar">`: a menu of the items the person moved out of a list adapted with
  * `adaptMarkup`, so nothing is ever out of reach. Choosing one clicks the hidden original, so the
- * application's own handler runs; when the original isn't in the page, it emits `apt-open`
+ * application's own handler runs; when the original isn't in the page, it emits `uitive-open`
  * (`detail: { list, action }`) for the application to run. Shows nothing while no item is out.
  * The `label` attribute names its button (default "More").
  */
-export class AptMore extends AptElement<MoreClientLike> {
+export class UitiveMore extends UitiveElement<MoreClientLike> {
   #open = false;
   readonly #outside = (event: Event) => {
     if (this.#open && !event.composedPath().includes(this)) this.#toggle(false);
@@ -115,9 +115,9 @@ export class AptMore extends AptElement<MoreClientLike> {
     client.record(argument, { via: 'overflow', surface: list });
     const root = this.getRootNode() as Document | ShadowRoot;
     const original = root.querySelector<HTMLElement>(
-      `[data-apt-list=${quote(list)}] [data-apt-item=${quote(argument)}]`,
+      `[data-uitive-list=${quote(list)}] [data-uitive-item=${quote(argument)}]`,
     );
     if (original) forward(original);
-    else this.emit('apt-open', { list, action: argument });
+    else this.emit('uitive-open', { list, action: argument });
   }
 }

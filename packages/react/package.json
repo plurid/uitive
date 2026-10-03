@@ -1,17 +1,17 @@
 {
-  "name": "@plurid/aptuitive-react",
+  "name": "@plurid/uitive-react",
   "version": "0.1.0",
-  "description": "React bindings for Aptuitive: interfaces that adapt to each user within the app's contract",
+  "description": "React bindings for Uitive: interfaces that adapt to each user within the app's contract",
   "keywords": [
-    "aptuitive",
+    "uitive",
     "adaptive-ui",
     "llm"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/react#readme",
+  "homepage": "https://github.com/plurid/uitive/tree/master/packages/react#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plurid/aptuitive.git",
+    "url": "git+https://github.com/plurid/uitive.git",
     "directory": "packages/react"
   },
   "type": "module",
@@ -32,8 +32,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@plurid/aptuitive-core": "workspace:^",
-    "@plurid/aptuitive-dom": "workspace:^"
+    "@plurid/uitive-core": "workspace:^",
+    "@plurid/uitive-dom": "workspace:^"
   },
   "peerDependencies": {
     "react": "^18.3.0 || ^19.0.0",

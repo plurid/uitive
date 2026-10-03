@@ -1,6 +1,6 @@
 # How it works
 
-Aptuitive has one rule: the model proposes, the contract constrains, policy disposes, and the person owns the result. Everything below follows from it. [CONTEXT.md](../CONTEXT.md) holds the exact vocabulary and invariants; this page tells the story.
+Uitive has one rule: the model proposes, the contract constrains, policy disposes, and the person owns the result. Everything below follows from it. [CONTEXT.md](../CONTEXT.md) holds the exact vocabulary and invariants; this page tells the story.
 
 ## The loop
 
@@ -30,7 +30,7 @@ flowchart LR
 
 A **command** is the person asking: "hide Bold", "move Table to the top", "make my home a morning check". It is planned at once and applies at once, on the person's own layer, and the banner says what happened.
 
-A **plan** comes from use: the provider, or `startAptuitive` without React, asks the planner once a session, as it starts. What policy accepts becomes pending, and applies only at a **safe moment**: the start of a later session, when the person comes back after a while. At most two structural changes apply at a time, a moved item keeps its place for three sessions, and a model's change applies only once a second plan agrees, unless the evidence is strong. Nothing moves while someone works.
+A **plan** comes from use: the provider, or `startUitive` without React, asks the planner once a session, as it starts. What policy accepts becomes pending, and applies only at a **safe moment**: the start of a later session, when the person comes back after a while. At most two structural changes apply at a time, a moved item keeps its place for three sessions, and a model's change applies only once a second plan agrees, unless the evidence is strong. Nothing moves while someone works.
 
 A planned **redesign** of a page, or a suggested item for a collection, is only ever a suggestion: the person previews it, accepts it or dismisses it.
 
@@ -66,3 +66,4 @@ The same engine runs in two places. An application integrates it, with a contrac
 - [ADR 0006](adr/0006-two-front-doors.md): one engine, two front doors.
 - [ADR 0007](adr/0007-the-agent-kit.md): the agent kit: generated, curated, checked.
 - [ADR 0008](adr/0008-any-model-plans.md): any model plans, from any provider, with the schema still the boundary.
+- [ADR 0009](adr/0009-renamed-to-uitive.md): the product's name, Uitive, everywhere, before publishing.

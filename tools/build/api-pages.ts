@@ -21,7 +21,7 @@ const advanced = (modules: readonly string[] = []): Category => ({
   title: ADVANCED,
   modules,
   summary:
-    "Used by Aptuitive's own packages and by tools built on them. These may change between minor versions.",
+    "Used by Uitive's own packages and by tools built on them. These may change between minor versions.",
 });
 
 export const PAGES: Readonly<Record<string, PageConfig>> = {
@@ -68,7 +68,7 @@ export const PAGES: Readonly<Record<string, PageConfig>> = {
   },
   dom: {
     intro:
-      "Aptuitive for pages without React: adapting an application's own markup, and the meta-interface as custom elements.",
+      "Uitive for pages without React: adapting an application's own markup, and the meta-interface as custom elements.",
     guides: [{ title: 'Without React', path: 'without-react.md' }],
     categories: [
       { title: 'Starting', modules: ['start.ts', 'define.ts'] },
@@ -87,7 +87,7 @@ export const PAGES: Readonly<Record<string, PageConfig>> = {
           'styles.ts',
         ],
       },
-      { title: '`@plurid/aptuitive-dom/debug`', modules: ['debug.ts'] },
+      { title: '`@plurid/uitive-dom/debug`', modules: ['debug.ts'] },
       advanced(),
     ],
   },
@@ -101,8 +101,8 @@ export const PAGES: Readonly<Record<string, PageConfig>> = {
         title: 'Models',
         modules: ['model.ts', 'environment.ts', 'anthropic.ts', 'openai.ts', 'google.ts'],
       },
-      { title: '`@plurid/aptuitive-planner/schema`', modules: ['schema.ts'] },
-      { title: '`@plurid/aptuitive-planner/prompt`', modules: ['prompt.ts'] },
+      { title: '`@plurid/uitive-planner/schema`', modules: ['schema.ts'] },
+      { title: '`@plurid/uitive-planner/prompt`', modules: ['prompt.ts'] },
       advanced(),
     ],
   },
@@ -112,13 +112,13 @@ export const PAGES: Readonly<Record<string, PageConfig>> = {
     guides: [{ title: 'Planning', path: 'planning.md' }],
     categories: [
       { title: 'The handler', modules: ['handler.ts'] },
-      { title: '`@plurid/aptuitive-server/node`', modules: ['node.ts'] },
+      { title: '`@plurid/uitive-server/node`', modules: ['node.ts'] },
       advanced(),
     ],
   },
   adapter: {
     intro:
-      "What pages Aptuitive doesn't own need: accessibility trees, discovery, and adapters as data. It runs anywhere, for the CLI and the extension alike.",
+      "What pages Uitive doesn't own need: accessibility trees, discovery, and adapters as data. It runs anywhere, for the CLI and the extension alike.",
     guides: [{ title: 'Coding agents', path: 'coding-agents.md' }],
     categories: [
       { title: 'Accessibility trees', modules: ['aria.ts'] },

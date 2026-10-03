@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { action, createAptuitive, defineApp, list } from '@plurid/aptuitive-core';
+import { action, createUitive, defineApp, list } from '@plurid/uitive-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { adaptMarkup, defineElements, orders } from './index.js';
 
@@ -34,7 +34,7 @@ const sheet = defineApp({
   },
 });
 
-const client = () => createAptuitive({ contract: sheet });
+const client = () => createUitive({ contract: sheet });
 
 // happy-dom doesn't restyle elements when an adopted stylesheet changes, so this asks the rules.
 const hidden = (element: Element | null) => {
@@ -52,11 +52,11 @@ const hidden = (element: Element | null) => {
 function menu() {
   document.body.insertAdjacentHTML(
     'beforeend',
-    `<div class="menu" data-apt-list="addNew">
-      <button data-apt-item="add-table">Add empty table</button>
-      <button data-apt-item="add-page">Add page</button>
-      <button data-apt-item="add-widget">Add widget</button>
-      <button data-apt-item="import">Import from file</button>
+    `<div class="menu" data-uitive-list="addNew">
+      <button data-uitive-item="add-table">Add empty table</button>
+      <button data-uitive-item="add-page">Add page</button>
+      <button data-uitive-item="add-widget">Add widget</button>
+      <button data-uitive-item="import">Import from file</button>
     </div>`,
   );
   return document.body.lastElementChild as HTMLElement;
@@ -65,13 +65,13 @@ function menu() {
 function toolbar() {
   document.body.insertAdjacentHTML(
     'beforeend',
-    `<div class="toolbar" style="display: flex" data-apt-list="tools">
+    `<div class="toolbar" style="display: flex" data-uitive-list="tools">
       <span class="logo">Logo</span>
-      <button data-apt-item="sort">Sort</button>
+      <button data-uitive-item="sort">Sort</button>
       <span class="separator"></span>
-      <button data-apt-item="filter">Filter</button>
-      <button data-apt-item="search">Search</button>
-      <apt-more list="tools"></apt-more>
+      <button data-uitive-item="filter">Filter</button>
+      <button data-uitive-item="search">Search</button>
+      <uitive-more list="tools"></uitive-more>
     </div>`,
   );
   return document.body.lastElementChild as HTMLElement;
@@ -79,10 +79,12 @@ function toolbar() {
 
 const order = (container: Element) =>
   [...container.children]
-    .map((child) => [Number(child.getAttribute('data-apt-order') ?? 0), child] as const)
+    .map((child) => [Number(child.getAttribute('data-uitive-order') ?? 0), child] as const)
     .sort(([a], [b]) => a - b)
-    .map(([, child]) => child.getAttribute('data-apt-item') ?? child.className ?? child.localName)
-    .map((name) => name || 'apt-more');
+    .map(
+      ([, child]) => child.getAttribute('data-uitive-item') ?? child.className ?? child.localName,
+    )
+    .map((name) => name || 'uitive-more');
 
 let stops: (() => void)[] = [];
 afterEach(() => {
@@ -94,46 +96,60 @@ afterEach(() => {
 describe('adaptMarkup', () => {
   it('leaves markup alone for someone who changes nothing', () => {
     const container = toolbar();
-    const aptuitive = client();
-    stops.push(adaptMarkup(aptuitive));
-    expect(hidden(container.querySelector('[data-apt-item="sort"]'))).toBe(false);
-    expect(container.querySelector('[data-apt-order]')).toBeNull();
+    const uitive = client();
+    stops.push(adaptMarkup(uitive));
+    expect(hidden(container.querySelector('[data-uitive-item="sort"]'))).toBe(false);
+    expect(container.querySelector('[data-uitive-order]')).toBeNull();
   });
 
   it('hides an item the person moved out, in markup rendered later too, and brings it back', () => {
-    const aptuitive = client();
-    stops.push(adaptMarkup(aptuitive));
-    aptuitive.hide('addNew', 'import');
+    const uitive = client();
+    stops.push(adaptMarkup(uitive));
+    uitive.hide('addNew', 'import');
     // A menu rendered only when opened, after the change.
     const opened = menu();
-    expect(getComputedStyle(opened.querySelector('[data-apt-item="import"]')!).display).toBe(
+    expect(getComputedStyle(opened.querySelector('[data-uitive-item="import"]')!).display).toBe(
       'none',
     );
-    expect(hidden(opened.querySelector('[data-apt-item="add-page"]'))).toBe(false);
-    aptuitive.reset();
-    expect(hidden(opened.querySelector('[data-apt-item="import"]'))).toBe(false);
+    expect(hidden(opened.querySelector('[data-uitive-item="add-page"]'))).toBe(false);
+    uitive.reset();
+    expect(hidden(opened.querySelector('[data-uitive-item="import"]'))).toBe(false);
   });
 
   it('orders a reordered list by CSS, keeping what isn’t an item where it was', () => {
     const container = toolbar();
-    const aptuitive = client();
-    stops.push(adaptMarkup(aptuitive));
-    aptuitive.move('tools', 'search', 0);
-    expect(order(container)).toEqual(['logo', 'search', 'sort', 'separator', 'filter', 'apt-more']);
-    aptuitive.reset();
-    expect(container.querySelector('[data-apt-order]')).toBeNull();
+    const uitive = client();
+    stops.push(adaptMarkup(uitive));
+    uitive.move('tools', 'search', 0);
+    expect(order(container)).toEqual([
+      'logo',
+      'search',
+      'sort',
+      'separator',
+      'filter',
+      'uitive-more',
+    ]);
+    uitive.reset();
+    expect(container.querySelector('[data-uitive-order]')).toBeNull();
   });
 
   it('orders children added later, and says when a container can’t be ordered', async () => {
     const onProblem = vi.fn();
-    const aptuitive = client();
-    stops.push(adaptMarkup(aptuitive, { onProblem }));
-    aptuitive.move('tools', 'search', 0);
+    const uitive = client();
+    stops.push(adaptMarkup(uitive, { onProblem }));
+    uitive.move('tools', 'search', 0);
     const container = toolbar();
     await Promise.resolve();
-    expect(order(container)).toEqual(['logo', 'search', 'sort', 'separator', 'filter', 'apt-more']);
+    expect(order(container)).toEqual([
+      'logo',
+      'search',
+      'sort',
+      'separator',
+      'filter',
+      'uitive-more',
+    ]);
     container.style.display = 'block';
-    aptuitive.move('tools', 'filter', 0);
+    uitive.move('tools', 'filter', 0);
     expect(onProblem).toHaveBeenCalledWith(
       'the list "tools" can\'t be reordered: its container isn\'t a flex or grid box',
     );
@@ -141,64 +157,66 @@ describe('adaptMarkup', () => {
 
   it('records usage from the application’s own controls', () => {
     const container = menu();
-    const aptuitive = client();
-    stops.push(adaptMarkup(aptuitive));
-    container.querySelector<HTMLElement>('[data-apt-item="add-page"]')?.click();
-    expect(aptuitive.events().map((event) => [event.action, event.via, event.surface])).toEqual([
+    const uitive = client();
+    stops.push(adaptMarkup(uitive));
+    container.querySelector<HTMLElement>('[data-uitive-item="add-page"]')?.click();
+    expect(uitive.events().map((event) => [event.action, event.via, event.surface])).toEqual([
       ['add-page', 'region', 'addNew'],
     ]);
   });
 
   it('undoes everything when stopped', () => {
     const container = toolbar();
-    const aptuitive = client();
-    const stop = adaptMarkup(aptuitive);
-    aptuitive.hide('tools', 'filter');
-    aptuitive.move('tools', 'search', 0);
+    const uitive = client();
+    const stop = adaptMarkup(uitive);
+    uitive.hide('tools', 'filter');
+    uitive.move('tools', 'search', 0);
     stop();
-    expect(hidden(container.querySelector('[data-apt-item="filter"]'))).toBe(false);
-    expect(container.querySelector('[data-apt-order]')).toBeNull();
-    container.querySelector<HTMLElement>('[data-apt-item="sort"]')?.click();
-    expect(aptuitive.events()).toEqual([]);
+    expect(hidden(container.querySelector('[data-uitive-item="filter"]'))).toBe(false);
+    expect(container.querySelector('[data-uitive-order]')).toBeNull();
+    container.querySelector<HTMLElement>('[data-uitive-item="sort"]')?.click();
+    expect(uitive.events()).toEqual([]);
   });
 });
 
-describe('<apt-more>', () => {
+describe('<uitive-more>', () => {
   it('offers what moved out, and runs the hidden original once, recorded as overflow', () => {
     const container = toolbar();
-    const aptuitive = client();
-    stops.push(adaptMarkup(aptuitive));
-    const more = container.querySelector('apt-more');
-    if (!more) throw new Error('No apt-more');
-    more.client = aptuitive;
+    const uitive = client();
+    stops.push(adaptMarkup(uitive));
+    const more = container.querySelector('uitive-more');
+    if (!more) throw new Error('No uitive-more');
+    more.client = uitive;
     const root = () => more.shadowRoot?.querySelector('[part="content"]') as HTMLElement;
     expect(root().textContent?.trim()).toBe('');
-    aptuitive.hide('tools', 'filter');
+    uitive.hide('tools', 'filter');
     root().querySelector<HTMLElement>('[data-act="toggle"]')?.click();
     const items = [...root().querySelectorAll('[role="menuitem"]')];
     expect(items.map((item) => item.textContent)).toEqual(['Filter']);
     const ran = vi.fn();
-    container.querySelector('[data-apt-item="filter"]')?.addEventListener('click', ran);
+    container.querySelector('[data-uitive-item="filter"]')?.addEventListener('click', ran);
     (items[0] as HTMLElement).click();
     expect(ran).toHaveBeenCalledTimes(1);
-    expect(aptuitive.events().map((event) => [event.action, event.via])).toEqual([
+    expect(uitive.events().map((event) => [event.action, event.via])).toEqual([
       ['filter', 'overflow'],
     ]);
     expect(root().querySelector('[role="menu"]')).toBeNull();
   });
 });
 
-describe('<apt-ask>', () => {
+describe('<uitive-ask>', () => {
   it('runs a plain command and says what happened', async () => {
     const container = menu();
-    const aptuitive = client();
-    stops.push(adaptMarkup(aptuitive));
-    const ask = document.createElement('apt-ask');
+    const uitive = client();
+    stops.push(adaptMarkup(uitive));
+    const ask = document.createElement('uitive-ask');
     document.body.append(ask);
-    ask.client = aptuitive;
+    ask.client = uitive;
     const root = ask.shadowRoot?.querySelector('[part="content"]') as HTMLElement;
     const asked = new Promise<CustomEvent>((resolve) =>
-      ask.addEventListener('apt-asked', (event) => resolve(event as CustomEvent), { once: true }),
+      ask.addEventListener('uitive-asked', (event) => resolve(event as CustomEvent), {
+        once: true,
+      }),
     );
     const input = root.querySelector('input') as HTMLInputElement;
     input.value = 'hide Import from file';
@@ -209,7 +227,7 @@ describe('<apt-ask>', () => {
     expect(event.detail.adaptation.status).toBe('done');
     expect(root.querySelector('.status')?.textContent).toBe('Done');
     expect((root.querySelector('input') as HTMLInputElement).value).toBe('');
-    expect(hidden(container.querySelector('[data-apt-item="import"]'))).toBe(true);
+    expect(hidden(container.querySelector('[data-uitive-item="import"]'))).toBe(true);
   });
 });
 

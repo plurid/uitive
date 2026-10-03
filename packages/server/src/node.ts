@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-/** A Fetch-standard handler, such as `createAptuitiveHandler` returns. */
+/** A Fetch-standard handler, such as `createUitiveHandler` returns. */
 export type FetchHandler = (request: Request) => Promise<Response>;
 
 /** How `toNodeListener` reads requests. */
@@ -22,7 +22,7 @@ export type NodeListener = (request: NodeRequest, response: ServerResponse) => P
  * they are written, and a request the client abandons is aborted.
  *
  * ```ts
- * app.use('/api/aptuitive', toNodeListener(handler));
+ * app.use('/api/uitive', toNodeListener(handler));
  * ```
  */
 export function toNodeListener(

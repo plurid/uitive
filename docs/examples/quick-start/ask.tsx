@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { useCommand } from '@plurid/aptuitive-react';
-import { aptuitive } from './client.js';
+import { useCommand } from '@plurid/uitive-react';
+import { uitive } from './client.js';
 
 /** Where people ask for a change in their own words; the banner says what happened. */
 export function Ask() {
-  const { ask, pending } = useCommand(aptuitive);
+  const { ask, pending } = useCommand(uitive);
   const [text, setText] = useState('');
   const submit = async (event: FormEvent) => {
     event.preventDefault();

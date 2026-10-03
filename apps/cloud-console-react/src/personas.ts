@@ -1,4 +1,4 @@
-import type { Persona } from '@plurid/aptuitive-core';
+import type { Persona } from '@plurid/uitive-core';
 import { byId } from './catalogue.ts';
 
 function persona(

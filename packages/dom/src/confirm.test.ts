@@ -1,16 +1,16 @@
 // @vitest-environment happy-dom
 import {
   action,
-  createAptuitive,
+  createUitive,
   defineApp,
   field,
   heuristicPlanner,
   list,
-} from '@plurid/aptuitive-core';
-import type { Perform } from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
+import type { Perform } from '@plurid/uitive-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { startAptuitive } from './index.js';
+import { startUitive } from './index.js';
 
 const store = defineApp({
   id: 'store',
@@ -48,17 +48,17 @@ function setup() {
   const recorder: Perform = (params) => {
     runs.push(params);
   };
-  const client = createAptuitive({
+  const client = createUitive({
     contract: store,
     bindings: { perform: { 'order.cancel': recorder, 'note.add': recorder, print: recorder } },
   });
-  const stop = startAptuitive(client);
+  const stop = startUitive(client);
   stops.push(stop);
   return { client, runs, stop };
 }
 
 function dialog() {
-  const element = document.createElement('apt-confirm');
+  const element = document.createElement('uitive-confirm');
   document.body.append(element);
   const root = element.shadowRoot?.querySelector('[part="content"]') as HTMLElement;
   return { element, root };
@@ -76,7 +76,7 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-describe('<apt-confirm>', () => {
+describe('<uitive-confirm>', () => {
   it('asks before a destructive action, with what it does to what, and the phrase to type', async () => {
     const { client, runs } = setup();
     const { root } = dialog();
@@ -116,15 +116,15 @@ describe('<apt-confirm>', () => {
   });
 });
 
-describe('startAptuitive', () => {
+describe('startUitive', () => {
   it('gives elements rendered later the client, saves usage when hidden, and undoes it all', () => {
     const { client, stop } = setup();
     const flush = vi.spyOn(client, 'flush');
     document.body.insertAdjacentHTML(
       'beforeend',
-      `<div data-apt-list="tools"><button data-apt-item="note.add">Add note</button><button data-apt-item="print">Print</button><apt-more list="tools"></apt-more></div>`,
+      `<div data-uitive-list="tools"><button data-uitive-item="note.add">Add note</button><button data-uitive-item="print">Print</button><uitive-more list="tools"></uitive-more></div>`,
     );
-    const more = document.querySelector('apt-more');
+    const more = document.querySelector('uitive-more');
     expect(more?.client).toBe(client);
     client.hide('tools', 'print');
     const content = more?.shadowRoot?.querySelector('[part="content"]');
@@ -139,12 +139,12 @@ describe('startAptuitive', () => {
   it('plans each session from use once', async () => {
     let time = 0;
     const plan = vi.fn(heuristicPlanner().plan);
-    const client = createAptuitive({
+    const client = createUitive({
       contract: store,
       now: () => time,
       planner: { name: 'test', plan },
     });
-    stops.push(startAptuitive(client));
+    stops.push(startUitive(client));
     await Promise.resolve();
     expect(plan).toHaveBeenCalledOnce();
     document.dispatchEvent(new Event('visibilitychange'));

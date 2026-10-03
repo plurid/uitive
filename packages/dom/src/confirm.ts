@@ -1,20 +1,19 @@
-import { formatValue, type Aptuitive, type Confirmation } from '@plurid/aptuitive-core';
+import { formatValue, type Uitive, type Confirmation } from '@plurid/uitive-core';
 import type { ClientLike } from './client-like.js';
-import { AptElement } from './element.js';
+import { UitiveElement } from './element.js';
 import { escape } from './html.js';
 
-/** What `<apt-confirm>` needs from a client. */
-export type ConfirmClientLike = ClientLike &
-  Pick<Aptuitive, 'confirm' | 'cancel' | 'confirmations'>;
+/** What `<uitive-confirm>` needs from a client. */
+export type ConfirmClientLike = ClientLike & Pick<Uitive, 'confirm' | 'cancel' | 'confirmations'>;
 
 const normal = (text: string) => text.trim().replace(/\s+/g, ' ').toLowerCase();
 
 /**
- * `<apt-confirm>`: asks the person before an action changes data: what it does and to what, and
+ * `<uitive-confirm>`: asks the person before an action changes data: what it does and to what, and
  * for a destructive action, the phrase to type. Place it once. While it is in the page, actions
  * with effects wait for the person's answer; without it, they are refused.
  */
-export class AptConfirm extends AptElement<ConfirmClientLike> {
+export class UitiveConfirm extends UitiveElement<ConfirmClientLike> {
   #shown: string | undefined;
   readonly #escape = (event: Event) => {
     const confirmation = this.#confirmation();

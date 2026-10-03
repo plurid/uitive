@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import type { BlockComponents } from '@plurid/aptuitive-react';
-import { useCommand, useSnapshot, useSurface } from '@plurid/aptuitive-react';
+import type { BlockComponents } from '@plurid/uitive-react';
+import { useCommand, useSnapshot, useSurface } from '@plurid/uitive-react';
 import { verbs } from '../catalogue.ts';
-import { aptuitive } from '../client.ts';
+import { uitive } from '../client.ts';
 import { useConsole } from '../console.tsx';
 import type { blocks, QuickAction } from '../contract.ts';
 import { labelOf } from '../data.ts';
 
-// The console's own blocks. Every other block on its pages is one of Aptuitive's, drawn from
+// The console's own blocks. Every other block on its pages is one of Uitive's, drawn from
 // the contract's sources and actions with the console's kit.
 
 const QuickActions: BlockComponents<typeof blocks>['quickActions'] = ({ props }) => {
   const { runQuick } = useConsole();
-  const quick = useSurface(aptuitive, 'quickActions');
+  const quick = useSurface(uitive, 'quickActions');
   const describeSteps = (value: QuickAction) =>
     value.steps.map((step) => `${verbs[step.verb][0]} ${labelOf(step.service)}`).join(' → ');
   if (quick.items.length === 0 && quick.suggestions.length === 0) {
@@ -44,15 +44,11 @@ const QuickActions: BlockComponents<typeof blocks>['quickActions'] = ({ props })
             <button
               type="button"
               className="small primary"
-              onClick={() => aptuitive.accept(entry.operation)}
+              onClick={() => uitive.accept(entry.operation)}
             >
               Add
             </button>
-            <button
-              type="button"
-              className="small"
-              onClick={() => aptuitive.dismiss(entry.operation)}
-            >
+            <button type="button" className="small" onClick={() => uitive.dismiss(entry.operation)}>
               Not now
             </button>
           </span>
@@ -63,8 +59,8 @@ const QuickActions: BlockComponents<typeof blocks>['quickActions'] = ({ props })
 };
 
 const Goal: BlockComponents<typeof blocks>['goal'] = () => {
-  const goal = useSnapshot(aptuitive).definition.goal;
-  const command = useCommand(aptuitive);
+  const goal = useSnapshot(uitive).definition.goal;
+  const command = useCommand(uitive);
   const [words, setWords] = useState('');
   if (goal !== undefined) {
     return (

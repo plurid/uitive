@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { ui } from '@plurid/aptuitive-core';
-import type { AnyPage } from '@plurid/aptuitive-core';
+import { ui } from '@plurid/uitive-core';
+import type { AnyPage } from '@plurid/uitive-core';
 import { describe, expect, it } from 'vitest';
 import { checkAdapter, routeOf } from './checks.js';
 import { compileEffects } from './effects.js';

@@ -1,6 +1,6 @@
-import { restFetch } from '@plurid/aptuitive-core';
-import type { FetchRequest, FetchResult } from '@plurid/aptuitive-core';
-import type { Adapter } from '@plurid/aptuitive-adapter';
+import { restFetch } from '@plurid/uitive-core';
+import type { FetchRequest, FetchResult } from '@plurid/uitive-core';
+import type { Adapter } from '@plurid/uitive-adapter';
 import { bucket, meter, READ_BUDGET } from './limits.ts';
 import { getSecret } from './secrets.ts';
 

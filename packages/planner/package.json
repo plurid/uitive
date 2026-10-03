@@ -1,17 +1,17 @@
 {
-  "name": "@plurid/aptuitive-planner",
+  "name": "@plurid/uitive-planner",
   "version": "0.1.0",
-  "description": "Aptuitive's model planner: contracts compiled to structured outputs, prompts and Claude, wherever JavaScript runs",
+  "description": "Uitive's model planner: contracts compiled to structured outputs, prompts and Claude, wherever JavaScript runs",
   "keywords": [
-    "aptuitive",
+    "uitive",
     "adaptive-ui",
     "llm"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/planner#readme",
+  "homepage": "https://github.com/plurid/uitive/tree/master/packages/planner#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plurid/aptuitive.git",
+    "url": "git+https://github.com/plurid/uitive.git",
     "directory": "packages/planner"
   },
   "type": "module",
@@ -42,7 +42,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@plurid/aptuitive-core": "workspace:^"
+    "@plurid/uitive-core": "workspace:^"
   },
   "peerDependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

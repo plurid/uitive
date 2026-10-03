@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { editor } from './__fixtures__/editor.js';
-import { createAptuitive, type Aptuitive } from './client.js';
+import { createUitive, type Uitive } from './client.js';
 import { action, defineApp, list } from './contract.js';
 import { heuristicPlanner } from './heuristic.js';
 import { remotePlanner, type Planner } from './planner.js';
@@ -16,7 +16,7 @@ function clock(start = 0) {
 const ids = (views: readonly { id: string }[]) => views.map((view) => view.id);
 
 /** Uses `table` from overflow across sessions until the heuristic wants it on the toolbar. */
-async function earnTable(client: Aptuitive<typeof editor>) {
+async function earnTable(client: Uitive<typeof editor>) {
   for (let session = 0; session < 3; session++) {
     client.record('table', { via: 'overflow' });
     client.record('table', { via: 'overflow' });
@@ -29,7 +29,7 @@ async function earnTable(client: Aptuitive<typeof editor>) {
 describe('sessions', () => {
   it('splits sessions lazily, and never applies changes on the first interaction after idle', async () => {
     const time = clock();
-    const client = createAptuitive({ contract: editor, now: time.now });
+    const client = createUitive({ contract: editor, now: time.now });
     await earnTable(client);
     expect(client.getSnapshot().pending).toHaveLength(1);
 
@@ -48,12 +48,12 @@ describe('sessions', () => {
   it('applies pending changes at page start, before anything renders', async () => {
     const time = clock();
     const store = memoryStore();
-    const first = createAptuitive({ contract: editor, now: time.now, store });
+    const first = createUitive({ contract: editor, now: time.now, store });
     await earnTable(first);
     first.flush();
 
     time.advance(45);
-    const second = createAptuitive({ contract: editor, now: time.now, store });
+    const second = createUitive({ contract: editor, now: time.now, store });
     expect(ids(second.surface('toolbar').visible)).toContain('table');
     expect(second.getSnapshot().latest?.kind).toBe('apply');
   });
@@ -61,7 +61,7 @@ describe('sessions', () => {
 
 describe('plan and apply', () => {
   it('stages a plan and applies it at the next session, explaining it with numbers true then', async () => {
-    const client = createAptuitive({ contract: editor, now: clock().now });
+    const client = createUitive({ contract: editor, now: clock().now });
     const plan = await earnTable(client);
     expect(plan.pending).toBe(1);
     expect(ids(client.surface('toolbar').visible)).not.toContain('table');
@@ -78,7 +78,7 @@ describe('plan and apply', () => {
   });
 
   it('keeps surface values identical between unrelated updates', () => {
-    const client = createAptuitive({ contract: editor, now: clock().now });
+    const client = createUitive({ contract: editor, now: clock().now });
     const before = client.surface('toolbar');
     const listener = vi.fn();
     client.subscribe(listener);
@@ -90,7 +90,7 @@ describe('plan and apply', () => {
   });
 
   it('lets the user revert, which cools the change down, or keep it', async () => {
-    const client = createAptuitive({ contract: editor, now: clock().now });
+    const client = createUitive({ contract: editor, now: clock().now });
     await earnTable(client);
     const operation = client.nextSession()?.applied[0] as string;
     client.revert(operation);
@@ -100,7 +100,7 @@ describe('plan and apply', () => {
     await client.plan();
     expect(client.getSnapshot().latest?.rejected.map((entry) => entry.rule)).toEqual(['cooldown']);
 
-    const other = createAptuitive({ contract: editor, now: clock().now });
+    const other = createUitive({ contract: editor, now: clock().now });
     await earnTable(other);
     const kept = other.nextSession()?.applied[0] as string;
     other.keep(kept);
@@ -110,7 +110,7 @@ describe('plan and apply', () => {
   });
 
   it('applies nothing on its own in suggest mode, until the user accepts', async () => {
-    const client = createAptuitive({ contract: editor, now: clock().now, autonomy: 'suggest' });
+    const client = createUitive({ contract: editor, now: clock().now, autonomy: 'suggest' });
     await earnTable(client);
     expect(client.nextSession()).toBeUndefined();
     const waiting = client.getSnapshot().pending[0]?.id as string;
@@ -123,12 +123,12 @@ describe('plan and apply', () => {
     const store = memoryStore();
     const base = heuristicPlanner();
     const counting: Planner = { name: 'counting', plan: vi.fn(base.plan) };
-    const first = createAptuitive({ contract: editor, now: time.now, store, planner: counting });
+    const first = createUitive({ contract: editor, now: time.now, store, planner: counting });
     await Promise.all([first.learn(), first.learn()]);
     expect(counting.plan).toHaveBeenCalledOnce();
     first.flush();
 
-    const reloaded = createAptuitive({ contract: editor, now: time.now, store, planner: counting });
+    const reloaded = createUitive({ contract: editor, now: time.now, store, planner: counting });
     expect(await reloaded.learn()).toBeUndefined();
     expect(counting.plan).toHaveBeenCalledOnce();
 
@@ -139,10 +139,10 @@ describe('plan and apply', () => {
 
   it('learns nothing while frozen, or when the application turns learning off', async () => {
     const counting: Planner = { name: 'counting', plan: vi.fn(heuristicPlanner().plan) };
-    const frozen = createAptuitive({ contract: editor, now: clock().now, planner: counting });
+    const frozen = createUitive({ contract: editor, now: clock().now, planner: counting });
     frozen.freeze(true);
     expect(await frozen.learn()).toBeUndefined();
-    const off = createAptuitive({
+    const off = createUitive({
       contract: editor,
       now: clock().now,
       planner: counting,
@@ -154,7 +154,7 @@ describe('plan and apply', () => {
   });
 
   it('shows the standard interface on request, without losing the definition', () => {
-    const client = createAptuitive({ contract: editor, now: clock().now });
+    const client = createUitive({ contract: editor, now: clock().now });
     client.hide('toolbar', 'bold');
     client.setView('standard');
     expect(ids(client.surface('toolbar').visible)).toContain('bold');
@@ -184,7 +184,7 @@ describe('commands', () => {
         }),
       },
     });
-    const client = createAptuitive({ contract: notes, now: clock().now });
+    const client = createUitive({ contract: notes, now: clock().now });
     expect((await client.ask('move Table to the top')).status).toBe('done');
     expect(ids(client.surface('toolbar').visible)).toEqual(['table', 'bold', 'italic']);
 
@@ -205,7 +205,7 @@ describe('commands', () => {
   });
 
   it('applies explicit commands at once, and explains refusals from policy', async () => {
-    const client = createAptuitive({ contract: editor, now: clock().now });
+    const client = createUitive({ contract: editor, now: clock().now });
     const hidden = await client.ask('hide bold');
     expect(hidden.status).toBe('done');
     expect(ids(client.surface('toolbar').visible)).not.toContain('bold');
@@ -230,7 +230,7 @@ describe('commands', () => {
   });
 
   it('keeps one choice per setting, so changes don\u2019t pile up', () => {
-    const client = createAptuitive({ contract: editor, now: () => 0 });
+    const client = createUitive({ contract: editor, now: () => 0 });
     client.set('density', 'compact');
     client.set('density', 'comfortable');
     client.set('density', 'compact');
@@ -244,7 +244,7 @@ describe('commands', () => {
   });
 
   it('undoes a hide or a pin by reverting it, rather than stacking an opposite change', async () => {
-    const client = createAptuitive({ contract: editor, now: () => 0 });
+    const client = createUitive({ contract: editor, now: () => 0 });
     const toolbar = () => client.surface('toolbar');
     const standard = toolbar();
     const shown = standard.visible.find((view) => view.id !== 'bold')?.id;
@@ -279,7 +279,7 @@ describe('commands', () => {
   });
 
   it('keeps a stated goal and lets the planner act on it', async () => {
-    const client = createAptuitive({ contract: editor, now: clock().now });
+    const client = createUitive({ contract: editor, now: clock().now });
     const result = await client.ask('I insert tables and images', { goal: true });
     expect(client.getSnapshot().definition.goal).toBe('I insert tables and images');
     expect(result.status).toBe('done');
@@ -290,13 +290,13 @@ describe('commands', () => {
 
   it('falls back to the local planner, recording why, when the server fails', async () => {
     const planner = remotePlanner({
-      url: 'https://planner.test/aptuitive',
+      url: 'https://planner.test/uitive',
       fetch: async () => {
         throw new Error('offline');
       },
       fallback: heuristicPlanner(),
     });
-    const client = createAptuitive({ contract: editor, now: clock().now, planner });
+    const client = createUitive({ contract: editor, now: clock().now, planner });
     const goal = await client.ask('I insert tables and images', { goal: true });
     expect(goal.meta?.fellBack).toBe('offline');
     expect(goal.status).toBe('done');
@@ -328,7 +328,7 @@ describe('commands', () => {
         };
       },
     };
-    const client = createAptuitive({ contract: editor, now: clock().now, planner: suggesting });
+    const client = createUitive({ contract: editor, now: clock().now, planner: suggesting });
     client.record('bold');
     const plan = await client.plan();
     expect(client.surface('macros').suggestions.map((entry) => entry.title)).toEqual(['Emphasis']);
@@ -336,7 +336,7 @@ describe('commands', () => {
     expect(client.surface('macros').items.map((entry) => entry.title)).toEqual(['Emphasis']);
 
     // A person who lets the interface act on its own gets new items at once.
-    const trusting = createAptuitive({ contract: editor, now: clock().now, planner: suggesting });
+    const trusting = createUitive({ contract: editor, now: clock().now, planner: suggesting });
     trusting.setAutonomy('auto');
     await trusting.plan();
     expect(trusting.surface('macros').items.map((entry) => entry.title)).toEqual(['Emphasis']);
@@ -345,11 +345,11 @@ describe('commands', () => {
 
 describe('ownership', () => {
   it('exports a definition another client can import', async () => {
-    const source = createAptuitive({ contract: editor, now: clock().now });
+    const source = createUitive({ contract: editor, now: clock().now });
     source.hide('toolbar', 'bold');
     source.pin('toolbar', 'print');
     source.set('density', 'compact');
-    const target = createAptuitive({ contract: editor, now: clock().now });
+    const target = createUitive({ contract: editor, now: clock().now });
     const imported = target.import(JSON.parse(JSON.stringify(source.export())));
     expect(imported.applied).toHaveLength(3);
     expect(target.surface('toolbar')).toEqual(source.surface('toolbar'));
@@ -358,7 +358,7 @@ describe('ownership', () => {
   });
 
   it('resets to the standard interface but keeps usage; clearing forgets everything', () => {
-    const client = createAptuitive({ contract: editor, now: clock().now });
+    const client = createUitive({ contract: editor, now: clock().now });
     client.record('table', { via: 'overflow' });
     client.hide('toolbar', 'bold');
     client.reset();
@@ -369,7 +369,7 @@ describe('ownership', () => {
   });
 
   it('freezes the interface against planners', async () => {
-    const client = createAptuitive({ contract: editor, now: clock().now });
+    const client = createUitive({ contract: editor, now: clock().now });
     client.freeze(true);
     const plan = await earnTable(client);
     expect(plan.pending).toBe(0);
@@ -381,14 +381,14 @@ describe('storage', () => {
   it('survives corrupt storage, reporting the problem', () => {
     const onError = vi.fn();
     const store = { load: () => JSON.parse('{oops'), save: () => {}, clear: () => {} };
-    const client = createAptuitive({ contract: editor, store, onError });
+    const client = createUitive({ contract: editor, store, onError });
     expect(onError).toHaveBeenCalled();
     expect(ids(client.surface('toolbar').visible)).toContain('bold');
   });
 
   it('keeps what still means something when the contract changes', () => {
     const store = memoryStore();
-    const before = createAptuitive({ contract: editor, store, now: clock().now });
+    const before = createUitive({ contract: editor, store, now: clock().now });
     before.pin('toolbar', 'print');
     before.pin('toolbar', 'image');
     before.record('print');
@@ -410,7 +410,7 @@ describe('storage', () => {
         }),
       },
     });
-    const client = createAptuitive({ contract: after, store, now: clock().now });
+    const client = createUitive({ contract: after, store, now: clock().now });
     expect(ids(client.surface('toolbar').visible)).toEqual(['output']);
     expect(client.getSnapshot().definition.operations).toHaveLength(1);
     expect(client.summary().rows.find((row) => row.action === 'output')?.uses).toBe(1);
@@ -440,8 +440,8 @@ describe('tabs', () => {
         },
       };
     };
-    const first = createAptuitive({ contract: editor, store: tab(), now: clock().now });
-    const second = createAptuitive({ contract: editor, store: tab(), now: clock().now });
+    const first = createUitive({ contract: editor, store: tab(), now: clock().now });
+    const second = createUitive({ contract: editor, store: tab(), now: clock().now });
     const listener = vi.fn();
     second.subscribe(listener);
 
@@ -454,7 +454,7 @@ describe('tabs', () => {
 
 describe('request', () => {
   it('sends only IDs, statistics and the user’s own words', async () => {
-    const client = createAptuitive({ contract: editor, now: clock().now });
+    const client = createUitive({ contract: editor, now: clock().now });
     client.setContext('tool', 'table');
     client.record('table');
     const request = client.request('command', 'hide print');

@@ -1,5 +1,5 @@
 {
-  "name": "@aptuitive/extension",
+  "name": "@uitive/extension",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,11 +8,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
-    "@plurid/aptuitive-adapter": "workspace:*",
-    "@plurid/aptuitive-core": "workspace:*",
-    "@plurid/aptuitive-dom": "workspace:*",
-    "@plurid/aptuitive-planner": "workspace:*",
-    "@plurid/aptuitive-react": "workspace:*",
+    "@plurid/uitive-adapter": "workspace:*",
+    "@plurid/uitive-core": "workspace:*",
+    "@plurid/uitive-dom": "workspace:*",
+    "@plurid/uitive-planner": "workspace:*",
+    "@plurid/uitive-react": "workspace:*",
     "dom-accessibility-api": "^0.7.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

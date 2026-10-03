@@ -1,5 +1,5 @@
 {
-  "format": "aptuitive.adapter",
+  "format": "uitive.adapter",
   "formatVersion": 1,
   "id": "stripe-dashboard",
   "label": "Stripe Dashboard",
@@ -7,7 +7,7 @@
     "https://dashboard.stripe.com"
   ],
   "contract": {
-    "format": "aptuitive.contract",
+    "format": "uitive.contract",
     "formatVersion": 2,
     "id": "stripe-dashboard",
     "version": "1",
@@ -69,7 +69,7 @@
           "properties": {
             "amount": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Amount",
                 "currency": "currency",
@@ -78,7 +78,7 @@
             },
             "available_on": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Available on",
                 "unit": "s"
@@ -86,7 +86,7 @@
             },
             "created": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Created",
                 "unit": "s"
@@ -94,21 +94,21 @@
             },
             "currency": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Currency"
               }
             },
             "description": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Description"
               }
             },
             "fee": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Fee",
                 "currency": "currency",
@@ -117,14 +117,14 @@
             },
             "id": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Id"
               }
             },
             "net": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Net",
                 "currency": "currency",
@@ -133,14 +133,14 @@
             },
             "reporting_category": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Reporting category"
               }
             },
             "status": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Status"
               }
@@ -201,7 +201,7 @@
                 "transfer_failure",
                 "transfer_refund"
               ],
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "enum",
                 "label": "Type"
               }
@@ -268,7 +268,7 @@
           "properties": {
             "amount": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Amount",
                 "currency": "currency",
@@ -277,7 +277,7 @@
             },
             "amount_refunded": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Amount refunded",
                 "currency": "currency",
@@ -286,14 +286,14 @@
             },
             "captured": {
               "type": "boolean",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "bool",
                 "label": "Captured"
               }
             },
             "created": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Created",
                 "unit": "s"
@@ -301,14 +301,14 @@
             },
             "currency": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Currency"
               }
             },
             "customer": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "ref",
                 "label": "Customer",
                 "source": "customers"
@@ -316,56 +316,56 @@
             },
             "description": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Description"
               }
             },
             "disputed": {
               "type": "boolean",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "bool",
                 "label": "Disputed"
               }
             },
             "failure_code": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Failure code"
               }
             },
             "failure_message": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Failure message"
               }
             },
             "id": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Id"
               }
             },
             "payment_intent": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Payment intent"
               }
             },
             "receipt_email": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Receipt email"
               }
             },
             "refunded": {
               "type": "boolean",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "bool",
                 "label": "Refunded"
               }
@@ -377,21 +377,21 @@
                 "pending",
                 "succeeded"
               ],
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "enum",
                 "label": "Status"
               }
             },
             "card_brand": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Card brand"
               }
             },
             "card_last4": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Card last4"
               }
@@ -454,7 +454,7 @@
           "properties": {
             "balance": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Balance",
                 "currency": "currency",
@@ -463,7 +463,7 @@
             },
             "created": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Created",
                 "unit": "s"
@@ -471,49 +471,49 @@
             },
             "currency": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Currency"
               }
             },
             "delinquent": {
               "type": "boolean",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "bool",
                 "label": "Delinquent"
               }
             },
             "description": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Description"
               }
             },
             "email": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Email"
               }
             },
             "id": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Id"
               }
             },
             "name": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Name"
               }
             },
             "phone": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Phone"
               }
@@ -568,7 +568,7 @@
           "properties": {
             "amount": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Amount",
                 "currency": "currency",
@@ -577,7 +577,7 @@
             },
             "charge": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "ref",
                 "label": "Charge",
                 "source": "charges"
@@ -585,7 +585,7 @@
             },
             "created": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Created",
                 "unit": "s"
@@ -593,35 +593,35 @@
             },
             "currency": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Currency"
               }
             },
             "id": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Id"
               }
             },
             "is_charge_refundable": {
               "type": "boolean",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "bool",
                 "label": "Is charge refundable"
               }
             },
             "payment_intent": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Payment intent"
               }
             },
             "reason": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Reason"
               }
@@ -638,7 +638,7 @@
                 "warning_under_review",
                 "won"
               ],
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "enum",
                 "label": "Status"
               }
@@ -700,7 +700,7 @@
           "properties": {
             "amount_due": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Amount due",
                 "currency": "currency",
@@ -709,7 +709,7 @@
             },
             "amount_paid": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Amount paid",
                 "currency": "currency",
@@ -718,7 +718,7 @@
             },
             "created": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Created",
                 "unit": "s"
@@ -726,14 +726,14 @@
             },
             "currency": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Currency"
               }
             },
             "customer": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "ref",
                 "label": "Customer",
                 "source": "customers"
@@ -741,14 +741,14 @@
             },
             "customer_email": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Customer email"
               }
             },
             "due_date": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Due date",
                 "unit": "s"
@@ -756,14 +756,14 @@
             },
             "id": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Id"
               }
             },
             "number": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Number"
               }
@@ -777,14 +777,14 @@
                 "uncollectible",
                 "void"
               ],
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "enum",
                 "label": "Status"
               }
             },
             "amount_remaining": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Amount remaining",
                 "currency": "currency",
@@ -853,7 +853,7 @@
           "properties": {
             "amount": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Amount",
                 "currency": "currency",
@@ -862,7 +862,7 @@
             },
             "arrival_date": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Arrival date",
                 "unit": "s"
@@ -870,7 +870,7 @@
             },
             "created": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Created",
                 "unit": "s"
@@ -878,42 +878,42 @@
             },
             "currency": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Currency"
               }
             },
             "description": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Description"
               }
             },
             "failure_message": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Failure message"
               }
             },
             "id": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Id"
               }
             },
             "method": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Method"
               }
             },
             "status": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Status"
               }
@@ -924,7 +924,7 @@
                 "bank_account",
                 "card"
               ],
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "enum",
                 "label": "Type"
               }
@@ -989,7 +989,7 @@
           "properties": {
             "amount": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "money",
                 "label": "Amount",
                 "currency": "currency",
@@ -998,7 +998,7 @@
             },
             "charge": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "ref",
                 "label": "Charge",
                 "source": "charges"
@@ -1006,7 +1006,7 @@
             },
             "created": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Created",
                 "unit": "s"
@@ -1014,21 +1014,21 @@
             },
             "currency": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Currency"
               }
             },
             "id": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Id"
               }
             },
             "payment_intent": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Payment intent"
               }
@@ -1041,14 +1041,14 @@
                 "fraudulent",
                 "requested_by_customer"
               ],
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "enum",
                 "label": "Reason"
               }
             },
             "status": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Status"
               }
@@ -1104,14 +1104,14 @@
           "properties": {
             "cancel_at_period_end": {
               "type": "boolean",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "bool",
                 "label": "Cancel at period end"
               }
             },
             "created": {
               "type": "number",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "time",
                 "label": "Created",
                 "unit": "s"
@@ -1119,14 +1119,14 @@
             },
             "currency": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Currency"
               }
             },
             "customer": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "ref",
                 "label": "Customer",
                 "source": "customers"
@@ -1134,14 +1134,14 @@
             },
             "description": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Description"
               }
             },
             "id": {
               "type": "string",
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "text",
                 "label": "Id"
               }
@@ -1158,7 +1158,7 @@
                 "trialing",
                 "unpaid"
               ],
-              "x-aptuitive": {
+              "x-uitive": {
                 "type": "enum",
                 "label": "Status"
               }

@@ -1,21 +1,21 @@
 # Coding agents
 
-Aptuitive is built to be integrated by a coding agent: every step is a command the agent can run and check, a playbook says in what order, and `aptuitive check` is the gate. Every page starts as a region, so the application works unchanged from the first minute. Three coding agents integrated Excalidraw, Medusa Admin and Grist this way, in 37 to 54 minutes each: see [Findings](findings.md).
+Uitive is built to be integrated by a coding agent: every step is a command the agent can run and check, a playbook says in what order, and `uitive check` is the gate. Every page starts as a region, so the application works unchanged from the first minute. Three coding agents integrated Excalidraw, Medusa Admin and Grist this way, in 37 to 54 minutes each: see [Findings](findings.md).
 
 ## Start
 
 In the application's package:
 
 ```sh
-npx @plurid/aptuitive-cli detect   # what the project uses; at a monorepo root, where to set up
-npx @plurid/aptuitive-cli init     # packages, the Aptuitive folder and the agents' configuration
+npx @plurid/uitive-cli detect   # what the project uses; at a monorepo root, where to set up
+npx @plurid/uitive-cli init     # packages, the Uitive folder and the agents' configuration
 ```
 
-Then ask the agent to integrate Aptuitive. `init` installs the playbook, a skill named `integrate-aptuitive`, which takes the agent from the contract to bindings, pages, the kit and checks, one checked step at a time.
+Then ask the agent to integrate Uitive. `init` installs the playbook, a skill named `integrate-uitive`, which takes the agent from the contract to bindings, pages, the kit and checks, one checked step at a time.
 
 ## What `init` writes
 
-`init` never overwrites a file. In the **Aptuitive folder**, `src/aptuitive/` when there is a `src` folder and `aptuitive/` otherwise:
+`init` never overwrites a file. In the **Uitive folder**, `src/uitive/` when there is a `src` folder and `uitive/` otherwise:
 
 | File               | What it holds                                                                   |
 | ------------------ | ------------------------------------------------------------------------------- |
@@ -27,7 +27,7 @@ Then ask the agent to integrate Aptuitive. `init` installs the playbook, a skill
 | `api.generated.ts` | Sources, actions and endpoints from a small API description                     |
 | `curation.json`    | What to keep from a large API description, for you or the agent to fill in      |
 
-`init --dir app/aptuitive` puts the folder elsewhere, such as inside the only folder the build compiles; package.json records it as `aptuitive.dir`, where every command finds it. With Next.js, `init` also writes `app/api/aptuitive/[kind]/route.ts`.
+`init --dir app/uitive` puts the folder elsewhere, such as inside the only folder the build compiles; package.json records it as `uitive.dir`, where every command finds it. With Next.js, `init` also writes `app/api/uitive/[kind]/route.ts`.
 
 At the repository's root, it configures the coding agents it finds: Claude Code (`.mcp.json` and the skill), Cursor (`.cursor/mcp.json`) and VS Code (`.vscode/mcp.json`). With none found, it configures Claude Code and says so; `--no-agents` leaves them alone.
 
@@ -38,7 +38,7 @@ Every command takes `--json` for agents, `--cwd <dir>` for the project's root, a
 | Command                             | What it does                                                                                                                           | Also exits with 1 when                       |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | `detect`                            | Lists what the project uses: package manager, UI library, framework, router, design system, server, API descriptions and coding agents |                                              |
-| `init`                              | Sets Aptuitive up. `--dir`, `--openapi`, `--packages`, `--no-install`, `--no-agents`, `--mcp <command>`                                | installing failed                            |
+| `init`                              | Sets Uitive up. `--dir`, `--openapi`, `--packages`, `--no-install`, `--no-agents`, `--mcp <command>`                                   | installing failed                            |
 | `survey --openapi <spec>`           | One line per source an OpenAPI 2.0, 3.0 or 3.1 description yields, to curate from. `--curation`                                        | the description has problems                 |
 | `generate sources --openapi <spec>` | Writes `api.generated.ts` from the description and `curation.json`. `--curation`, `--out`, `--dry-run`                                 | generating failed                            |
 | `generate blocks <file#Component>…` | Writes `blocks.generated.ts` from components' props. `--out`, `--check`                                                                | there are problems, or with `--check`, drift |
@@ -49,9 +49,9 @@ Every command takes `--json` for agents, `--cwd <dir>` for the project's root, a
 
 An API description describes everything; an interface shows a part. Past 40 sources or 200 actions, planning gets worse, so `generate sources` asks for a curation first. Curating is three steps:
 
-1. `aptuitive survey --openapi <spec>` prints one line per source: the fields kept and left out, its filters, search, sorting and paging, and its actions, then what was skipped and why.
-2. `curation.json` in the Aptuitive folder keeps what the frontend shows, names things the way its people do, and lifts nested values people look at.
-3. `aptuitive generate sources --openapi <spec>` writes the sources and actions, which the contract spreads in. Rerun it after every change to the curation, and never edit the generated file.
+1. `uitive survey --openapi <spec>` prints one line per source: the fields kept and left out, its filters, search, sorting and paging, and its actions, then what was skipped and why.
+2. `curation.json` in the Uitive folder keeps what the frontend shows, names things the way its people do, and lifts nested values people look at.
+3. `uitive generate sources --openapi <spec>` writes the sources and actions, which the contract spreads in. Rerun it after every change to the curation, and never edit the generated file.
 
 <!-- example: docs/examples/agents/curation.json -->
 
@@ -89,38 +89,38 @@ Choices survive every regeneration. An action's effect can be raised freely, and
 
 ## Discovery
 
-`aptuitive discover --url http://localhost:5173/` crawls the running application with Playwright, following same-origin links and never pressing anything. It proposes routes, with row keys turned into parameters, a region per route, lists from navigation and toolbars, which buttons match the contract's actions, and the buttons that open menus it doesn't open. Buttons in dialogs and sort buttons are never actions, and a generic verb or a dismissal alone, such as "Create" or "Cancel", never matches a longer action.
+`uitive discover --url http://localhost:5173/` crawls the running application with Playwright, following same-origin links and never pressing anything. It proposes routes, with row keys turned into parameters, a region per route, lists from navigation and toolbars, which buttons match the contract's actions, and the buttons that open menus it doesn't open. Buttons in dialogs and sort buttons are never actions, and a generic verb or a dismissal alone, such as "Create" or "Cancel", never matches a longer action.
 
 - It needs `playwright`, or `playwright-core` with `--chrome` to use the installed Chrome.
 - `--storage-state <file>` gives it a signed-in session, saved with Playwright.
-- It writes `discovery.json` in the Aptuitive folder, for the agent to turn into routes, regions and lists.
+- It writes `discovery.json` in the Uitive folder, for the agent to turn into routes, regions and lists.
 
 ## Native blocks
 
-`aptuitive generate blocks src/order-summary.tsx#OrderSummary` writes block specs from components' TypeScript props, so redesigns can place the application's own components: literal unions become enums, optional props become required with their defaults described, and functions, content and objects are left out and reported. Run it with `--check` in CI. [Pages](pages.md#your-own-blocks) shows how to render them.
+`uitive generate blocks src/order-summary.tsx#OrderSummary` writes block specs from components' TypeScript props, so redesigns can place the application's own components: literal unions become enums, optional props become required with their defaults described, and functions, content and objects are left out and reported. Run it with `--check` in CI. [Pages](pages.md#your-own-blocks) shows how to render them.
 
 ## The check
 
-`aptuitive check` loads the contract and the bindings in Node, through the project's tsconfig paths, and checks that they hold: see [Contracts](contracts.md#what-check-checks). It prints what the integration covers, such as "10 actions, 1 route, 1 page, 1 region, 2 lists", so an agent can report it. Keep the contract importable on its own: aliases only the bundler knows don't resolve in Node.
+`uitive check` loads the contract and the bindings in Node, through the project's tsconfig paths, and checks that they hold: see [Contracts](contracts.md#what-check-checks). It prints what the integration covers, such as "10 actions, 1 route, 1 page, 1 region, 2 lists", so an agent can report it. Keep the contract importable on its own: aliases only the bundler knows don't resolve in Node.
 
 ## MCP
 
-`@plurid/aptuitive-mcp` offers the same steps as Model Context Protocol tools, for agents that prefer tools to a shell:
+`@plurid/uitive-mcp` offers the same steps as Model Context Protocol tools, for agents that prefer tools to a shell:
 
 ```json
-{ "mcpServers": { "aptuitive": { "command": "npx", "args": ["-y", "@plurid/aptuitive-mcp"] } } }
+{ "mcpServers": { "uitive": { "command": "npx", "args": ["-y", "@plurid/uitive-mcp"] } } }
 ```
 
-| Tool                         | What it does                                                                                                            |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `aptuitive_detect`           | What the application uses. Start here                                                                                   |
-| `aptuitive_init`             | Sets Aptuitive up; installs packages only when `install` is true                                                        |
-| `aptuitive_openapi_survey`   | The survey of an API description                                                                                        |
-| `aptuitive_generate_sources` | Sources, actions and endpoints from the description and the curation                                                    |
-| `aptuitive_generate_blocks`  | Block specs from components' props; with `check`, reports drift                                                         |
-| `aptuitive_discover`         | Crawls the running application                                                                                          |
-| `aptuitive_check`            | The gate, with coverage                                                                                                 |
-| `aptuitive_preview_plan`     | Which sources and actions a request would plan over, and how large its schema and prompt are, without calling the model |
+| Tool                      | What it does                                                                                                            |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `uitive_detect`           | What the application uses. Start here                                                                                   |
+| `uitive_init`             | Sets Uitive up; installs packages only when `install` is true                                                           |
+| `uitive_openapi_survey`   | The survey of an API description                                                                                        |
+| `uitive_generate_sources` | Sources, actions and endpoints from the description and the curation                                                    |
+| `uitive_generate_blocks`  | Block specs from components' props; with `check`, reports drift                                                         |
+| `uitive_discover`         | Crawls the running application                                                                                          |
+| `uitive_check`            | The gate, with coverage                                                                                                 |
+| `uitive_preview_plan`     | Which sources and actions a request would plan over, and how large its schema and prompt are, without calling the model |
 
 No tool reads or writes outside the project's root. API descriptions come from files, and discovery crawls only local hosts, unless the server starts with `--allow-network`.
 
@@ -129,8 +129,8 @@ No tool reads or writes outside the project's root. API descriptions come from f
 The plugin bundles the playbook, a skill that checks an integration and says what to fix, the `curator` agent and the MCP server. Add this repository as a marketplace, then install it:
 
 ```text
-/plugin marketplace add plurid/aptuitive
-/plugin install aptuitive@plurid-aptuitive
+/plugin marketplace add plurid/uitive
+/plugin install uitive@plurid-uitive
 ```
 
 `init` already configures Claude Code in a project; the plugin brings the same to every project.

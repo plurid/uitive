@@ -109,7 +109,7 @@ export interface PerformOptions {
   typed?: boolean;
   /**
    * `native` runs come from the application's own controls, which ask for confirmation
-   * themselves; `generated` ones come from interfaces Aptuitive drew. @default 'generated'
+   * themselves; `generated` ones come from interfaces Uitive drew. @default 'generated'
    */
   origin?: 'native' | 'generated';
   /** The user already saw the params and said yes, such as by submitting a complete form. */

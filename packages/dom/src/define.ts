@@ -1,29 +1,30 @@
-import { AptAsk } from './ask.js';
-import { AptBanner } from './banner.js';
-import { AptConfirm } from './confirm.js';
-import { AptMore } from './more.js';
-import { AptYourInterface } from './your-interface.js';
+import { UitiveAsk } from './ask.js';
+import { UitiveBanner } from './banner.js';
+import { UitiveConfirm } from './confirm.js';
+import { UitiveMore } from './more.js';
+import { UitiveYourInterface } from './your-interface.js';
 
 /**
- * Registers `<apt-ask>`, `<apt-banner>`, `<apt-confirm>`, `<apt-more>` and `<apt-your-interface>`.
+ * Registers `<uitive-ask>`, `<uitive-banner>`, `<uitive-confirm>`, `<uitive-more>` and `<uitive-your-interface>`.
  * Safe to call more than once, and a no-op without a DOM, as during server rendering.
  */
 export function defineElements(): void {
   const registry = (globalThis as { customElements?: CustomElementRegistry }).customElements;
   if (!registry) return;
-  if (!registry.get('apt-ask')) registry.define('apt-ask', AptAsk);
-  if (!registry.get('apt-banner')) registry.define('apt-banner', AptBanner);
-  if (!registry.get('apt-confirm')) registry.define('apt-confirm', AptConfirm);
-  if (!registry.get('apt-more')) registry.define('apt-more', AptMore);
-  if (!registry.get('apt-your-interface')) registry.define('apt-your-interface', AptYourInterface);
+  if (!registry.get('uitive-ask')) registry.define('uitive-ask', UitiveAsk);
+  if (!registry.get('uitive-banner')) registry.define('uitive-banner', UitiveBanner);
+  if (!registry.get('uitive-confirm')) registry.define('uitive-confirm', UitiveConfirm);
+  if (!registry.get('uitive-more')) registry.define('uitive-more', UitiveMore);
+  if (!registry.get('uitive-your-interface'))
+    registry.define('uitive-your-interface', UitiveYourInterface);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'apt-ask': AptAsk;
-    'apt-banner': AptBanner;
-    'apt-confirm': AptConfirm;
-    'apt-more': AptMore;
-    'apt-your-interface': AptYourInterface;
+    'uitive-ask': UitiveAsk;
+    'uitive-banner': UitiveBanner;
+    'uitive-confirm': UitiveConfirm;
+    'uitive-more': UitiveMore;
+    'uitive-your-interface': UitiveYourInterface;
   }
 }

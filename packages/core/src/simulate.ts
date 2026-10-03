@@ -1,4 +1,4 @@
-import type { Adaptation, Aptuitive, RecordOptions } from './client.js';
+import type { Adaptation, Uitive, RecordOptions } from './client.js';
 import type { AnyContract, ListValue } from './contract.js';
 
 /** A seeded pseudo-random generator (mulberry32), so a simulation repeats exactly. */
@@ -56,7 +56,7 @@ function pick(weights: Readonly<Record<string, number>>, draw: number): string {
 
 /** The visible items of every list, for reports and assertions. */
 export function visibleLists<C extends AnyContract>(
-  client: Aptuitive<C>,
+  client: Uitive<C>,
 ): Record<string, readonly string[]> {
   const contract: AnyContract = client.contract;
   const surface = client.surface as (id: string, context?: string) => unknown;
@@ -81,7 +81,7 @@ export function visibleLists<C extends AnyContract>(
  * changes at the safe moment), the persona works, and a plan is made at the end.
  */
 export async function simulate<C extends AnyContract>(
-  client: Aptuitive<C>,
+  client: Uitive<C>,
   persona: Persona,
   options: { sessions: number; seed: number; plan?: boolean },
 ): Promise<SessionReport[]> {

@@ -1,5 +1,5 @@
-import type { Effect } from '@plurid/aptuitive-adapter';
-import { orders } from '@plurid/aptuitive-dom';
+import type { Effect } from '@plurid/uitive-adapter';
+import { orders } from '@plurid/uitive-dom';
 import type { Resolution } from './anchors.ts';
 
 export interface Applied {
@@ -18,7 +18,7 @@ const quote = (value: string) => JSON.stringify(value);
 
 /**
  * Applies effects without moving anything the page's framework owns: resolved elements get a
- * `data-apt` attribute, and one constructable stylesheet hides and orders them.
+ * `data-uitive` attribute, and one constructable stylesheet hides and orders them.
  */
 export function createEngine(document: Document): Engine {
   const view = document.defaultView;
@@ -52,8 +52,8 @@ export function createEngine(document: Document): Engine {
             failed.push({ effect: 'hide', target: effect.anchor, reason: 'not found' });
             continue;
           }
-          mark(element, 'data-apt', effect.anchor);
-          rules.push(`[data-apt=${quote(effect.anchor)}] { display: none !important; }`);
+          mark(element, 'data-uitive', effect.anchor);
+          rules.push(`[data-uitive=${quote(effect.anchor)}] { display: none !important; }`);
         } else if (effect.kind === 'order') {
           const container = anchors.get(effect.container)?.element;
           if (!container) {
@@ -76,15 +76,19 @@ export function createEngine(document: Document): Engine {
               items.findIndex((item) => child === item || child.contains(item)),
             ),
           );
-          children.forEach((child, index) => mark(child, 'data-apt-order', String(values[index])));
+          children.forEach((child, index) =>
+            mark(child, 'data-uitive-order', String(values[index])),
+          );
           for (const value of new Set(values)) {
-            rules.push(`[data-apt-order=${quote(String(value))}] { order: ${value} !important; }`);
+            rules.push(
+              `[data-uitive-order=${quote(String(value))}] { order: ${value} !important; }`,
+            );
           }
         } else if (effect.kind === 'overlay' && effect.mode === 'replace') {
           const element = anchors.get(effect.region)?.element;
           if (!element) continue;
-          mark(element, 'data-apt-replaced', effect.surface);
-          rules.push(`[data-apt-replaced] { display: none !important; }`);
+          mark(element, 'data-uitive-replaced', effect.surface);
+          rules.push(`[data-uitive-replaced] { display: none !important; }`);
         }
       }
       // Marks no effect asks for any more come off, one attribute at a time.

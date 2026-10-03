@@ -2,7 +2,7 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
 import { NOW, payments, rows } from './__fixtures__/payments.js';
 import type { ParamsOf, Perform, PerformContext } from './action.js';
-import { createAptuitive } from './client.js';
+import { createUitive } from './client.js';
 import { action, defineApp } from './contract.js';
 import { fromRows } from './data.js';
 import { field } from './field.js';
@@ -20,7 +20,7 @@ function setup(options: { perform?: Record<string, Perform>; withUi?: boolean } 
     };
   const navigate = vi.fn();
   const onError = vi.fn();
-  const client = createAptuitive({
+  const client = createUitive({
     contract: payments,
     now: () => NOW * 1000,
     onError,
@@ -185,7 +185,7 @@ describe('perform', () => {
   });
 
   it('fails effectful actions without a binding', async () => {
-    const client = createAptuitive({ contract: payments });
+    const client = createUitive({ contract: payments });
     expect(await client.perform('export', {})).toEqual({
       status: 'failed',
       message: 'Nothing runs Export payments here',

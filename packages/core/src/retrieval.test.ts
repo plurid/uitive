@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { payments } from './__fixtures__/payments.js';
 import { scale } from './__fixtures__/scale.js';
-import { createAptuitive } from './client.js';
+import { createUitive } from './client.js';
 import { ui } from './page.js';
 import { query } from './query.js';
 import { areasOf, rankAreas, selectSubset, sourcesInView, terms } from './retrieval.js';
@@ -67,7 +67,7 @@ describe('retrieval', () => {
   });
 
   it('finds the sources on screen from pages and routes', () => {
-    const client = createAptuitive({ contract: payments, now: () => 0 });
+    const client = createUitive({ contract: payments, now: () => 0 });
     client.setPage(
       'home',
       ui.page(

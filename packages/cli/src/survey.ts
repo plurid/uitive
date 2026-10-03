@@ -68,7 +68,7 @@ export function survey(inventory: ApiInventory, included?: ReadonlySet<string>):
   const advice: string[] = [];
   if (inventory.sources.length > CURATE_SOURCES || inventory.actions.length > CURATE_ACTIONS) {
     advice.push(
-      `This API has ${inventory.sources.length} sources and ${inventory.actions.length} actions. Keep what the frontend shows (at most ${CURATE_SOURCES} sources and ${CURATE_ACTIONS} actions) in the curation file, curation.json in the Aptuitive folder: { "default": "exclude", "sources": { "<id>": { "include": true } } }. Actions follow their source.`,
+      `This API has ${inventory.sources.length} sources and ${inventory.actions.length} actions. Keep what the frontend shows (at most ${CURATE_SOURCES} sources and ${CURATE_ACTIONS} actions) in the curation file, curation.json in the Uitive folder: { "default": "exclude", "sources": { "<id>": { "include": true } } }. Actions follow their source.`,
     );
   }
   const notes = inventory.sources.filter((entry) => entry.notes.length > 0).length;

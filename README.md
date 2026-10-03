@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="about/identity/aptuitive-logo.png" alt="" height="160" />
+  <img src="about/identity/uitive-logo.png" alt="" height="160" />
 </p>
 
-<h1 align="center">Aptuitive</h1>
+<h1 align="center">Uitive</h1>
 
 <p align="center">
   Adapt the User Interface through Learning from Usage.
@@ -25,7 +25,7 @@
 
 ## The idea
 
-Large applications show everything to everyone; each person uses a small, personal part of it. Aptuitive lets an interface converge on that part, learned from usage and redesigned by asking in plain language, within the boundaries the application declares.
+Large applications show everything to everyone; each person uses a small, personal part of it. Uitive lets an interface converge on that part, learned from usage and redesigned by asking in plain language, within the boundaries the application declares.
 
 - **The application declares a contract** of what may adapt: toolbars and menus, settings, whole pages built from its own components and its data, and the actions people can run.
 - **Planners propose, within it.** A deterministic planner learns from use and answers plain commands, offline and without a key. A language model on the application's server, from any provider (Claude, GPT, Gemini or a local model), answers requests in plain words and redesigns pages; structured outputs make anything outside the contract unrepresentable.
@@ -35,7 +35,7 @@ Large applications show everything to everyone; each person uses a small, person
 ## Quick start
 
 ```sh
-pnpm add @plurid/aptuitive-core @plurid/aptuitive-react zod
+pnpm add @plurid/uitive-core @plurid/uitive-react zod
 ```
 
 Declare what may adapt, such as a notes editor's toolbar:
@@ -43,7 +43,7 @@ Declare what may adapt, such as a notes editor's toolbar:
 <!-- example: docs/examples/quick-start/contract.ts -->
 
 ```ts
-import { action, defineApp, list } from '@plurid/aptuitive-core';
+import { action, defineApp, list } from '@plurid/uitive-core';
 
 export const contract = defineApp({
   id: 'notes',
@@ -76,11 +76,11 @@ Create a client. It learns from use, answers commands, and keeps each person's i
 <!-- example: docs/examples/quick-start/client.ts -->
 
 ```ts
-import { createAptuitive, localStore } from '@plurid/aptuitive-core';
+import { createUitive, localStore } from '@plurid/uitive-core';
 import { contract } from './contract.js';
 
 // Learns from use and changes when asked; the person's interface is kept in this browser.
-export const aptuitive = createAptuitive({
+export const uitive = createUitive({
   contract,
   store: localStore('notes'),
 });
@@ -92,12 +92,12 @@ Draw the toolbar from the person's interface with your own components, and recor
 
 ```tsx
 import { useState } from 'react';
-import { useSurface } from '@plurid/aptuitive-react';
-import { aptuitive } from './client.js';
+import { useSurface } from '@plurid/uitive-react';
+import { uitive } from './client.js';
 
 /** The toolbar each person shaped: what fits, then the rest under More. */
 export function Toolbar({ run }: { run(action: string): void }) {
-  const toolbar = useSurface(aptuitive, 'toolbar');
+  const toolbar = useSurface(uitive, 'toolbar');
   const [more, setMore] = useState(false);
   return (
     <div role="toolbar" aria-label="Formatting">
@@ -106,7 +106,7 @@ export function Toolbar({ run }: { run(action: string): void }) {
           key={item.id}
           type="button"
           onClick={() => {
-            aptuitive.record(item.id, { via: 'region', surface: 'toolbar' });
+            uitive.record(item.id, { via: 'region', surface: 'toolbar' });
             run(item.id);
           }}
         >
@@ -127,7 +127,7 @@ export function Toolbar({ run }: { run(action: string): void }) {
               role="menuitem"
               onClick={() => {
                 setMore(false);
-                aptuitive.record(item.id, { via: 'overflow', surface: 'toolbar' });
+                uitive.record(item.id, { via: 'overflow', surface: 'toolbar' });
                 run(item.id);
               }}
             >
@@ -141,15 +141,15 @@ export function Toolbar({ run }: { run(action: string): void }) {
 }
 ```
 
-Wrap the editor in `AptuitiveProvider`, and add `<AptBanner>` and an ask box built on `useCommand`. Now "hide Bold" or "move Table to the top" changes the toolbar for that person alone. Someone who keeps opening Table from More finds it on the toolbar at the start of a later session, with the banner saying why and Revert one click away. [Getting started](docs/getting-started.md) walks through every step.
+Wrap the editor in `UitiveProvider`, and add `<UitiveBanner>` and an ask box built on `useCommand`. Now "hide Bold" or "move Table to the top" changes the toolbar for that person alone. Someone who keeps opening Table from More finds it on the toolbar at the start of a later session, with the banner saying why and Revert one click away. [Getting started](docs/getting-started.md) walks through every step.
 
 ### With a coding agent
 
 ```sh
-npx @plurid/aptuitive-cli init
+npx @plurid/uitive-cli init
 ```
 
-`init` installs the packages, writes an Aptuitive folder with every page as the page it already is, and configures your coding agents with a playbook they follow step by step; `aptuitive check` is the gate. Then ask the agent to integrate Aptuitive. In Claude Code, the plugin brings the same to every project: `/plugin marketplace add plurid/aptuitive`, then `/plugin install aptuitive@plurid-aptuitive`. See [Coding agents](docs/coding-agents.md).
+`init` installs the packages, writes a Uitive folder with every page as the page it already is, and configures your coding agents with a playbook they follow step by step; `uitive check` is the gate. Then ask the agent to integrate Uitive. In Claude Code, the plugin brings the same to every project: `/plugin marketplace add plurid/uitive`, then `/plugin install uitive@plurid-uitive`. See [Coding agents](docs/coding-agents.md).
 
 ## What people can ask for
 
@@ -188,7 +188,7 @@ The same engine also runs in a private browser extension prototype, which applie
 
 ```sh
 pnpm install
-pnpm --filter @aptuitive/cloud-console-react dev   # at localhost:5171
+pnpm --filter @uitive/cloud-console-react dev   # at localhost:5171
 ```
 
 Say what you use the cloud for on the home page, ask for changes with ⌘K, compare Standard and Yours, and open Debug to simulate a week of use as a persona. With a key in `apps/cloud-console-react/.env.local` (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GEMINI_API_KEY`), requests in plain words are planned by that provider's model on the dev server; without one, the deterministic planner answers.
@@ -199,16 +199,16 @@ Say what you use the cloud for on the home page, ask for changes with ⌘K, comp
 
 ## Packages
 
-| Package                                                   | What it holds                                                                                                                 |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| [`@plurid/aptuitive-core`](packages/core/README.md)       | Contracts, sources and queries, usage learning, policy and the deterministic planner; runs anywhere                           |
-| [`@plurid/aptuitive-react`](packages/react/README.md)     | The provider, hooks, the page renderer, generic blocks and the kit                                                            |
-| [`@plurid/aptuitive-dom`](packages/dom/README.md)         | Adapting existing markup without React, and the meta-interface as custom elements                                             |
-| [`@plurid/aptuitive-planner`](packages/planner/README.md) | The model planner, for any provider: schemas, prompt, repair, and models from Anthropic, OpenAI-compatible servers and Gemini |
-| [`@plurid/aptuitive-server`](packages/server/README.md)   | The planner's handler, for any Fetch runtime, Express and Node                                                                |
-| [`@plurid/aptuitive-adapter`](packages/adapter/README.md) | Accessibility trees and discovery, for pages Aptuitive doesn't own                                                            |
-| [`@plurid/aptuitive-cli`](packages/cli/README.md)         | The agent kit: detect, init, survey, generate, discover and check                                                             |
-| [`@plurid/aptuitive-mcp`](packages/mcp/README.md)         | The agent kit as Model Context Protocol tools                                                                                 |
+| Package                                                | What it holds                                                                                                                 |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`@plurid/uitive-core`](packages/core/README.md)       | Contracts, sources and queries, usage learning, policy and the deterministic planner; runs anywhere                           |
+| [`@plurid/uitive-react`](packages/react/README.md)     | The provider, hooks, the page renderer, generic blocks and the kit                                                            |
+| [`@plurid/uitive-dom`](packages/dom/README.md)         | Adapting existing markup without React, and the meta-interface as custom elements                                             |
+| [`@plurid/uitive-planner`](packages/planner/README.md) | The model planner, for any provider: schemas, prompt, repair, and models from Anthropic, OpenAI-compatible servers and Gemini |
+| [`@plurid/uitive-server`](packages/server/README.md)   | The planner's handler, for any Fetch runtime, Express and Node                                                                |
+| [`@plurid/uitive-adapter`](packages/adapter/README.md) | Accessibility trees and discovery, for pages Uitive doesn't own                                                               |
+| [`@plurid/uitive-cli`](packages/cli/README.md)         | The agent kit: detect, init, survey, generate, discover and check                                                             |
+| [`@plurid/uitive-mcp`](packages/mcp/README.md)         | The agent kit as Model Context Protocol tools                                                                                 |
 
 They are ES modules with TypeScript declarations, which CommonJS can `require` on Node 22.12 or later. They need Node 22 or later for the tools, React 18.3 or 19 for the React bindings, and zod 4.2 or later, shared with the application. It is a rewrite of the 2019 library, archived in [legacy](legacy/README.md).
 

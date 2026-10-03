@@ -214,7 +214,7 @@ function Panel() {
   return (
     <main>
       <header className="row">
-        <h1>Aptuitive</h1>
+        <h1>Uitive</h1>
         <span className="muted">
           {status.adapter ? status.adapter.label : (status.origin ?? 'No page')}
         </span>
@@ -226,8 +226,8 @@ function Panel() {
       ) : !status.enabled ? (
         <section>
           <p>
-            Aptuitive can reshape {status.adapter.label} on {status.origin}. It reads the
-            page&apos;s structure, never its text, and changes nothing until you ask.
+            Uitive can reshape {status.adapter.label} on {status.origin}. It reads the page&apos;s
+            structure, never its text, and changes nothing until you ask.
           </p>
           <div className="row">
             <button type="button" className="primary" onClick={() => void enableSite()}>
@@ -330,7 +330,7 @@ function Panel() {
             ) : null}
             {missing.length > 0 ? (
               <div className="row">
-                <span className="muted">Show Aptuitive where they are now:</span>
+                <span className="muted">Show Uitive where they are now:</span>
                 {missing.map(([name]) => (
                   <button key={name} type="button" onClick={() => void repair(name)}>
                     Pick {name}
@@ -406,7 +406,7 @@ function Panel() {
             </p>
             {forgetting ? (
               <div className="row">
-                <span>Erase everything Aptuitive keeps here, keys included?</span>
+                <span>Erase everything Uitive keeps here, keys included?</span>
                 <button type="button" className="primary" onClick={() => void forget()}>
                   Erase
                 </button>

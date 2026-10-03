@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { action, block, createAptuitive, defineApp, page, ui } from '@plurid/aptuitive-core';
+import { action, block, createUitive, defineApp, page, ui } from '@plurid/uitive-core';
 import { Page, type BlockComponents } from './page.js';
 import { useSurface } from './hooks.js';
 
@@ -48,7 +48,7 @@ const components: BlockComponents<typeof blocks> = {
 function Home({ client }: { client: ReturnType<typeof fresh> }) {
   return <Page value={useSurface(client, 'home')} blocks={components} />;
 }
-const fresh = () => createAptuitive({ contract, now: () => 0 });
+const fresh = () => createUitive({ contract, now: () => 0 });
 
 describe('Page', () => {
   it('renders a page that is one region as the application itself, with no wrapper', () => {
@@ -66,7 +66,7 @@ describe('Page', () => {
         }),
       },
     });
-    const client = createAptuitive({ contract: app, now: () => 0 });
+    const client = createUitive({ contract: app, now: () => 0 });
     const { container } = render(
       <Page
         value={client.surface('home')}

@@ -1,5 +1,5 @@
-import { Page, useSurface } from '@plurid/aptuitive-react';
-import { aptuitive } from './client.js';
+import { Page, useSurface } from '@plurid/uitive-react';
+import { uitive } from './client.js';
 
 /** Stands for the application's own orders page, which stays exactly as it is. */
 function OrdersList() {
@@ -8,7 +8,7 @@ function OrdersList() {
 
 // #region page
 export function OrdersPage() {
-  const value = useSurface(aptuitive, 'orders');
+  const value = useSurface(uitive, 'orders');
   return <Page value={value} blocks={{}} regions={{ orders: OrdersList }} />;
 }
 // #endregion

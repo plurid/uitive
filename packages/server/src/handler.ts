@@ -1,8 +1,8 @@
-import type { AnyContract, Planner, PlanRequest } from '@plurid/aptuitive-core';
-import { PlannerError } from '@plurid/aptuitive-planner';
+import type { AnyContract, Planner, PlanRequest } from '@plurid/uitive-core';
+import { PlannerError } from '@plurid/uitive-planner';
 
 /**
- * What `createAptuitiveHandler` takes: the contract it serves, who plans, who may ask, and its
+ * What `createUitiveHandler` takes: the contract it serves, who plans, who may ask, and its
  * limits.
  */
 export interface HandlerOptions {
@@ -29,7 +29,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 const report = (error: unknown) =>
-  console.error('[aptuitive] planning failed:', error instanceof Error ? error.message : error);
+  console.error('[uitive] planning failed:', error instanceof Error ? error.message : error);
 
 const local = (request: Request) => {
   const host = new URL(request.url).hostname;
@@ -41,7 +41,7 @@ const local = (request: Request) => {
  * with a plan result. It owns the contract (clients send only its hash) and never logs bodies.
  * Clients that accept `application/x-ndjson` get progress lines, then the result or an error.
  */
-export function createAptuitiveHandler(
+export function createUitiveHandler(
   options: HandlerOptions,
 ): (request: Request) => Promise<Response> {
   const maxBody = options.maxBody ?? 131_072;

@@ -2,13 +2,13 @@ import {
   hash,
   operationKey,
   simulate,
-  type Aptuitive,
+  type Uitive,
   type Autonomy,
   type Persona,
   type SessionReport,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import type { DebugClientLike } from './client-like.js';
-import { AptElement } from './element.js';
+import { UitiveElement } from './element.js';
 import { escape, plural } from './html.js';
 
 const TABS = {
@@ -34,14 +34,14 @@ const table = (heads: readonly string[], rows: readonly string[], empty: string)
     : `<p class="muted">${escape(empty)}</p>`;
 
 /**
- * `<apt-debug>`: a developer panel over a client: usage events, the summary and the exact
+ * `<uitive-debug>`: a developer panel over a client: usage events, the summary and the exact
  * request a planner receives, the definition, pending changes and history, with controls to
  * plan, start sessions, change autonomy and simulate personas.
  *
  * Set `personas` to offer "Simulate a week" buttons. Starts collapsed with the `collapsed`
- * attribute. Emits `apt-simulated` (`detail.persona`, `detail.reports`) after a simulation.
+ * attribute. Emits `uitive-simulated` (`detail.persona`, `detail.reports`) after a simulation.
  */
-export class AptDebug extends AptElement<DebugClientLike> {
+export class UitiveDebug extends UitiveElement<DebugClientLike> {
   #tab: Tab = 'events';
   #open = true;
   #busy: string | undefined;
@@ -130,7 +130,7 @@ export class AptDebug extends AptElement<DebugClientLike> {
     const snapshot = client.getSnapshot();
     const latest = snapshot.latest?.meta;
     const bar = `<header class="bar">
-      <button class="quiet" data-act="toggle" aria-expanded="${this.#open}">${this.#open ? '▾' : '▸'} Aptuitive</button>
+      <button class="quiet" data-act="toggle" aria-expanded="${this.#open}">${this.#open ? '▾' : '▸'} Uitive</button>
       <span class="muted">session ${snapshot.session} · ${escape(snapshot.autonomy)} · ${escape(
         client.contract.id,
       )}${latest ? ` · last plan: ${escape(latest.planner)}${latest.fellBack ? ' (fell back)' : ''}` : ''}</span>
@@ -330,7 +330,7 @@ export class AptDebug extends AptElement<DebugClientLike> {
       const options = { sessions: 7, seed: seedFor(persona) };
       const reports = client.simulate
         ? await client.simulate(persona, options)
-        : await simulate(client as unknown as Aptuitive, persona, options);
+        : await simulate(client as unknown as Uitive, persona, options);
       const applied = reports.reduce(
         (sum, report) => sum + (report.applied?.applied.length ?? 0),
         0,
@@ -340,7 +340,7 @@ export class AptDebug extends AptElement<DebugClientLike> {
         applied,
         'change',
       )} applied, ${waiting} waiting.`;
-      this.emit('apt-simulated', { persona, reports });
+      this.emit('uitive-simulated', { persona, reports });
       return reports;
     } finally {
       this.#busy = undefined;
@@ -422,14 +422,14 @@ export class AptDebug extends AptElement<DebugClientLike> {
   }
 }
 
-/** Registers `<apt-debug>`. Safe to call more than once, and a no-op without a DOM. */
+/** Registers `<uitive-debug>`. Safe to call more than once, and a no-op without a DOM. */
 export function defineDebugElement(): void {
   const registry = (globalThis as { customElements?: CustomElementRegistry }).customElements;
-  if (registry && !registry.get('apt-debug')) registry.define('apt-debug', AptDebug);
+  if (registry && !registry.get('uitive-debug')) registry.define('uitive-debug', UitiveDebug);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'apt-debug': AptDebug;
+    'uitive-debug': UitiveDebug;
   }
 }

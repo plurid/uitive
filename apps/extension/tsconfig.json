@@ -9,10 +9,10 @@
     "resolveJsonModule": true,
     "types": ["chrome", "node"],
     "paths": {
-      "@plurid/aptuitive-core": ["../../packages/core/src/index.ts"],
-      "@plurid/aptuitive-react": ["../../packages/react/src/index.ts"],
-      "@plurid/aptuitive-adapter": ["../../packages/adapter/src/index.ts"],
-      "@plurid/aptuitive-planner": ["../../packages/planner/src/index.ts"]
+      "@plurid/uitive-core": ["../../packages/core/src/index.ts"],
+      "@plurid/uitive-react": ["../../packages/react/src/index.ts"],
+      "@plurid/uitive-adapter": ["../../packages/adapter/src/index.ts"],
+      "@plurid/uitive-planner": ["../../packages/planner/src/index.ts"]
     }
   },
   "include": ["src", "adapters", "build.ts", "manifest.ts"]

@@ -1,14 +1,14 @@
-import type { Aptuitive, ListSpec, ListValue } from '@plurid/aptuitive-core';
+import type { Uitive, ListSpec, ListValue } from '@plurid/uitive-core';
 import { orders } from './order.js';
 
-/** What adapting markup needs from a client; a client from `createAptuitive` fits as it is. */
+/** What adapting markup needs from a client; a client from `createUitive` fits as it is. */
 export type MarkupClientLike = Pick<
-  Aptuitive,
+  Uitive,
   'contract' | 'surface' | 'standard' | 'subscribe' | 'record'
 >;
 
 /**
- * How `adaptMarkup` and `startAptuitive` work: where the markup is, whether clicks count as use,
+ * How `adaptMarkup` and `startUitive` work: where the markup is, whether clicks count as use,
  * and who hears of problems.
  */
 export interface MarkupOptions {
@@ -25,8 +25,8 @@ export interface MarkupOptions {
 }
 
 const quote = (value: string) => JSON.stringify(value);
-const LIST = '[data-apt-list]';
-const ITEM = '[data-apt-item]';
+const LIST = '[data-uitive-list]';
+const ITEM = '[data-uitive-item]';
 
 let forwarding = false;
 
@@ -41,15 +41,15 @@ export function forward(element: HTMLElement): void {
 }
 
 /** The items the person moved out of a list: the markup shows them unless told otherwise. */
-export function movedOut(client: Pick<Aptuitive, 'surface' | 'standard'>, list: string) {
+export function movedOut(client: Pick<Uitive, 'surface' | 'standard'>, list: string) {
   const standard = new Set((client.standard(list) as ListValue).overflow.map((view) => view.id));
   return (client.surface(list) as ListValue).overflow.filter((view) => !standard.has(view.id));
 }
 
 /**
  * Adapts an application's own markup to the person's interface, for applications without React.
- * Mark each list's container with `data-apt-list="<list>"` and each item inside it with
- * `data-apt-item="<action>"`. Items the person moves out are hidden by one stylesheet, so markup
+ * Mark each list's container with `data-uitive-list="<list>"` and each item inside it with
+ * `data-uitive-item="<action>"`. Items the person moves out are hidden by one stylesheet, so markup
  * rendered later, such as a menu's, adapts too; reordered lists set CSS `order` on their
  * container's children, which needs a flex or grid box. Nothing is moved, so the application's
  * framework keeps its nodes. Clicks on items record usage. Returns a function that undoes it all.
@@ -66,7 +66,7 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
   const problem = (text: string) => {
     if (reported.has(text)) return;
     reported.add(text);
-    (options.onProblem ?? ((message: string) => console.warn(`Aptuitive: ${message}`)))(text);
+    (options.onProblem ?? ((message: string) => console.warn(`Uitive: ${message}`)))(text);
   };
 
   // Constructable stylesheets also work under a strict style-src policy; a style element elsewhere.
@@ -78,7 +78,7 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
   } catch {
     sheet = undefined;
     style = owner.createElement('style');
-    style.setAttribute('data-aptuitive', '');
+    style.setAttribute('data-uitive', '');
     (root.nodeType === 9 ? (owner.head ?? owner.documentElement) : root).append(style);
   }
 
@@ -90,7 +90,7 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
     const css = [
       ...hidden.map((rule) => `${rule} { display: none !important; }`),
       ...[...used].map(
-        (value) => `${LIST} > [data-apt-order="${value}"] { order: ${value} !important; }`,
+        (value) => `${LIST} > [data-uitive-order="${value}"] { order: ${value} !important; }`,
       ),
     ].join('\n');
     if (sheet) sheet.replaceSync(css);
@@ -106,19 +106,19 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
     const values = orders(
       children.map((child) => {
         const item = child.matches(ITEM) ? child : child.querySelector(ITEM);
-        return item ? order.indexOf(item.getAttribute('data-apt-item') ?? '') : -1;
+        return item ? order.indexOf(item.getAttribute('data-uitive-item') ?? '') : -1;
       }),
     );
     children.forEach((child, index) => {
       const value = values[index] ?? 0;
-      child.setAttribute('data-apt-order', String(value));
+      child.setAttribute('data-uitive-order', String(value));
       marked.add(child);
       used.add(value);
     });
   };
 
   const containers = (list: string) =>
-    root.querySelectorAll(`[data-apt-list=${quote(list)}]`) as NodeListOf<Element>;
+    root.querySelectorAll(`[data-uitive-list=${quote(list)}]`) as NodeListOf<Element>;
 
   // Only while a list is reordered: new children, or new containers, need their order.
   const observer = new view.MutationObserver((records) => {
@@ -137,7 +137,7 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
     }
     const before = used.size;
     for (const container of touched) {
-      const list = container.getAttribute('data-apt-list') ?? '';
+      const list = container.getAttribute('data-uitive-list') ?? '';
       const order = reordered.get(list);
       if (order) mark(container, order, list);
     }
@@ -147,7 +147,7 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
   const render = () => {
     hidden = lists.flatMap(({ id }) =>
       movedOut(client, id).map(
-        (item) => `[data-apt-list=${quote(id)}] [data-apt-item=${quote(item.id)}]`,
+        (item) => `[data-uitive-list=${quote(id)}] [data-uitive-item=${quote(item.id)}]`,
       ),
     );
     reordered = new Map(
@@ -158,7 +158,7 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
         return visible.some((item, index) => item !== standard[index]) ? [[id, visible]] : [];
       }),
     );
-    for (const element of marked) element.removeAttribute('data-apt-order');
+    for (const element of marked) element.removeAttribute('data-uitive-order');
     marked.clear();
     for (const [list, order] of reordered) {
       for (const container of containers(list)) mark(container, order, list);
@@ -171,9 +171,9 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
   const click = (event: Event) => {
     if (forwarding) return;
     const item = (event.target as Element | null)?.closest?.(ITEM);
-    const action = item?.getAttribute('data-apt-item');
+    const action = item?.getAttribute('data-uitive-item');
     if (!item || !action || !(action in client.contract.actions)) return;
-    const list = item.closest(LIST)?.getAttribute('data-apt-list') ?? undefined;
+    const list = item.closest(LIST)?.getAttribute('data-uitive-list') ?? undefined;
     client.record(action, {
       via: 'region',
       ...(list && list in client.contract.surfaces ? { surface: list } : {}),
@@ -187,7 +187,7 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
     unsubscribe();
     observer.disconnect();
     root.removeEventListener('click', click, true);
-    for (const element of marked) element.removeAttribute('data-apt-order');
+    for (const element of marked) element.removeAttribute('data-uitive-order');
     marked.clear();
     if (sheet) root.adoptedStyleSheets = root.adoptedStyleSheets.filter((entry) => entry !== sheet);
     style?.remove();

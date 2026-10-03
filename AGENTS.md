@@ -11,6 +11,6 @@ This is a single-context repository: `CONTEXT.md` holds the vocabulary, invarian
 - Packages live in `packages/`, demonstrations in `apps/`, shared tooling in `tools/`. `legacy/` is the archived 2019 code: never edit or build it.
 - Writing: no em dashes, in code, copy or docs.
 - Conventions: kebab-case files, named exports through `index.ts`, `.js` extensions on relative imports, `import type`, JSDoc with `@default` on public options, British spelling, few comments, and those explain why.
-- `@plurid/aptuitive-core` stays isomorphic (no DOM or Node APIs); its tsconfig enforces this.
+- `@plurid/uitive-core` stays isomorphic (no DOM or Node APIs); its tsconfig enforces this.
 - Whoever pays holds the key (ADR 0006): in applications, keys never reach client code and the planner runs on the server; in the extension, the user's own key stays with its service worker. No planner ever receives a third-party page's text.
 - Never commit or sign work: the person working here commits.

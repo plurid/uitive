@@ -1,6 +1,6 @@
 // Captures the README's picture of the Acme Cloud demo after a change, with its banner showing:
 // `node tools/build/screenshots.ts [url]`, with the demo running
-// (`pnpm --filter @aptuitive/cloud-console-react dev`). Uses the installed Chrome.
+// (`pnpm --filter @uitive/cloud-console-react dev`). Uses the installed Chrome.
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { root } from './docs.ts';
@@ -42,7 +42,7 @@ try {
   await page.goto(url);
   await page.fill('#goal', 'I watch costs and budgets');
   await page.click('button:has-text("Design my console")');
-  await page.waitForSelector('apt-banner section.card');
+  await page.waitForSelector('uitive-banner section.card');
   await page.waitForTimeout(500);
   const path = join(root, 'docs/assets/acme-cloud.png');
   await page.screenshot({ path });

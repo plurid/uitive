@@ -1,6 +1,6 @@
-import { query } from '@plurid/aptuitive-core';
-import { useQuery } from '@plurid/aptuitive-react';
-import { aptuitive } from './client.js';
+import { query } from '@plurid/uitive-core';
+import { useQuery } from '@plurid/uitive-react';
+import { uitive } from './client.js';
 
 // #region query
 const unshipped = query('orders', {
@@ -17,7 +17,7 @@ const unshipped = query('orders', {
 // #region component
 /** Orders paid more than two days ago and not shipped, read with the person's own session. */
 export function Unshipped() {
-  const entry = useQuery(aptuitive, unshipped);
+  const entry = useQuery(uitive, unshipped);
   if (!entry.result) return <p role="status">{entry.error ?? 'Loading'}</p>;
   return (
     <ul>

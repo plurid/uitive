@@ -149,7 +149,7 @@ export interface PlanRequest {
   text?: string;
   /** The goal the user stated, in their words. */
   goal?: string;
-  /** For pages Aptuitive adapts from outside, such as in the extension: what was found. */
+  /** For pages Uitive adapts from outside, such as in the extension: what was found. */
   environment?: Environment;
 }
 

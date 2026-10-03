@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { PlanRequest } from '@plurid/aptuitive-core';
+import type { PlanRequest } from '@plurid/uitive-core';
 import {
   anthropic,
   DEFAULT_MODELS,
@@ -7,7 +7,7 @@ import {
   modelPlanner,
   openai,
   type Model,
-} from '@plurid/aptuitive-planner';
+} from '@plurid/uitive-planner';
 import { adapterById } from '../adapters.ts';
 import { planMessage } from '../messages.ts';
 import type { PlanReply } from '../messages.ts';

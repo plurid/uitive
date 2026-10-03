@@ -1,6 +1,6 @@
 import { normalize, upgrade } from '@scalar/openapi-parser';
-import { FIELD_PATTERN, OPS_BY_TYPE, pointer, SOURCE_PATTERN } from '@plurid/aptuitive-core';
-import type { Effect, FieldType, Op, RestAction, RestSource } from '@plurid/aptuitive-core';
+import { FIELD_PATTERN, OPS_BY_TYPE, pointer, SOURCE_PATTERN } from '@plurid/uitive-core';
+import type { Effect, FieldType, Op, RestAction, RestSource } from '@plurid/uitive-core';
 
 type Json = Record<string, unknown>;
 

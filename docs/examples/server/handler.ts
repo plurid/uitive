@@ -1,12 +1,12 @@
-import { heuristicPlanner } from '@plurid/aptuitive-core';
-import { createAptuitiveHandler, environmentModel, modelPlanner } from '@plurid/aptuitive-server';
+import { heuristicPlanner } from '@plurid/uitive-core';
+import { createUitiveHandler, environmentModel, modelPlanner } from '@plurid/uitive-server';
 import { shop } from '../shop/contract.js';
 
 // #region handler
 // Whichever model the server has a key for: Anthropic, OpenAI or Gemini.
 const model = environmentModel();
 
-export const handler = createAptuitiveHandler({
+export const handler = createUitiveHandler({
   contract: shop,
   // Without a key, as in development, the deterministic planner answers plain commands.
   planner: model ? modelPlanner({ model }) : heuristicPlanner(),

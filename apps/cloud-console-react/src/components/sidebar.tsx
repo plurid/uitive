@@ -1,7 +1,7 @@
-import type { View, Via } from '@plurid/aptuitive-core';
-import { useSurface } from '@plurid/aptuitive-react';
+import type { View, Via } from '@plurid/uitive-core';
+import { useSurface } from '@plurid/uitive-react';
 import { categories, services } from '../catalogue.ts';
-import { aptuitive } from '../client.ts';
+import { uitive } from '../client.ts';
 
 interface SidebarProps {
   view: View;
@@ -12,7 +12,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ view, current, onOpen, onHome, onCatalogue }: SidebarProps) {
-  const yours = useSurface(aptuitive, 'services');
+  const yours = useSurface(uitive, 'services');
   return (
     <nav className="sidebar" aria-label="Services">
       <button

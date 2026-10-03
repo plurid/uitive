@@ -5,7 +5,7 @@ import {
   type Metric,
   type OutputRejection,
   type ProposedOperation,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 
 /**
  * What the model writes, in the schema `outputSchema` compiles: a status, candidates for ambiguous

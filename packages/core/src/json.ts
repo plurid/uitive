@@ -19,11 +19,11 @@ import type { RouteSpec } from './route.js';
 import type { AnySourceSpec, Capabilities } from './source.js';
 
 /** What a JSON contract says it is, in its `format` field. */
-export const CONTRACT_FORMAT = 'aptuitive.contract';
+export const CONTRACT_FORMAT = 'uitive.contract';
 /** The JSON contract format's version. */
 export const FORMAT_VERSION = 2;
 
-/** One field as JSON: its JSON type, and what it means under `x-aptuitive`. */
+/** One field as JSON: its JSON type, and what it means under `x-uitive`. */
 export interface FieldJson {
   /** The JSON type the value is stored as. */
   type: 'string' | 'number' | 'boolean';
@@ -31,7 +31,7 @@ export interface FieldJson {
   enum?: string[];
   /** What the field holds. */
   description?: string;
-  /** What the value means to Aptuitive, beyond its JSON type, such as a money field's currency. */
+  /** What the value means to Uitive, beyond its JSON type, such as a money field's currency. */
   [FIELD_META]: FieldMeta;
 }
 
@@ -475,7 +475,7 @@ export function fromJson(raw: unknown, runtime: Runtime = {}): Contract {
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     throw new Error(
-      `Not an Aptuitive contract: ${issue?.path.join('.') || 'value'} ${issue?.message ?? ''}`.trim(),
+      `Not a Uitive contract: ${issue?.path.join('.') || 'value'} ${issue?.message ?? ''}`.trim(),
     );
   }
   const json = raw as ContractJson;

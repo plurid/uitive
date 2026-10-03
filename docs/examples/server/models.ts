@@ -1,4 +1,4 @@
-import { anthropic, google, modelPlanner, openai, type Model } from '@plurid/aptuitive-server';
+import { anthropic, google, modelPlanner, openai, type Model } from '@plurid/uitive-server';
 
 // #region providers
 // Claude: reads ANTHROPIC_API_KEY, or an `ant auth login` profile.

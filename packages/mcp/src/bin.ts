@@ -4,9 +4,9 @@ import { parseArgs } from 'node:util';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createServer } from './server.js';
 
-const HELP = `Usage: aptuitive-mcp [options]
+const HELP = `Usage: uitive-mcp [options]
 
-Serves Aptuitive's agent kit over the Model Context Protocol, on stdio.
+Serves Uitive's agent kit over the Model Context Protocol, on stdio.
 
 Options:
   --root <dir>       The project to work in; no tool reads or writes outside it.
@@ -38,9 +38,7 @@ if (values.help) {
     version,
   });
   server.connect(new StdioServerTransport()).catch((error: unknown) => {
-    process.stderr.write(
-      `aptuitive-mcp: ${error instanceof Error ? error.message : String(error)}\n`,
-    );
+    process.stderr.write(`uitive-mcp: ${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
   });
 }

@@ -12,7 +12,7 @@ const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 /** A project folder whose packages resolve, as if installed. */
 async function project(manifest: object, files: Record<string, string> = {}) {
-  const cwd = await mkdtemp(join(tmpdir(), 'aptuitive-'));
+  const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
   await writeFile(join(cwd, 'package.json'), JSON.stringify(manifest));
   for (const [path, content] of Object.entries(files)) {
     await mkdir(join(cwd, path, '..'), { recursive: true });
@@ -31,12 +31,12 @@ describe('init', () => {
     const result = await init({ cwd, install: false, agents: false });
     expect(result.written).toEqual([
       'package.json',
-      'src/aptuitive/contract.ts',
-      'src/aptuitive/bindings.ts',
-      'src/aptuitive/client.ts',
-      'src/aptuitive/kit.tsx',
+      'src/uitive/contract.ts',
+      'src/uitive/bindings.ts',
+      'src/uitive/client.ts',
+      'src/uitive/kit.tsx',
     ]);
-    expect(await readFile(join(cwd, 'src/aptuitive/bindings.ts'), 'utf8')).toContain(
+    expect(await readFile(join(cwd, 'src/uitive/bindings.ts'), 'utf8')).toContain(
       'Bindings<typeof contract>',
     );
     expect((await check({ cwd })).checks.filter((entry) => !entry.ok)).toEqual([]);
@@ -48,9 +48,9 @@ describe('init', () => {
       { 'app/page.tsx': '', 'package-lock.json': '' },
     );
     const result = await init({ cwd, install: false, agents: false });
-    expect(result.written).toContain('app/api/aptuitive/[kind]/route.ts');
-    expect(await readFile(join(cwd, 'app/api/aptuitive/[kind]/route.ts'), 'utf8')).toContain(
-      "from '../../../../aptuitive/server'",
+    expect(result.written).toContain('app/api/uitive/[kind]/route.ts');
+    expect(await readFile(join(cwd, 'app/api/uitive/[kind]/route.ts'), 'utf8')).toContain(
+      "from '../../../../uitive/server'",
     );
   });
 
@@ -65,7 +65,7 @@ describe('init', () => {
       );
       const result = await init({ cwd, install: false, agents: false });
       expect(result.next[0]).toBe(
-        'Install the packages: npm install @plurid/aptuitive-core @plurid/aptuitive-react && npm install --save-dev @plurid/aptuitive-cli',
+        'Install the packages: npm install @plurid/uitive-core @plurid/uitive-react && npm install --save-dev @plurid/uitive-cli',
       );
       expect(
         result.next.some((step) => step.includes('needs 4.2 or later')),
@@ -75,10 +75,10 @@ describe('init', () => {
   });
 
   it('warns about a second copy of zod', async () => {
-    const cwd = await mkdtemp(join(tmpdir(), 'aptuitive-'));
+    const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
     await writeFile(join(cwd, 'package.json'), JSON.stringify({ name: 'two', type: 'module' }));
     await mkdir(join(cwd, 'node_modules', '@plurid'), { recursive: true });
-    await symlink(here('../../core'), join(cwd, 'node_modules', '@plurid', 'aptuitive-core'));
+    await symlink(here('../../core'), join(cwd, 'node_modules', '@plurid', 'uitive-core'));
     // The same code under another path and version, as a package manager's second copy is.
     const zod = join(cwd, 'node_modules', 'zod');
     await mkdir(zod);
@@ -95,10 +95,10 @@ describe('init', () => {
       join(zod, 'index.js'),
       `export * from ${JSON.stringify(here('../node_modules/zod/index.js'))};\n`,
     );
-    await mkdir(join(cwd, 'aptuitive'));
+    await mkdir(join(cwd, 'uitive'));
     await writeFile(
-      join(cwd, 'aptuitive', 'contract.ts'),
-      `import { action, defineApp, list } from '@plurid/aptuitive-core';
+      join(cwd, 'uitive', 'contract.ts'),
+      `import { action, defineApp, list } from '@plurid/uitive-core';
 export const contract = defineApp({
   id: 'two',
   description: 'Two copies of zod',
@@ -109,7 +109,7 @@ export const contract = defineApp({
     );
     const checked = await check({ cwd });
     expect(checked.warnings.find((warning) => warning.startsWith('Two copies of zod'))).toMatch(
-      /^Two copies of zod: the application's 4\.2\.0 and Aptuitive's 4\.\d+\.\d+/,
+      /^Two copies of zod: the application's 4\.2\.0 and Uitive's 4\.\d+\.\d+/,
     );
   });
 
@@ -126,27 +126,25 @@ export const contract = defineApp({
       cwd,
       install: false,
       agents: false,
-      dir: './app/client/aptuitive/',
+      dir: './app/client/uitive/',
     });
     expect(result.written).toEqual([
       'package.json',
-      'app/client/aptuitive/contract.ts',
-      'app/client/aptuitive/bindings.ts',
-      'app/client/aptuitive/client.ts',
+      'app/client/uitive/contract.ts',
+      'app/client/uitive/bindings.ts',
+      'app/client/uitive/client.ts',
     ]);
-    expect(JSON.parse(await readFile(join(cwd, 'package.json'), 'utf8')).aptuitive).toEqual({
-      dir: 'app/client/aptuitive',
+    expect(JSON.parse(await readFile(join(cwd, 'package.json'), 'utf8')).uitive).toEqual({
+      dir: 'app/client/uitive',
     });
     // Without React, the DOM package, and how to use it.
     expect(result.next[0]).toBe(
-      'Install the packages: yarn add @plurid/aptuitive-core zod @plurid/aptuitive-dom && yarn add -D @plurid/aptuitive-cli',
+      'Install the packages: yarn add @plurid/uitive-core zod @plurid/uitive-dom && yarn add -D @plurid/uitive-cli',
     );
-    expect(result.next.at(-2)).toMatch(
-      /^Without React, use @plurid\/aptuitive-dom: call startAptuitive/,
-    );
+    expect(result.next.at(-2)).toMatch(/^Without React, use @plurid\/uitive-dom: call startUitive/);
     const checked = await check({ cwd });
     expect(checked.checks.filter((entry) => !entry.ok)).toEqual([]);
-    expect((await detect(cwd)).aptuitive).toBe(true);
+    expect((await detect(cwd)).uitive).toBe(true);
   });
 
   it('sets a React project up so that check passes, and keeps every file on a second run', async () => {
@@ -172,22 +170,22 @@ export const contract = defineApp({
       agents: ['claude-code', 'cursor'],
     });
     expect(result.written).toEqual([
-      'aptuitive/api.generated.ts',
-      'aptuitive/contract.ts',
-      'aptuitive/bindings.ts',
-      'aptuitive/client.ts',
-      'aptuitive/kit.tsx',
+      'uitive/api.generated.ts',
+      'uitive/contract.ts',
+      'uitive/bindings.ts',
+      'uitive/client.ts',
+      'uitive/kit.tsx',
       '.mcp.json',
       '.cursor/mcp.json',
-      '.claude/skills/integrate-aptuitive/SKILL.md',
+      '.claude/skills/integrate-uitive/SKILL.md',
     ]);
     expect(result.next[0]).toBe(
-      'Install the packages: pnpm add @plurid/aptuitive-core zod @plurid/aptuitive-react && pnpm add -D @plurid/aptuitive-cli',
+      'Install the packages: pnpm add @plurid/uitive-core zod @plurid/uitive-react && pnpm add -D @plurid/uitive-cli',
     );
     expect(JSON.parse(await readFile(join(cwd, '.mcp.json'), 'utf8'))).toEqual({
-      mcpServers: { aptuitive: { command: 'npx', args: ['-y', '@plurid/aptuitive-mcp'] } },
+      mcpServers: { uitive: { command: 'npx', args: ['-y', '@plurid/uitive-mcp'] } },
     });
-    expect(await readFile(join(cwd, '.claude/skills/integrate-aptuitive/SKILL.md'), 'utf8')).toBe(
+    expect(await readFile(join(cwd, '.claude/skills/integrate-uitive/SKILL.md'), 'utf8')).toBe(
       SKILL,
     );
 
@@ -197,7 +195,7 @@ export const contract = defineApp({
 
     const again = await init({ cwd, install: false });
     expect(again.written).toEqual(['.mcp.json', '.cursor/mcp.json']);
-    expect(again.kept).toContain('aptuitive/contract.ts');
+    expect(again.kept).toContain('uitive/contract.ts');
   });
 
   it('asks for a curation first when the API is large', async () => {
@@ -234,10 +232,10 @@ export const contract = defineApp({
       },
     );
     const result = await init({ cwd, install: false, agents: false });
-    expect(result.written).toContain('aptuitive/curation.json');
-    expect(result.written).not.toContain('aptuitive/api.generated.ts');
-    expect(result.next[1]).toMatch(/^Choose what the frontend shows in aptuitive\/curation\.json/);
-    const curation = JSON.parse(await readFile(join(cwd, 'aptuitive/curation.json'), 'utf8'));
+    expect(result.written).toContain('uitive/curation.json');
+    expect(result.written).not.toContain('uitive/api.generated.ts');
+    expect(result.next[1]).toMatch(/^Choose what the frontend shows in uitive\/curation\.json/);
+    const curation = JSON.parse(await readFile(join(cwd, 'uitive/curation.json'), 'utf8'));
     expect(curation.default).toBe('exclude');
     expect(Object.keys(curation.sources)).toHaveLength(45);
     expect((await check({ cwd })).ok).toBe(true);
@@ -246,7 +244,7 @@ export const contract = defineApp({
 
 describe('init with local packages', () => {
   it('points a yarn workspace at tarballs, before the packages are published', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'aptuitive-'));
+    const root = await mkdtemp(join(tmpdir(), 'uitive-'));
     await writeFile(
       join(root, 'package.json'),
       JSON.stringify({ private: true, workspaces: ['app'] }),
@@ -261,7 +259,7 @@ describe('init with local packages', () => {
     const folder = join(root, 'tarballs');
     await mkdir(folder);
     for (const name of ['core', 'react', 'server', 'planner', 'cli']) {
-      await writeFile(join(folder, `plurid-aptuitive-${name}-0.1.0.tgz`), '');
+      await writeFile(join(folder, `plurid-uitive-${name}-0.1.0.tgz`), '');
     }
     const result = await init({
       cwd: join(root, 'app'),
@@ -270,21 +268,21 @@ describe('init with local packages', () => {
       agents: false,
     });
     // Relative to the package that depends on them, so the project stays movable.
-    const tarball = (name: string) => `file:../tarballs/plurid-aptuitive-${name}-0.1.0.tgz`;
+    const tarball = (name: string) => `file:../tarballs/plurid-uitive-${name}-0.1.0.tgz`;
     const app = JSON.parse(await readFile(join(root, 'app', 'package.json'), 'utf8'));
     // No server here, so no server package; zod is shared with the application, so it comes too.
     expect(app.dependencies).toEqual({
       zod: '^4.6.5',
       react: '^19.0.0',
-      '@plurid/aptuitive-core': tarball('core'),
-      '@plurid/aptuitive-react': tarball('react'),
+      '@plurid/uitive-core': tarball('core'),
+      '@plurid/uitive-react': tarball('react'),
     });
-    expect(app.devDependencies).toEqual({ '@plurid/aptuitive-cli': tarball('cli') });
+    expect(app.devDependencies).toEqual({ '@plurid/uitive-cli': tarball('cli') });
     // Yarn reads resolutions from the workspace root, for the packages' own dependencies too:
     // every tarball, since any package left to the registry would install another build.
     const top = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
     expect(Object.keys(top.resolutions).sort()).toEqual(
-      ['cli', 'core', 'planner', 'react', 'server'].map((name) => `@plurid/aptuitive-${name}`),
+      ['cli', 'core', 'planner', 'react', 'server'].map((name) => `@plurid/uitive-${name}`),
     );
     const found = await detect(root);
     expect(found.workspaces).toEqual([
@@ -295,7 +293,7 @@ describe('init with local packages', () => {
 
   /** An app next to a folder of tarballs, using the pnpm version given. */
   async function pnpmApp(pnpm: string) {
-    const root = await mkdtemp(join(tmpdir(), 'aptuitive-'));
+    const root = await mkdtemp(join(tmpdir(), 'uitive-'));
     await mkdir(join(root, '.git'));
     await mkdir(join(root, 'app'));
     await writeFile(
@@ -305,7 +303,7 @@ describe('init with local packages', () => {
     await writeFile(join(root, 'app', 'pnpm-lock.yaml'), '');
     await mkdir(join(root, 'tarballs'));
     for (const name of ['core', 'react', 'dom', 'cli']) {
-      await writeFile(join(root, 'tarballs', `plurid-aptuitive-${name}-0.1.0.tgz`), '');
+      await writeFile(join(root, 'tarballs', `plurid-uitive-${name}-0.1.0.tgz`), '');
     }
     const result = await init({
       cwd: join(root, 'app'),
@@ -325,10 +323,10 @@ describe('init with local packages', () => {
     expect(await readFile(join(root, 'app', 'pnpm-workspace.yaml'), 'utf8')).toBe(
       [
         'overrides:',
-        "  '@plurid/aptuitive-cli': file:../tarballs/plurid-aptuitive-cli-0.1.0.tgz",
-        "  '@plurid/aptuitive-core': file:../tarballs/plurid-aptuitive-core-0.1.0.tgz",
-        "  '@plurid/aptuitive-dom': file:../tarballs/plurid-aptuitive-dom-0.1.0.tgz",
-        "  '@plurid/aptuitive-react': file:../tarballs/plurid-aptuitive-react-0.1.0.tgz",
+        "  '@plurid/uitive-cli': file:../tarballs/plurid-uitive-cli-0.1.0.tgz",
+        "  '@plurid/uitive-core': file:../tarballs/plurid-uitive-core-0.1.0.tgz",
+        "  '@plurid/uitive-dom': file:../tarballs/plurid-uitive-dom-0.1.0.tgz",
+        "  '@plurid/uitive-react': file:../tarballs/plurid-uitive-react-0.1.0.tgz",
         '',
       ].join('\n'),
     );
@@ -337,7 +335,7 @@ describe('init with local packages', () => {
   it('gives pnpm 9 its overrides in package.json', async () => {
     const { app } = await pnpmApp('pnpm@9.15.0');
     expect(Object.keys(app.pnpm.overrides).sort()).toEqual(
-      ['cli', 'core', 'dom', 'react'].map((name) => `@plurid/aptuitive-${name}`),
+      ['cli', 'core', 'dom', 'react'].map((name) => `@plurid/uitive-${name}`),
     );
   });
 
@@ -347,20 +345,20 @@ describe('init with local packages', () => {
       '  - app',
       '',
       'overrides:',
-      "  '@plurid/aptuitive-core': file:old.tgz",
+      "  '@plurid/uitive-core': file:old.tgz",
       '  left-pad: 1.3.0',
       '',
       'onlyBuiltDependencies:',
       '  - esbuild',
       '',
     ].join('\n');
-    expect(withOverrides(yaml, { '@plurid/aptuitive-core': 'file:new.tgz' })).toBe(
+    expect(withOverrides(yaml, { '@plurid/uitive-core': 'file:new.tgz' })).toBe(
       [
         'packages:',
         '  - app',
         '',
         'overrides:',
-        "  '@plurid/aptuitive-core': file:new.tgz",
+        "  '@plurid/uitive-core': file:new.tgz",
         '  left-pad: 1.3.0',
         '',
         'onlyBuiltDependencies:',
@@ -379,7 +377,7 @@ describe('check', () => {
     const cwd = await project(
       { name: 'broken' },
       {
-        'aptuitive/contract.ts': `import { defineApp, list } from '@plurid/aptuitive-core';
+        'uitive/contract.ts': `import { defineApp, list } from '@plurid/uitive-core';
 export const contract = defineApp({
   id: 'broken',
   version: '1',
@@ -405,7 +403,7 @@ export const contract = defineApp({
           compilerOptions: { baseUrl: '.', paths: { '@app/*': ['src/*'] } },
         }),
         'src/tools.ts': "export const tools = ['pen', 'eraser'] as const;\n",
-        'aptuitive/contract.ts': `import { action, defineApp, list } from '@plurid/aptuitive-core';
+        'uitive/contract.ts': `import { action, defineApp, list } from '@plurid/uitive-core';
 import { tools } from '@app/tools';
 export const contract = defineApp({
   id: 'aliased',
@@ -425,7 +423,7 @@ export const contract = defineApp({
     const cwd = await project(
       { name: 'unbound' },
       {
-        'aptuitive/contract.ts': `import { defineApp, source } from '@plurid/aptuitive-core';
+        'uitive/contract.ts': `import { defineApp, source } from '@plurid/uitive-core';
 import { z } from 'zod';
 export const contract = defineApp({
   id: 'unbound',
@@ -444,7 +442,7 @@ export const contract = defineApp({
     expect(result.checks.find((entry) => entry.name === 'bindings')).toEqual({
       name: 'bindings',
       ok: false,
-      detail: 'aptuitive/bindings.ts not found; it binds fetch',
+      detail: 'uitive/bindings.ts not found; it binds fetch',
     });
   });
 });

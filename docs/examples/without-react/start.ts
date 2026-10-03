@@ -1,5 +1,5 @@
-import { startAptuitive } from '@plurid/aptuitive-dom';
-import { aptuitive } from './client.js';
+import { startUitive } from '@plurid/uitive-dom';
+import { uitive } from './client.js';
 
 // Registers the elements, adapts the marked markup and keeps state across visits.
-startAptuitive(aptuitive);
+startUitive(uitive);

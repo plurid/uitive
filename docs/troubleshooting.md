@@ -1,10 +1,10 @@
 # Troubleshooting
 
-Find the message or the symptom, then the fix. Messages are quoted as Aptuitive prints them.
+Find the message or the symptom, then the fix. Messages are quoted as Uitive prints them.
 
-## `aptuitive check`
+## `uitive check`
 
-**"contract.ts not found; run `aptuitive init` first"**: the command ran outside the application's package, or the Aptuitive folder is elsewhere. Run it where package.json is, or pass `--contract <file>`; `init --dir` records a folder in package.json as `aptuitive.dir`.
+**"contract.ts not found; run `uitive init` first"**: the command ran outside the application's package, or the Uitive folder is elsewhere. Run it where package.json is, or pass `--contract <file>`; `init --dir` records a folder in package.json as `uitive.dir`.
 
 **"the module exports no contract: export one made with defineApp as `contract`"**: export the contract from `contract.ts`, made with `defineApp`.
 
@@ -20,7 +20,7 @@ Find the message or the symptom, then the fix. Messages are quoted as Aptuitive 
 
 **"bindings.ts not found; it binds …" or "export `bindings` with fetch and perform"**: the bindings must export `bindings`, with `fetch` when the contract has sources and `perform` when actions have effects.
 
-**"Two copies of zod: the application's … and Aptuitive's …"**: Aptuitive shares the application's zod. Install one zod, 4.2 or later, and let the package manager deduplicate it.
+**"Two copies of zod: the application's … and Uitive's …"**: Uitive shares the application's zod. Install one zod, 4.2 or later, and let the package manager deduplicate it.
 
 **"Actions share labels, so people can't tell them apart"**: give each action its own label; requests find actions by label.
 
@@ -28,13 +28,13 @@ Find the message or the symptom, then the fix. Messages are quoted as Aptuitive 
 
 ## Installing and loading
 
-**`init` warns that the project's zod is older than 4.2**: upgrade zod first; Aptuitive's schemas need 4.2 or later.
+**`init` warns that the project's zod is older than 4.2**: upgrade zod first; Uitive's schemas need 4.2 or later.
 
 **`ERR_REQUIRE_ESM`, or `require()` of an ES module fails**: the packages are ES modules with a `default` export condition, which Node 22.12 and later can `require`. Update Node, or import them.
 
 **The CLI or MCP server won't start**: they need Node 22 or later.
 
-**`init --packages` says "install failed"**: installing from local tarballs, such as a build of this repository, the package manager couldn't resolve a package from them. `init` overrides every `@plurid/aptuitive-*` package with its tarball: in `pnpm-workspace.yaml` for pnpm 10 and later, which pnpm 11 requires, and in package.json otherwise. Pack all eight packages into the folder, and read the warnings `init` prints: an older `init` wrote pnpm's overrides into package.json, which pnpm 11 ignores (`The "pnpm" field in package.json is no longer read`).
+**`init --packages` says "install failed"**: installing from local tarballs, such as a build of this repository, the package manager couldn't resolve a package from them. `init` overrides every `@plurid/uitive-*` package with its tarball: in `pnpm-workspace.yaml` for pnpm 10 and later, which pnpm 11 requires, and in package.json otherwise. Pack all eight packages into the folder, and read the warnings `init` prints: an older `init` wrote pnpm's overrides into package.json, which pnpm 11 ignores (`The "pnpm" field in package.json is no longer read`).
 
 ## Commands and plans
 
@@ -69,17 +69,17 @@ Find the message or the symptom, then the fix. Messages are quoted as Aptuitive 
 - whether the person reverted the same change recently: it waits five sessions, and a second revert blocks it for good;
 - in `mixed`, a model's change waits for a second plan to agree, unless the evidence is strong; the banner says how many changes will apply at the next session.
 
-**Nothing learns from use**: the provider and `startAptuitive` plan once a session. With a client used without either, call `client.learn()` when a session starts, or `client.plan()` yourself; `learn: false` turns learning off.
+**Nothing learns from use**: the provider and `startUitive` plan once a session. With a client used without either, call `client.learn()` when a session starts, or `client.plan()` yourself; `learn: false` turns learning off.
 
 **A redesign shows only as a suggestion**: a redesign the person didn't ask for always waits for them to accept it, whatever the autonomy.
 
 **A list doesn't reorder in the markup**: `adaptMarkup` orders items with CSS `order`, which needs a flex or grid container. The console says so once: `the list "…" can't be reordered: its container isn't a flex or grid box`.
 
-**Hidden items still show**: check that each item has `data-apt-item` with the action's ID, inside a container with `data-apt-list` naming the list, and that `startAptuitive` or `adaptMarkup` ran with the right `root` for markup in a shadow root.
+**Hidden items still show**: check that each item has `data-uitive-item` with the action's ID, inside a container with `data-uitive-list` naming the list, and that `startUitive` or `adaptMarkup` ran with the right `root` for markup in a shadow root.
 
 ## Actions and data
 
-**"Nothing here can ask you to confirm this"**: a write or a destructive action ran from a generated page with no confirmation interface. Mount `<Confirmations />` in React, or `<apt-confirm>` elsewhere.
+**"Nothing here can ask you to confirm this"**: a write or a destructive action ran from a generated page with no confirmation interface. Mount `<Confirmations />` in React, or `<uitive-confirm>` elsewhere.
 
 **"Another change is waiting for your yes"**: one run waits for confirmation at a time.
 
@@ -87,4 +87,4 @@ Find the message or the symptom, then the fix. Messages are quoted as Aptuitive 
 
 **"This application reads no data"**: a page or `useQuery` asked for data, but the bindings have no `fetch`.
 
-**A table says its result is partial**: the binding couldn't do all the query asked, so Aptuitive finished it on the client, and there were more rows to look through than `scan` allows (500 by default). Declare what the endpoint can do in the source's `capabilities` and the binding's `filters`, or raise `scan`.
+**A table says its result is partial**: the binding couldn't do all the query asked, so Uitive finished it on the client, and there were more rows to look through than `scan` allows (500 by default). Declare what the endpoint can do in the source's `capabilities` and the binding's `filters`, or raise `scan`.

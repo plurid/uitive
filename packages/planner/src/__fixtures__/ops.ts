@@ -1,13 +1,5 @@
 import { z } from 'zod';
-import {
-  action,
-  block,
-  choice,
-  defineApp,
-  list,
-  page,
-  type ActionSpec,
-} from '@plurid/aptuitive-core';
+import { action, block, choice, defineApp, list, page, type ActionSpec } from '@plurid/uitive-core';
 
 const machines = Array.from({ length: 20 }, (_, index) => `machine-${index}`);
 

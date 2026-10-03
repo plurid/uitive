@@ -1,9 +1,9 @@
-# @plurid/aptuitive-react
+# @plurid/uitive-react
 
-React bindings for Aptuitive: a provider, hooks that re-render only when what they read changes, a page renderer and the generic blocks, drawn with a kit you map to your design system.
+React bindings for Uitive: a provider, hooks that re-render only when what they read changes, a page renderer and the generic blocks, drawn with a kit you map to your design system.
 
 ```sh
-pnpm add @plurid/aptuitive-core @plurid/aptuitive-react zod
+pnpm add @plurid/uitive-core @plurid/uitive-react zod
 ```
 
 Draw a list from the person's interface with your own components:
@@ -12,12 +12,12 @@ Draw a list from the person's interface with your own components:
 
 ```tsx
 import { useState } from 'react';
-import { useSurface } from '@plurid/aptuitive-react';
-import { aptuitive } from './client.js';
+import { useSurface } from '@plurid/uitive-react';
+import { uitive } from './client.js';
 
 /** The toolbar each person shaped: what fits, then the rest under More. */
 export function Toolbar({ run }: { run(action: string): void }) {
-  const toolbar = useSurface(aptuitive, 'toolbar');
+  const toolbar = useSurface(uitive, 'toolbar');
   const [more, setMore] = useState(false);
   return (
     <div role="toolbar" aria-label="Formatting">
@@ -26,7 +26,7 @@ export function Toolbar({ run }: { run(action: string): void }) {
           key={item.id}
           type="button"
           onClick={() => {
-            aptuitive.record(item.id, { via: 'region', surface: 'toolbar' });
+            uitive.record(item.id, { via: 'region', surface: 'toolbar' });
             run(item.id);
           }}
         >
@@ -47,7 +47,7 @@ export function Toolbar({ run }: { run(action: string): void }) {
               role="menuitem"
               onClick={() => {
                 setMore(false);
-                aptuitive.record(item.id, { via: 'overflow', surface: 'toolbar' });
+                uitive.record(item.id, { via: 'overflow', surface: 'toolbar' });
                 run(item.id);
               }}
             >
@@ -66,28 +66,28 @@ Then mount the provider once, with the banner that says what changed and "Your i
 <!-- example: docs/examples/quick-start/app.tsx -->
 
 ```tsx
-import { AptBanner, AptuitiveProvider, AptYourInterface } from '@plurid/aptuitive-react';
+import { UitiveBanner, UitiveProvider, UitiveYourInterface } from '@plurid/uitive-react';
 import { Ask } from './ask.js';
-import { aptuitive } from './client.js';
+import { uitive } from './client.js';
 import { Toolbar } from './toolbar.js';
 
 export function Editor({ run }: { run(action: string): void }) {
   return (
-    <AptuitiveProvider client={aptuitive}>
+    <UitiveProvider client={uitive}>
       <Toolbar run={run} />
       <Ask />
       {/* What just changed and why, with Revert and Keep; and every change, owned by the person. */}
-      <AptBanner client={aptuitive} />
-      <AptYourInterface client={aptuitive} />
-    </AptuitiveProvider>
+      <UitiveBanner client={uitive} />
+      <UitiveYourInterface client={uitive} />
+    </UitiveProvider>
   );
 }
 ```
 
 - `useSurface(client, id)` gives a list's visible and overflow actions, a choice's value, a collection, or a page for `Page` to draw.
-- `useCommand(client)` runs a request in the person's own words; `useAction(client, id)` runs the application's own controls through Aptuitive, so their use counts.
-- `useQuery(client, query)` reads data, shared and cached; `useAptuitiveRouter(client, { path, navigate })` connects any router.
+- `useCommand(client)` runs a request in the person's own words; `useAction(client, id)` runs the application's own controls through Uitive, so their use counts.
+- `useQuery(client, query)` reads data, shared and cached; `useUitiveRouter(client, { path, navigate })` connects any router.
 - `createKit({ Button, Table, Dialog, values: { money } })` swaps in your design system's parts, one at a time.
 - `<Confirmations />` asks before a generated page changes data.
 
-It needs React 18.3 or 19, and zod 4.2 or later. Read the [React guide](https://github.com/plurid/aptuitive/blob/master/docs/react.md), [Pages](https://github.com/plurid/aptuitive/blob/master/docs/pages.md) and the [API reference](https://github.com/plurid/aptuitive/blob/master/docs/api/react.md). MIT licensed.
+It needs React 18.3 or 19, and zod 4.2 or later. Read the [React guide](https://github.com/plurid/uitive/blob/master/docs/react.md), [Pages](https://github.com/plurid/uitive/blob/master/docs/pages.md) and the [API reference](https://github.com/plurid/uitive/blob/master/docs/api/react.md). MIT licensed.

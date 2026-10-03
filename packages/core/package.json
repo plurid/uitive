@@ -1,17 +1,17 @@
 {
-  "name": "@plurid/aptuitive-core",
+  "name": "@plurid/uitive-core",
   "version": "0.1.0",
   "description": "Typed contracts, usage learning and policy for interfaces that adapt to each user",
   "keywords": [
-    "aptuitive",
+    "uitive",
     "adaptive-ui",
     "llm"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/core#readme",
+  "homepage": "https://github.com/plurid/uitive/tree/master/packages/core#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plurid/aptuitive.git",
+    "url": "git+https://github.com/plurid/uitive.git",
     "directory": "packages/core"
   },
   "type": "module",

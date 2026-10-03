@@ -1,11 +1,11 @@
-import type { Adaptation, Aptuitive } from '@plurid/aptuitive-core';
+import type { Adaptation, Uitive } from '@plurid/uitive-core';
 import { commandHeading } from './banner.js';
 import type { ClientLike } from './client-like.js';
-import { AptElement } from './element.js';
+import { UitiveElement } from './element.js';
 import { escape } from './html.js';
 
-/** What `<apt-ask>` needs from a client. */
-export type AskClientLike = ClientLike & Pick<Aptuitive, 'ask'>;
+/** What `<uitive-ask>` needs from a client. */
+export type AskClientLike = ClientLike & Pick<Uitive, 'ask'>;
 
 /** What a command did, in a line. */
 function outcome(adaptation: Adaptation, client: AskClientLike): string {
@@ -18,12 +18,12 @@ function outcome(adaptation: Adaptation, client: AskClientLike): string {
 }
 
 /**
- * `<apt-ask>`: where the person asks for a change in their own words, such as "hide Print". Simple
+ * `<uitive-ask>`: where the person asks for a change in their own words, such as "hide Print". Simple
  * commands work without a model; with a planner, so do requests like "make my home a morning
- * check". What happened shows here in a line, and in full in `<apt-banner>` when there is one.
- * Emits `apt-asked` (`detail.adaptation`). The `placeholder` attribute replaces the hint.
+ * check". What happened shows here in a line, and in full in `<uitive-banner>` when there is one.
+ * Emits `uitive-asked` (`detail.adaptation`). The `placeholder` attribute replaces the hint.
  */
-export class AptAsk extends AptElement<AskClientLike> {
+export class UitiveAsk extends UitiveElement<AskClientLike> {
   #pending = false;
   #status = '';
 
@@ -73,7 +73,7 @@ export class AptAsk extends AptElement<AskClientLike> {
       if (current && (adaptation.status === 'done' || adaptation.status === 'partial')) {
         current.value = '';
       }
-      this.emit('apt-asked', { adaptation });
+      this.emit('uitive-asked', { adaptation });
     } catch (error) {
       this.#status = commandHeading('unavailable', client.contract);
       throw error;

@@ -1,17 +1,17 @@
 {
-  "name": "@plurid/aptuitive-cli",
+  "name": "@plurid/uitive-cli",
   "version": "0.1.0",
-  "description": "Aptuitive for coding agents: detect, scaffold, generate sources and blocks, discover, and check an integration",
+  "description": "Uitive for coding agents: detect, scaffold, generate sources and blocks, discover, and check an integration",
   "keywords": [
-    "aptuitive",
+    "uitive",
     "adaptive-ui",
     "llm"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/cli#readme",
+  "homepage": "https://github.com/plurid/uitive/tree/master/packages/cli#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plurid/aptuitive.git",
+    "url": "git+https://github.com/plurid/uitive.git",
     "directory": "packages/cli"
   },
   "type": "module",
@@ -24,7 +24,7 @@
   },
   "types": "./dist/index.d.ts",
   "bin": {
-    "aptuitive": "./dist/bin.js"
+    "uitive": "./dist/bin.js"
   },
   "files": [
     "dist"
@@ -37,9 +37,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@plurid/aptuitive-adapter": "workspace:^",
-    "@plurid/aptuitive-core": "workspace:^",
-    "@plurid/aptuitive-planner": "workspace:^",
+    "@plurid/uitive-adapter": "workspace:^",
+    "@plurid/uitive-core": "workspace:^",
+    "@plurid/uitive-planner": "workspace:^",
     "@scalar/openapi-parser": "^0.29.10",
     "jiti": "^2.7.0",
     "typescript": "6.0.3",

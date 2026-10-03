@@ -1,12 +1,12 @@
 {
-  "name": "plurid-aptuitive",
-  "description": "Claude Code plugins for integrating Aptuitive into applications.",
+  "name": "plurid-uitive",
+  "description": "Claude Code plugins for integrating Uitive into applications.",
   "owner": { "name": "plurid", "url": "https://github.com/plurid" },
   "plugins": [
     {
-      "name": "aptuitive",
+      "name": "uitive",
       "source": "./plugins/claude-code",
-      "description": "Integrate Aptuitive with a coding agent: detection, generated sources, curation, checks and the playbook."
+      "description": "Integrate Uitive with a coding agent: detection, generated sources, curation, checks and the playbook."
     }
   ]
 }

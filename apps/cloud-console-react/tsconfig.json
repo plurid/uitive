@@ -8,11 +8,11 @@
     "allowImportingTsExtensions": true,
     "types": ["vite/client", "node"],
     "paths": {
-      "@plurid/aptuitive-core": ["../../packages/core/src/index.ts"],
-      "@plurid/aptuitive-react": ["../../packages/react/src/index.ts"],
-      "@plurid/aptuitive-dom": ["../../packages/dom/src/index.ts"],
-      "@plurid/aptuitive-dom/*": ["../../packages/dom/src/*"],
-      "@plurid/aptuitive-server": ["../../packages/server/src/index.ts"]
+      "@plurid/uitive-core": ["../../packages/core/src/index.ts"],
+      "@plurid/uitive-react": ["../../packages/react/src/index.ts"],
+      "@plurid/uitive-dom": ["../../packages/dom/src/index.ts"],
+      "@plurid/uitive-dom/*": ["../../packages/dom/src/*"],
+      "@plurid/uitive-server": ["../../packages/server/src/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts"]

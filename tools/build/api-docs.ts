@@ -28,7 +28,7 @@ export interface Entry {
   symbol: ts.Symbol;
   /** The package whose page documents it: where it is declared. */
   page: string;
-  /** Every specifier that exports it, such as `@plurid/aptuitive-server/node`. */
+  /** Every specifier that exports it, such as `@plurid/uitive-server/node`. */
   specifiers: string[];
   /** The declaring file, from the package's `src`, such as `contract.ts`. */
   module: string;

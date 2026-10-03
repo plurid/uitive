@@ -1,5 +1,5 @@
-import { query, ui } from '@plurid/aptuitive-core';
-import { aptuitive } from './client.js';
+import { query, ui } from '@plurid/uitive-core';
+import { uitive } from './client.js';
 
 // #region redesign
 const fields = [
@@ -46,6 +46,6 @@ export const needsAttention = ui.page(
 // #region apply
 /** The person's own redesign: policy checks it like any plan, and Revert brings the page back. */
 export function redesignOrders() {
-  return aptuitive.setPage('orders', needsAttention);
+  return uitive.setPage('orders', needsAttention);
 }
 // #endregion

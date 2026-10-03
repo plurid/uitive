@@ -1,6 +1,6 @@
 # Planning
 
-A planner turns use and requests into proposed operations, which policy then checks. Aptuitive has two. The **deterministic planner** in core needs no model, no key and no network: it answers plain commands and learns from use. **A language model**, from any provider, through the model planner on your server, answers requests in plain words, works towards a person's stated goal and redesigns pages. Whoever pays holds the key: the model planner runs on your server, and the browser only ever talks to your server.
+A planner turns use and requests into proposed operations, which policy then checks. Uitive has two. The **deterministic planner** in core needs no model, no key and no network: it answers plain commands and learns from use. **A language model**, from any provider, through the model planner on your server, answers requests in plain words, works towards a person's stated goal and redesigns pages. Whoever pays holds the key: the model planner runs on your server, and the browser only ever talks to your server.
 
 ## Without a model
 
@@ -20,9 +20,9 @@ Items are found by label, exactly, then by prefix, then by any part, and an uncl
 
 ## Learning from use
 
-The provider in React, and `startAptuitive` without it, call `client.learn()` whenever a session starts: one plan from use, once a session. The deterministic planner promotes items people keep reaching for in overflow over items that sit unused, past a margin, so two items used about equally never trade places. What policy accepts applies at the next safe moment, as [How it works](how-it-works.md#commands-and-plans) describes.
+The provider in React, and `startUitive` without it, call `client.learn()` whenever a session starts: one plan from use, once a session. The deterministic planner promotes items people keep reaching for in overflow over items that sit unused, past a margin, so two items used about equally never trade places. What policy accepts applies at the next safe moment, as [How it works](how-it-works.md#commands-and-plans) describes.
 
-With a model planner, each of those plans is one request to your server. Pass `learn: false` to `createAptuitive` to plan only when you call `client.plan()` yourself, such as from a button through `usePlan`.
+With a model planner, each of those plans is one request to your server. Pass `learn: false` to `createUitive` to plan only when you call `client.plan()` yourself, such as from a button through `usePlan`.
 
 ## A model on your server
 
@@ -34,7 +34,7 @@ The server owns the contract and the key. Create a handler with the contract, a 
 // Whichever model the server has a key for: Anthropic, OpenAI or Gemini.
 const model = environmentModel();
 
-export const handler = createAptuitiveHandler({
+export const handler = createUitiveHandler({
   contract: shop,
   // Without a key, as in development, the deterministic planner answers plain commands.
   planner: model ? modelPlanner({ model }) : heuristicPlanner(),
@@ -43,7 +43,7 @@ export const handler = createAptuitiveHandler({
 });
 ```
 
-`environmentModel()` picks whichever provider the server has a key for: `ANTHROPIC_API_KEY`, else `OPENAI_API_KEY`, else `GEMINI_API_KEY`, with `APTUITIVE_MODEL` naming the model. To choose one yourself, see [Choosing a model](#choosing-a-model).
+`environmentModel()` picks whichever provider the server has a key for: `ANTHROPIC_API_KEY`, else `OPENAI_API_KEY`, else `GEMINI_API_KEY`, with `UITIVE_MODEL` naming the model. To choose one yourself, see [Choosing a model](#choosing-a-model).
 
 | Option      | What it does                                                                                                                                                                       |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -61,18 +61,18 @@ The handler answers `POST <base>/plan` and `POST <base>/command`: it takes a Fet
 <!-- example: docs/examples/server/next-route.ts -->
 
 ```ts
-// app/api/aptuitive/[kind]/route.ts: one route serves both /plan and /command.
+// app/api/uitive/[kind]/route.ts: one route serves both /plan and /command.
 import { handler } from './handler.js';
 
 export const POST = handler;
 ```
 
-**Node, Express and Fastify**: `toNodeListener` from `@plurid/aptuitive-server/node` turns the handler into a `(request, response)` listener, in CommonJS or ES modules. A body that `express.json()` already parsed is used as it is, and progress streams as it is written.
+**Node, Express and Fastify**: `toNodeListener` from `@plurid/uitive-server/node` turns the handler into a `(request, response)` listener, in CommonJS or ES modules. A body that `express.json()` already parsed is used as it is, and progress streams as it is written.
 
 <!-- example: docs/examples/server/node-server.ts#node -->
 
 ```ts
-// In Express: app.use('/api/aptuitive', toNodeListener(handler)).
+// In Express: app.use('/api/uitive', toNodeListener(handler)).
 createServer(toNodeListener(handler)).listen(8787);
 ```
 
@@ -85,12 +85,12 @@ In the browser, `remotePlanner` sends requests to the handler, and the determini
 <!-- example: docs/examples/server/client.ts#client -->
 
 ```ts
-export const aptuitive = createAptuitive({
+export const uitive = createUitive({
   contract: shop,
   store: localStore('shop'),
   bindings,
   // A model through the application's server; simple commands still work when it can't answer.
-  planner: remotePlanner({ url: '/api/aptuitive', fallback: heuristicPlanner() }),
+  planner: remotePlanner({ url: '/api/uitive', fallback: heuristicPlanner() }),
 });
 ```
 
@@ -211,7 +211,7 @@ The handler answers with these statuses; on any but 200, `remotePlanner` falls b
 
 ## Large contracts
 
-A request about a large contract is planned over a subset of it: the **areas** on screen and the few most relevant to the words, where an area is one source with the actions that act on it and the routes that show it. Past 40 sources or 200 actions, plans get worse, and `aptuitive check` says so: curate what the interface needs, as [Coding agents](coding-agents.md#curation) shows. [ADR 0005](adr/0005-planning-at-scale.md) has the details.
+A request about a large contract is planned over a subset of it: the **areas** on screen and the few most relevant to the words, where an area is one source with the actions that act on it and the routes that show it. Past 40 sources or 200 actions, plans get worse, and `uitive check` says so: curate what the interface needs, as [Coding agents](coding-agents.md#curation) shows. [ADR 0005](adr/0005-planning-at-scale.md) has the details.
 
 ## Goals and autonomy
 

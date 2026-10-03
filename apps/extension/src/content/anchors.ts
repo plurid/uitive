@@ -1,5 +1,5 @@
 import { computeAccessibleName, getRole } from 'dom-accessibility-api';
-import type { Adapter, Strategy } from '@plurid/aptuitive-adapter';
+import type { Adapter, Strategy } from '@plurid/uitive-adapter';
 
 export type AnchorState = 'found' | 'missing' | 'ambiguous';
 

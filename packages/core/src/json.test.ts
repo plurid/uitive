@@ -51,10 +51,10 @@ describe('JSON contracts', () => {
 
   it('write meanings out, so sources and params come back the same', () => {
     const { json, back } = roundTrip(payments);
-    expect(json.format).toBe('aptuitive.contract');
+    expect(json.format).toBe('uitive.contract');
     expect(json.sources.payments?.row.properties.amount).toEqual({
       type: 'number',
-      'x-aptuitive': { type: 'money', label: 'Amount', currency: 'currency', minor: true },
+      'x-uitive': { type: 'money', label: 'Amount', currency: 'currency', minor: true },
     });
     expect(json.sources.payments?.row.required).not.toContain('customer');
     expect(back.source('payments')).toEqual(payments.source('payments'));
@@ -154,9 +154,7 @@ describe('JSON contracts', () => {
       },
     });
     expect(() => toJson(transformed)).toThrow(/block shout/);
-    expect(() => fromJson({ format: 'something-else' })).toThrow(
-      /Not an Aptuitive contract: format/,
-    );
+    expect(() => fromJson({ format: 'something-else' })).toThrow(/Not a Uitive contract: format/);
     const json = JSON.parse(JSON.stringify(toJson(payments)));
     json.routes.payment.page = 'refunds';
     expect(() => fromJson(json)).toThrow(/route payment: "refunds" is not a page/);

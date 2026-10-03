@@ -26,7 +26,7 @@ export const sources = {
     key: 'id',
     title: 'number',
     summary: ['total', 'status'],
-    // What the API does itself; Aptuitive does the rest on the client.
+    // What the API does itself; Uitive does the rest on the client.
     capabilities: {
       filter: { status: ['eq', 'in'], placed: ['gte', 'lt'], customer: ['eq'] },
       sort: ['placed'],
@@ -59,12 +59,12 @@ Field helpers say what a value means, so it shows and filters correctly. Plain z
 Every helper takes a `label`, shown as a column's header, and a `description`.
 
 - `title` names a row, and `summary` lists the fields that sum it up; a relation one hop away can show only those.
-- `capabilities` declares what the binding does itself: which filters, which sorts, text search and paging. Aptuitive pushes those down and does the rest on the client, over at most `scan` rows (500 by default). A result cut short by the cap says it is partial.
+- `capabilities` declares what the binding does itself: which filters, which sorts, text search and paging. Uitive pushes those down and does the rest on the client, over at most `scan` rows (500 by default). A result cut short by the cap says it is partial.
 - `maxLimit` caps the rows one query may ask for (100 by default), and `ttl` how many seconds a result stays fresh (30 by default).
 
 ## Sources from an API description
 
-With an OpenAPI description, sources and actions are generated rather than written: `aptuitive survey` lists what the description holds, a `curation.json` keeps what the interface shows, and `aptuitive generate sources` writes a module of `sources`, `actions` and `endpoints` to spread into the contract. [Coding agents](coding-agents.md#curation) has the steps and every curation key.
+With an OpenAPI description, sources and actions are generated rather than written: `uitive survey` lists what the description holds, a `curation.json` keeps what the interface shows, and `uitive generate sources` writes a module of `sources`, `actions` and `endpoints` to spread into the contract. [Coding agents](coding-agents.md#curation) has the steps and every curation key.
 
 ## Bindings
 
@@ -156,7 +156,7 @@ Fields are qualified by source (`orders.total`) and may follow one relation (`or
 ```tsx
 /** Orders paid more than two days ago and not shipped, read with the person's own session. */
 export function Unshipped() {
-  const entry = useQuery(aptuitive, unshipped);
+  const entry = useQuery(uitive, unshipped);
   if (!entry.result) return <p role="status">{entry.error ?? 'Loading'}</p>;
   return (
     <ul>
@@ -184,14 +184,14 @@ An action with an `effect` runs through `perform`.
 
 A run ends `done`, `cancelled` by the person, `failed` in the binding or for want of one, or `refused` before it starts: when its params don't fit the action's schema, when no interface can ask for confirmation, when another run is already waiting, or while a redesign is being previewed. A run that succeeds is recorded as use, without its params, and `invalidates` refreshes results that read the sources it changed. Each run carries an idempotency key the binding may use to refuse doing it twice; `restPerform` sends it in the header its `idempotency` option names.
 
-Generated pages ask through the confirmation interface you mount once: `<Confirmations />` in React, `<apt-confirm>` elsewhere. The application's own controls ask in their own way; send them through `useAction`, so their runs count as use:
+Generated pages ask through the confirmation interface you mount once: `<Confirmations />` in React, `<uitive-confirm>` elsewhere. The application's own controls ask in their own way; send them through `useAction`, so their runs count as use:
 
 <!-- example: docs/examples/shop/cancel-button.tsx#action -->
 
 ```tsx
 /** The application's own button: it asks in its own way, and each run counts as use. */
 export function CancelButton({ order }: { order: string }) {
-  const cancel = useAction(aptuitive, 'orders.cancel');
+  const cancel = useAction(uitive, 'orders.cancel');
   return (
     <button
       type="button"

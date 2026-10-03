@@ -1,4 +1,4 @@
-import { EFFECTS, OPS } from '@plurid/aptuitive-core';
+import { EFFECTS, OPS } from '@plurid/uitive-core';
 import { z } from 'zod';
 import type { ApiAction, ApiField, ApiInventory, ApiSource } from './openapi.js';
 
@@ -40,7 +40,7 @@ const actionCuration = z
   })
   .strict();
 
-/** `aptuitive/curation.json`: what to keep from an API description, kept across regenerations. */
+/** `uitive/curation.json`: what to keep from an API description, kept across regenerations. */
 export const curationSchema = z
   .object({
     $schema: z.string().optional(),

@@ -7,12 +7,12 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   action,
   choice,
-  createAptuitive,
+  createUitive,
   defineApp,
   heuristicPlanner,
   list,
   memoryStore,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import { useCommand, useLifecycle, useSnapshot, useSurface } from './hooks.js';
 
 const contract = defineApp({
@@ -41,7 +41,7 @@ const contract = defineApp({
   },
 });
 
-const fresh = () => createAptuitive({ contract, now: () => 0 });
+const fresh = () => createUitive({ contract, now: () => 0 });
 type Client = ReturnType<typeof fresh>;
 
 function Toolbar({ client, onRender }: { client: Client; onRender?: () => void }) {
@@ -75,7 +75,7 @@ describe('useSurface', () => {
 
   it('renders the standard layout on the server and the user’s on the client, without mismatch', async () => {
     const store = memoryStore();
-    const server = createAptuitive({ contract, now: () => 0, store });
+    const server = createUitive({ contract, now: () => 0, store });
     server.hide('toolbar', 'bold');
     server.flush();
 
@@ -86,7 +86,7 @@ describe('useSurface', () => {
     container.innerHTML = html;
     document.body.append(container);
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const client = createAptuitive({ contract, now: () => 0, store });
+    const client = createUitive({ contract, now: () => 0, store });
     await act(async () => {
       hydrateRoot(container, <Toolbar client={client} />);
     });
@@ -125,7 +125,7 @@ describe('useLifecycle', () => {
   it('plans each session from use once, under StrictMode too', async () => {
     let time = 0;
     const plan = vi.fn(heuristicPlanner().plan);
-    const client = createAptuitive({ contract, now: () => time, planner: { name: 'test', plan } });
+    const client = createUitive({ contract, now: () => time, planner: { name: 'test', plan } });
     function App() {
       useLifecycle(client);
       return null;

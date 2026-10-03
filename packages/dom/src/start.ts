@@ -1,22 +1,22 @@
-import type { AnyContract, Aptuitive } from '@plurid/aptuitive-core';
+import type { AnyContract, Uitive } from '@plurid/uitive-core';
 import { defineElements } from './define.js';
-import { AptElement } from './element.js';
+import { UitiveElement } from './element.js';
 import { adaptMarkup } from './markup.js';
 import type { MarkupOptions } from './markup.js';
 
 /**
- * Starts Aptuitive on a page without React, once: registers the elements and gives every one the
- * client, adapts the markup marked with `data-apt-list` and `data-apt-item` (see `adaptMarkup`),
+ * Starts Uitive on a page without React, once: registers the elements and gives every one the
+ * client, adapts the markup marked with `data-uitive-list` and `data-uitive-item` (see `adaptMarkup`),
  * starts a new session when the person comes back after a while, plans each session from use once
  * (see `learn`), and saves usage whenever the page is hidden or closed. Returns a function that
  * undoes it all.
  */
-export function startAptuitive<C extends AnyContract>(
-  client: Aptuitive<C>,
+export function startUitive<C extends AnyContract>(
+  client: Uitive<C>,
   options: MarkupOptions = {},
 ): () => void {
   defineElements();
-  AptElement.useClient(client);
+  UitiveElement.useClient(client);
   const stop = adaptMarkup(client, options);
   const root = options.root ?? document;
   const owner = root.nodeType === 9 ? (root as Document) : (root as ShadowRoot).ownerDocument;
@@ -35,6 +35,6 @@ export function startAptuitive<C extends AnyContract>(
     stop();
     owner.removeEventListener('visibilitychange', visibility);
     view?.removeEventListener('pagehide', hide);
-    AptElement.useClient(undefined);
+    UitiveElement.useClient(undefined);
   };
 }

@@ -15,10 +15,10 @@ import {
   type RegionProps,
   type SectionProps,
   type TabsProps,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import { GenericBlock } from './generic.js';
 import { defaultKit } from './kit.js';
-import { AptuitiveContext } from './provider.js';
+import { UitiveContext } from './provider.js';
 
 /** Props every block component receives: its own typed props, and the page's context value. */
 export interface BlockProps<P> {
@@ -47,13 +47,13 @@ export interface PageProps<B extends Record<string, BlockSpec>> {
   value: AnyPage;
   /** A component for each of the application's own blocks; generic blocks need none. */
   blocks: BlockComponents<B>;
-  /** What each region shows, such as the page as it was before Aptuitive. */
+  /** What each region shows, such as the page as it was before Uitive. */
   regions?: RegionComponents;
   /** The page's context value, such as the service shown. */
   context?: string;
   /** The key of the row the page is about. @default the row the location is about */
   current?: string;
-  /** The class of the page's wrapper. @default 'apt-page' */
+  /** The class of the page's wrapper. @default 'uitive-page' */
   className?: string;
 }
 
@@ -72,7 +72,7 @@ export function Page<B extends Record<string, BlockSpec>>({
   current,
   className,
 }: PageProps<B>) {
-  const scope = useContext(AptuitiveContext);
+  const scope = useContext(UitiveContext);
   const location = useSyncExternalStore(
     scope ? scope.client.subscribe : silent,
     () => scope?.client.getSnapshot().location,
@@ -99,7 +99,7 @@ export function Page<B extends Record<string, BlockSpec>>({
         {...(row === undefined ? {} : { current: row })}
       />
     ) : (
-      <kit.Status state="error" message="Wrap the page in <AptuitiveProvider> to show its data" />
+      <kit.Status state="error" message="Wrap the page in <UitiveProvider> to show its data" />
     );
   };
 
@@ -139,7 +139,7 @@ export function Page<B extends Record<string, BlockSpec>>({
     const element = byId.get(id);
     if (!element) return null;
     return (
-      <div key={id} className="apt-block" data-block={element.block} data-element={id}>
+      <div key={id} className="uitive-block" data-block={element.block} data-element={id}>
         {node(element, depth)}
       </div>
     );
@@ -152,7 +152,7 @@ export function Page<B extends Record<string, BlockSpec>>({
   if (root.block === 'section') {
     const props = root.props as SectionProps;
     return (
-      <div className={className ?? 'apt-page'} data-layout={props.layout}>
+      <div className={className ?? 'uitive-page'} data-layout={props.layout}>
         {props.title && <kit.Title>{props.title}</kit.Title>}
         {root.children.map((id) => {
           const element = byId.get(id);
@@ -166,5 +166,5 @@ export function Page<B extends Record<string, BlockSpec>>({
       </div>
     );
   }
-  return <div className={className ?? 'apt-page'}>{node(root, 1)}</div>;
+  return <div className={className ?? 'uitive-page'}>{node(root, 1)}</div>;
 }

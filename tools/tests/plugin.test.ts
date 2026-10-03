@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { SKILL } from '@plurid/aptuitive-cli';
+import { SKILL } from '@plurid/uitive-cli';
 import { describe, expect, it } from 'vitest';
 
 const root = new URL('../../', import.meta.url);
@@ -20,7 +20,7 @@ describe('the Claude Code plugin', () => {
   const marketplace = json('.claude-plugin/marketplace.json');
 
   it('has a manifest the marketplace points at', () => {
-    expect(plugin.name).toBe('aptuitive');
+    expect(plugin.name).toBe('uitive');
     expect(plugin.name).not.toMatch(/^(claude|anthropic)/);
     const entries = marketplace.plugins as { name: string; source: string }[];
     expect(entries).toEqual([
@@ -36,21 +36,21 @@ describe('the Claude Code plugin', () => {
   it('starts the MCP server from the published package, in the project', () => {
     expect(json('plugins/claude-code/.mcp.json')).toEqual({
       mcpServers: {
-        aptuitive: {
+        uitive: {
           command: 'npx',
-          args: ['-y', '@plurid/aptuitive-mcp', '--root', '${CLAUDE_PROJECT_DIR}'],
+          args: ['-y', '@plurid/uitive-mcp', '--root', '${CLAUDE_PROJECT_DIR}'],
         },
       },
     });
   });
 
   it('bundles the same integration skill that init writes', () => {
-    expect(read('plugins/claude-code/skills/integrate-aptuitive/SKILL.md')).toBe(SKILL);
+    expect(read('plugins/claude-code/skills/integrate-uitive/SKILL.md')).toBe(SKILL);
   });
 
   it.each([
-    'plugins/claude-code/skills/integrate-aptuitive/SKILL.md',
-    'plugins/claude-code/skills/aptuitive-check/SKILL.md',
+    'plugins/claude-code/skills/integrate-uitive/SKILL.md',
+    'plugins/claude-code/skills/uitive-check/SKILL.md',
     'plugins/claude-code/agents/curator.md',
   ])('%s says what it is and when to use it', (path) => {
     const fields = frontmatter(read(path));

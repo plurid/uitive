@@ -1,5 +1,5 @@
-import { action, defineApp, list, page, route, toJson, ui } from '@plurid/aptuitive-core';
-import type { AdapterInput } from '@plurid/aptuitive-adapter';
+import { action, defineApp, list, page, route, toJson, ui } from '@plurid/uitive-core';
+import type { AdapterInput } from '@plurid/uitive-adapter';
 import { endpoints, sources } from './stripe/api.generated.ts';
 
 // Hrefs and names are guesses until checked on the real dashboard, in test mode. Paths may start
@@ -101,7 +101,7 @@ const permissions: Record<string, string> = {
 };
 
 export const adapter: AdapterInput = {
-  format: 'aptuitive.adapter',
+  format: 'uitive.adapter',
   formatVersion: 1,
   id: 'stripe-dashboard',
   label: 'Stripe Dashboard',

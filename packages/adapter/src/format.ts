@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** What an adapter says it is, in its `format` field. */
-export const ADAPTER_FORMAT = 'aptuitive.adapter';
+export const ADAPTER_FORMAT = 'uitive.adapter';
 /** The adapter format's version. */
 export const ADAPTER_VERSION = 1;
 
@@ -117,7 +117,7 @@ export const adapterSchema = z
   })
   .strict();
 
-/** An adapter, checked: how Aptuitive applies a contract to a site it doesn't own. */
+/** An adapter, checked: how Uitive applies a contract to a site it doesn't own. */
 export type Adapter = z.infer<typeof adapterSchema>;
 /** An adapter as written, before defaults fill in. */
 export type AdapterInput = z.input<typeof adapterSchema>;

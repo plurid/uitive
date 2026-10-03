@@ -1,12 +1,12 @@
-# @plurid/aptuitive-planner
+# @plurid/uitive-planner
 
-Aptuitive's model planner, for any provider. It compiles a contract into the JSON Schema a model must answer in and a prompt, plans with a language model, and repairs an answer once when it strays from the schema or policy rejects part of it. Large contracts are planned over the part a request needs. It uses no Node or DOM APIs, so it runs on servers and in browser extensions alike.
+Uitive's model planner, for any provider. It compiles a contract into the JSON Schema a model must answer in and a prompt, plans with a language model, and repairs an answer once when it strays from the schema or policy rejects part of it. Large contracts are planned over the part a request needs. It uses no Node or DOM APIs, so it runs on servers and in browser extensions alike.
 
 ```sh
-pnpm add @plurid/aptuitive-planner zod
+pnpm add @plurid/uitive-planner zod
 ```
 
-Applications use it through [`@plurid/aptuitive-server`](https://github.com/plurid/aptuitive/blob/master/packages/server/README.md), which re-exports it, with the model the server has a key for:
+Applications use it through [`@plurid/uitive-server`](https://github.com/plurid/uitive/blob/master/packages/server/README.md), which re-exports it, with the model the server has a key for:
 
 <!-- example: docs/examples/server/handler.ts#handler -->
 
@@ -14,7 +14,7 @@ Applications use it through [`@plurid/aptuitive-server`](https://github.com/plur
 // Whichever model the server has a key for: Anthropic, OpenAI or Gemini.
 const model = environmentModel();
 
-export const handler = createAptuitiveHandler({
+export const handler = createUitiveHandler({
   contract: shop,
   // Without a key, as in development, the deterministic planner answers plain commands.
   planner: model ? modelPlanner({ model }) : heuristicPlanner(),
@@ -42,6 +42,6 @@ export const gemini = modelPlanner({ model: google({ model: 'gemini-3.8-flash' }
 - `openai({ model })` reaches OpenAI and, through `baseURL`, every server that speaks its API, such as Ollama, vLLM, LM Studio, OpenRouter and Groq. `google({ model })` reaches Gemini. Both call `fetch`.
 - Models without structured output plan too, with `structured: 'json'` or `'text'`: answers are checked against the schema and repaired once.
 - `Model` is one `generate` call, for any other provider; `environmentModel()` picks whichever provider the environment has a key for.
-- `@plurid/aptuitive-planner/schema` and `@plurid/aptuitive-planner/prompt` need no SDK: tools use them to measure schemas and prompts.
+- `@plurid/uitive-planner/schema` and `@plurid/uitive-planner/prompt` need no SDK: tools use them to measure schemas and prompts.
 
-Keys stay with whoever pays: on the application's server, or in the person's own extension, never in a page's code. zod 4.2 or later is shared with the application. Read [Planning](https://github.com/plurid/aptuitive/blob/master/docs/planning.md) and the [API reference](https://github.com/plurid/aptuitive/blob/master/docs/api/planner.md). MIT licensed.
+Keys stay with whoever pays: on the application's server, or in the person's own extension, never in a page's code. zod 4.2 or later is shared with the application. Read [Planning](https://github.com/plurid/uitive/blob/master/docs/planning.md) and the [API reference](https://github.com/plurid/uitive/blob/master/docs/api/planner.md). MIT licensed.

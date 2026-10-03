@@ -1,4 +1,4 @@
-import type { View } from '@plurid/aptuitive-core';
+import type { View } from '@plurid/uitive-core';
 
 interface HeaderProps {
   view: View;

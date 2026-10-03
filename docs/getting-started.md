@@ -1,22 +1,22 @@
 # Getting started
 
-Aptuitive needs three things: a contract that says what may adapt, a client that holds each person's interface, and an interface drawn from that client. This guide builds the smallest complete integration, a notes editor's toolbar in React that learns from use and changes when asked. [Without React](without-react.md) does the same for any other page, and [Coding agents](coding-agents.md) has an agent do these steps for you.
+Uitive needs three things: a contract that says what may adapt, a client that holds each person's interface, and an interface drawn from that client. This guide builds the smallest complete integration, a notes editor's toolbar in React that learns from use and changes when asked. [Without React](without-react.md) does the same for any other page, and [Coding agents](coding-agents.md) has an agent do these steps for you.
 
 ## Install
 
-Aptuitive needs React 18.3 or 19 for its React bindings, zod 4.2 or later, and Node 22 or later for its tools.
+Uitive needs React 18.3 or 19 for its React bindings, zod 4.2 or later, and Node 22 or later for its tools.
 
 ```sh
-pnpm add @plurid/aptuitive-core @plurid/aptuitive-react zod
+pnpm add @plurid/uitive-core @plurid/uitive-react zod
 ```
 
 Or let `init` install them, and write a starting folder too:
 
 ```sh
-npx @plurid/aptuitive-cli init
+npx @plurid/uitive-cli init
 ```
 
-It writes `contract.ts`, `bindings.ts` and `client.ts` into `src/aptuitive/` (or `aptuitive/` when there is no `src`), and `kit.tsx` with React. The steps below fill them in for a notes editor: replace `contract.ts` with the contract below, keep `bindings.ts` and `client.ts`, and put the components with your application's own. The examples keep every file in one folder and import with `.js` extensions, which TypeScript resolves to `.ts` files under `"moduleResolution": "bundler"` or `"nodenext"`.
+It writes `contract.ts`, `bindings.ts` and `client.ts` into `src/uitive/` (or `uitive/` when there is no `src`), and `kit.tsx` with React. The steps below fill them in for a notes editor: replace `contract.ts` with the contract below, keep `bindings.ts` and `client.ts`, and put the components with your application's own. The examples keep every file in one folder and import with `.js` extensions, which TypeScript resolves to `.ts` files under `"moduleResolution": "bundler"` or `"nodenext"`.
 
 ## Declare a contract
 
@@ -25,7 +25,7 @@ The contract is the boundary: everything a person or a model may change, and not
 <!-- example: docs/examples/quick-start/contract.ts -->
 
 ```ts
-import { action, defineApp, list } from '@plurid/aptuitive-core';
+import { action, defineApp, list } from '@plurid/uitive-core';
 
 export const contract = defineApp({
   id: 'notes',
@@ -62,11 +62,11 @@ A client holds one person's interface: how they use the application, what they c
 <!-- example: docs/examples/quick-start/client.ts -->
 
 ```ts
-import { createAptuitive, localStore } from '@plurid/aptuitive-core';
+import { createUitive, localStore } from '@plurid/uitive-core';
 import { contract } from './contract.js';
 
 // Learns from use and changes when asked; the person's interface is kept in this browser.
-export const aptuitive = createAptuitive({
+export const uitive = createUitive({
   contract,
   store: localStore('notes'),
 });
@@ -76,18 +76,18 @@ With no planner given, the client plans with the deterministic planner: it answe
 
 ## Draw the toolbar
 
-`useSurface` gives the toolbar as this person has it: the actions that show, then those in overflow. Draw them with your own components, and record each use with how it was reached. `run` is your editor's own handler, what Bold does in your editor, which Aptuitive never needs to know.
+`useSurface` gives the toolbar as this person has it: the actions that show, then those in overflow. Draw them with your own components, and record each use with how it was reached. `run` is your editor's own handler, what Bold does in your editor, which Uitive never needs to know.
 
 <!-- example: docs/examples/quick-start/toolbar.tsx -->
 
 ```tsx
 import { useState } from 'react';
-import { useSurface } from '@plurid/aptuitive-react';
-import { aptuitive } from './client.js';
+import { useSurface } from '@plurid/uitive-react';
+import { uitive } from './client.js';
 
 /** The toolbar each person shaped: what fits, then the rest under More. */
 export function Toolbar({ run }: { run(action: string): void }) {
-  const toolbar = useSurface(aptuitive, 'toolbar');
+  const toolbar = useSurface(uitive, 'toolbar');
   const [more, setMore] = useState(false);
   return (
     <div role="toolbar" aria-label="Formatting">
@@ -96,7 +96,7 @@ export function Toolbar({ run }: { run(action: string): void }) {
           key={item.id}
           type="button"
           onClick={() => {
-            aptuitive.record(item.id, { via: 'region', surface: 'toolbar' });
+            uitive.record(item.id, { via: 'region', surface: 'toolbar' });
             run(item.id);
           }}
         >
@@ -117,7 +117,7 @@ export function Toolbar({ run }: { run(action: string): void }) {
               role="menuitem"
               onClick={() => {
                 setMore(false);
-                aptuitive.record(item.id, { via: 'overflow', surface: 'toolbar' });
+                uitive.record(item.id, { via: 'overflow', surface: 'toolbar' });
                 run(item.id);
               }}
             >
@@ -141,12 +141,12 @@ How an action was reached is what learning reads. An action someone keeps diggin
 
 ```tsx
 import { useState, type FormEvent } from 'react';
-import { useCommand } from '@plurid/aptuitive-react';
-import { aptuitive } from './client.js';
+import { useCommand } from '@plurid/uitive-react';
+import { uitive } from './client.js';
 
 /** Where people ask for a change in their own words; the banner says what happened. */
 export function Ask() {
-  const { ask, pending } = useCommand(aptuitive);
+  const { ask, pending } = useCommand(uitive);
   const [text, setText] = useState('');
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -182,32 +182,32 @@ The ask box shows nothing itself: the banner, in the next step, says what happen
 
 ## Show what changed
 
-Every change belongs to the person: they can see it, keep it or revert it. `<AptBanner>` says what just changed and why, with Revert, and Keep for changes the person didn't make themselves; `<AptYourInterface>` lists every change, with export, import and reset.
+Every change belongs to the person: they can see it, keep it or revert it. `<UitiveBanner>` says what just changed and why, with Revert, and Keep for changes the person didn't make themselves; `<UitiveYourInterface>` lists every change, with export, import and reset.
 
 <!-- example: docs/examples/quick-start/app.tsx -->
 
 ```tsx
-import { AptBanner, AptuitiveProvider, AptYourInterface } from '@plurid/aptuitive-react';
+import { UitiveBanner, UitiveProvider, UitiveYourInterface } from '@plurid/uitive-react';
 import { Ask } from './ask.js';
-import { aptuitive } from './client.js';
+import { uitive } from './client.js';
 import { Toolbar } from './toolbar.js';
 
 export function Editor({ run }: { run(action: string): void }) {
   return (
-    <AptuitiveProvider client={aptuitive}>
+    <UitiveProvider client={uitive}>
       <Toolbar run={run} />
       <Ask />
       {/* What just changed and why, with Revert and Keep; and every change, owned by the person. */}
-      <AptBanner client={aptuitive} />
-      <AptYourInterface client={aptuitive} />
-    </AptuitiveProvider>
+      <UitiveBanner client={uitive} />
+      <UitiveYourInterface client={uitive} />
+    </UitiveProvider>
   );
 }
 ```
 
 The banner floats at the bottom right of the page; add `docked` to place it in the page's flow. "Your interface" is a panel, for a settings page or a side panel. Both render in shadow roots, styled with CSS custom properties: see [React](react.md#the-meta-interface).
 
-`AptuitiveProvider` also keeps the person's state across tab switches and visits: usage is saved when the page is hidden, and a new session starts when they come back after a while.
+`UitiveProvider` also keeps the person's state across tab switches and visits: usage is saved when the page is hidden, and a new session starts when they come back after a while.
 
 ## Run it
 
@@ -237,16 +237,16 @@ Start the development server and ask for "hide Bold": Bold moves under More, and
 
 ## Watch it learn
 
-The provider plans from use once a session, as it starts, and what policy accepts waits for the next safe moment: the start of the session after. Nothing moves while someone works. Reach for Table under More a couple of times, and come back after a break: Aptuitive plans from that use. Come back once more, and Table is on the toolbar. "Your interface" lists the change with its reason and Revert; the banner announces it too when it applies while the page is open, as when the person returns to a tab, but not when they load the page afresh.
+The provider plans from use once a session, as it starts, and what policy accepts waits for the next safe moment: the start of the session after. Nothing moves while someone works. Reach for Table under More a couple of times, and come back after a break: Uitive plans from that use. Come back once more, and Table is on the toolbar. "Your interface" lists the change with its reason and Revert; the banner announces it too when it applies while the page is open, as when the person returns to a tab, but not when they load the page afresh.
 
 A session ends after 30 minutes without use (`idleMinutes`). [Testing](testing.md) shows the same in a test, session by session, and [How it works](how-it-works.md) explains the rules.
 
 ## Check it
 
-`aptuitive check` loads the contract and bindings and checks they hold: IDs, the JSON form, request schemas a model can answer in, labels and bindings. It prints what the contract covers, and exits with 1 when something fails, so it belongs in CI. It loads the modules without typechecking them, so run `tsc` too.
+`uitive check` loads the contract and bindings and checks they hold: IDs, the JSON form, request schemas a model can answer in, labels and bindings. It prints what the contract covers, and exits with 1 when something fails, so it belongs in CI. It loads the modules without typechecking them, so run `tsc` too.
 
 ```sh
-npx aptuitive check
+npx uitive check
 ```
 
 ## Next

@@ -9,31 +9,31 @@ import {
   rankAreas,
   selectSubset,
   toJson,
-} from '@plurid/aptuitive-core';
-import type { AnyContract } from '@plurid/aptuitive-core';
-import { limits, outputSchema, size } from '@plurid/aptuitive-planner/schema';
+} from '@plurid/uitive-core';
+import type { AnyContract } from '@plurid/uitive-core';
+import { limits, outputSchema, size } from '@plurid/uitive-planner/schema';
 import { createJiti } from 'jiti';
 import { folderOf } from './folder.js';
 import { CURATE_ACTIONS, CURATE_SOURCES } from './survey.js';
 
-/** Where the contract is, in a project that keeps Aptuitive's files in `aptuitive/`; commands use the project's own folder (`folderOf`). */
-export const CONTRACT = 'aptuitive/contract.ts';
-/** Where the bindings are, in a project that keeps Aptuitive's files in `aptuitive/`; commands use the project's own folder (`folderOf`). */
-export const BINDINGS = 'aptuitive/bindings.ts';
+/** Where the contract is, in a project that keeps Uitive's files in `uitive/`; commands use the project's own folder (`folderOf`). */
+export const CONTRACT = 'uitive/contract.ts';
+/** Where the bindings are, in a project that keeps Uitive's files in `uitive/`; commands use the project's own folder (`folderOf`). */
+export const BINDINGS = 'uitive/bindings.ts';
 
 /** What one request's schema may hold, so Claude's structured outputs accept it. */
 export const SCHEMA_LIMITS = { bytes: 60_000, optional: 0, unions: 1, enum: 400 } as const;
 
 /**
  * What `check` reads: the project, and where its contract and bindings are when they aren't in the
- * Aptuitive folder.
+ * Uitive folder.
  */
 export interface CheckOptions {
   /** The project's root. @default process.cwd() */
   cwd?: string;
-  /** The contract module. @default 'contract.ts' in the project's Aptuitive folder */
+  /** The contract module. @default 'contract.ts' in the project's Uitive folder */
   contract?: string;
-  /** The bindings module. @default 'bindings.ts' in the project's Aptuitive folder */
+  /** The bindings module. @default 'bindings.ts' in the project's Uitive folder */
   bindings?: string;
 }
 
@@ -98,13 +98,13 @@ function zodFrom(folder: string): { path: string; version: string } | undefined 
 /** The folder of the core package the project's imports resolve to, or nothing. */
 function coreFrom(cwd: string): string | undefined {
   try {
-    let folder = dirname(createRequire(join(cwd, 'index.js')).resolve('@plurid/aptuitive-core'));
+    let folder = dirname(createRequire(join(cwd, 'index.js')).resolve('@plurid/uitive-core'));
     while (folder !== dirname(folder)) {
       const manifest = join(folder, 'package.json');
       try {
         if (
           (JSON.parse(readFileSync(manifest, 'utf8')) as { name?: string }).name ===
-          '@plurid/aptuitive-core'
+          '@plurid/uitive-core'
         ) {
           return folder;
         }
@@ -173,7 +173,7 @@ export async function check(options: CheckOptions = {}): Promise<CheckResult> {
   const contractName = options.contract ?? `${folder}/contract.ts`;
   const contractPath = resolve(cwd, contractName);
   if (!(await exists(contractPath))) {
-    fail('contract', `${contractName} not found; run \`aptuitive init\` first`);
+    fail('contract', `${contractName} not found; run \`uitive init\` first`);
     return done();
   }
   let contract: AnyContract | undefined;
@@ -280,13 +280,13 @@ export async function check(options: CheckOptions = {}): Promise<CheckResult> {
     if (fields > 40) warnings.push(`${id} has ${fields} fields; keep sources to 40.`);
   }
 
-  // Aptuitive shares the application's zod; two copies type-check against each other badly.
+  // Uitive shares the application's zod; two copies type-check against each other badly.
   const core = coreFrom(cwd);
   const ours = zodFrom(cwd);
   const theirs = core ? zodFrom(core) : undefined;
   if (ours && theirs && ours.path !== theirs.path) {
     warnings.push(
-      `Two copies of zod: the application's ${ours.version} and Aptuitive's ${theirs.version}. Schemas from one don't type-check against the other; install one zod, 4.2 or later.`,
+      `Two copies of zod: the application's ${ours.version} and Uitive's ${theirs.version}. Schemas from one don't type-check against the other; install one zod, 4.2 or later.`,
     );
   }
 

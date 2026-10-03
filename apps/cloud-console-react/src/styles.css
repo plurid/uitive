@@ -673,53 +673,53 @@ button.link {
 /* Pages: sections of blocks, as the user's definition arranges them */
 
 .console {
-  --apt-gap: var(--space-4);
-  --apt-good: var(--positive);
-  --apt-bad: var(--danger);
-  --apt-dialog: var(--surface);
-  --apt-badge: var(--surface-2);
-  --apt-radius: var(--radius);
+  --uitive-gap: var(--space-4);
+  --uitive-good: var(--positive);
+  --uitive-bad: var(--danger);
+  --uitive-dialog: var(--surface);
+  --uitive-badge: var(--surface-2);
+  --uitive-radius: var(--radius);
 }
 
-/* Aptuitive's blocks, in the console's style */
+/* Uitive's blocks, in the console's style */
 
-.apt-block > .apt-table,
-.apt-block > .apt-list,
-.apt-block > .apt-stat,
-.apt-block > .apt-chart,
-.apt-block > .apt-stack,
-.apt-block > .apt-grid {
+.uitive-block > .uitive-table,
+.uitive-block > .uitive-list,
+.uitive-block > .uitive-stat,
+.uitive-block > .uitive-chart,
+.uitive-block > .uitive-stack,
+.uitive-block > .uitive-grid {
   padding: var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-l);
   background: var(--surface);
 }
 
-.apt-table {
+.uitive-table {
   font-size: var(--text-s);
 }
 
-.apt-table th {
+.uitive-table th {
   color: var(--muted);
   font-weight: 500;
 }
 
-.apt-table .mono {
+.uitive-table .mono {
   white-space: nowrap;
 }
 
-.apt-actions {
+.uitive-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.apt-actions[data-size='large'] {
+.uitive-actions[data-size='large'] {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
 }
 
-.apt-actions[data-size='large'] .apt-button {
+.uitive-actions[data-size='large'] .uitive-button {
   padding: var(--space-4);
   border-radius: var(--radius-l);
   background: var(--surface);
@@ -727,49 +727,49 @@ button.link {
   font-weight: 500;
 }
 
-.apt-actions .apt-button:hover {
+.uitive-actions .uitive-button:hover {
   border-color: var(--accent);
 }
 
-.apt-stat-value {
+.uitive-stat-value {
   font-size: var(--text-xl);
 }
 
-.apt-page {
+.uitive-page {
   display: grid;
   gap: var(--space-5);
 }
 
-.apt-section-title {
+.uitive-section-title {
   margin: 0 0 var(--space-3);
   font-size: var(--text-m);
   font-weight: 600;
 }
 
-.apt-blocks {
+.uitive-blocks {
   display: grid;
   gap: var(--space-4);
 }
 
-.apt-blocks[data-layout='grid'] {
+.uitive-blocks[data-layout='grid'] {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
-.apt-blocks[data-layout='columns'][data-count='2'] {
+.uitive-blocks[data-layout='columns'][data-count='2'] {
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
 }
 
-.apt-blocks[data-layout='columns'][data-count='3'] {
+.uitive-blocks[data-layout='columns'][data-count='3'] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.apt-blocks[data-layout='columns'][data-count='4'],
-.apt-blocks[data-layout='columns'][data-count='5'],
-.apt-blocks[data-layout='columns'][data-count='6'] {
+.uitive-blocks[data-layout='columns'][data-count='4'],
+.uitive-blocks[data-layout='columns'][data-count='5'],
+.uitive-blocks[data-layout='columns'][data-count='6'] {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.apt-block {
+.uitive-block {
   min-width: 0;
 }
 
@@ -1109,7 +1109,7 @@ button.link {
 }
 
 @media (max-width: 1100px) {
-  .apt-blocks[data-layout='columns'] {
+  .uitive-blocks[data-layout='columns'] {
     grid-template-columns: 1fr !important;
   }
 }

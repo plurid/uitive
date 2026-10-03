@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useRanked } from '@plurid/aptuitive-react';
+import { useRanked } from '@plurid/uitive-react';
 import { byId } from '../catalogue.ts';
-import { aptuitive } from '../client.ts';
+import { uitive } from '../client.ts';
 
 interface PaletteProps {
   service: string | undefined;
@@ -20,7 +20,7 @@ interface Entry {
 
 /** Search ranked by how this person works; anything else, they can simply ask for. */
 export function Palette({ service, onOpen, onRun, onAsk, onClose }: PaletteProps) {
-  const ranked = useRanked(aptuitive);
+  const ranked = useRanked(uitive);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const typed = query.trim().length > 0;

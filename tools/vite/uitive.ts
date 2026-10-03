@@ -1,12 +1,12 @@
-// Develop against Aptuitive's source: aliases the packages to `src`, so apps and tests see
-// every edit without a build and, given a handler module, serves it at `/api/aptuitive`.
+// Develop against Uitive's source: aliases the packages to `src`, so apps and tests see
+// every edit without a build and, given a handler module, serves it at `/api/uitive`.
 import { fileURLToPath } from 'node:url';
 import { loadEnv, type Plugin } from 'vite';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const packages = ['core', 'react', 'dom', 'planner', 'adapter', 'server', 'cli', 'mcp'];
 
-export interface AptuitiveDevOptions {
+export interface UitiveDevOptions {
   /**
    * A module, relative to the app's root, exporting `handler: (request: Request) =>
    * Promise<Response>`. It runs in the dev server, never in the browser.
@@ -14,9 +14,9 @@ export interface AptuitiveDevOptions {
   handler?: string;
 }
 
-export function aptuitive(options: AptuitiveDevOptions = {}): Plugin {
+export function uitive(options: UitiveDevOptions = {}): Plugin {
   return {
-    name: 'aptuitive',
+    name: 'uitive',
     enforce: 'pre',
     config(config, environment) {
       // Planner credentials stay server-side: copied into the dev server's environment only,
@@ -26,18 +26,18 @@ export function aptuitive(options: AptuitiveDevOptions = {}): Plugin {
         'OPENAI_',
         'GEMINI_',
         'GOOGLE_',
-        'APTUITIVE_',
+        'UITIVE_',
       ]);
       for (const [key, value] of Object.entries(variables)) process.env[key] ??= value;
       return {
         resolve: {
           alias: packages.flatMap((name) => [
             {
-              find: new RegExp(`^@plurid/aptuitive-${name}$`),
+              find: new RegExp(`^@plurid/uitive-${name}$`),
               replacement: `${root}packages/${name}/src/index.ts`,
             },
             {
-              find: new RegExp(`^@plurid/aptuitive-${name}/(.+)$`),
+              find: new RegExp(`^@plurid/uitive-${name}/(.+)$`),
               replacement: `${root}packages/${name}/src/$1.ts`,
             },
           ]),
@@ -47,7 +47,7 @@ export function aptuitive(options: AptuitiveDevOptions = {}): Plugin {
     configureServer(server) {
       const entry = options.handler;
       if (!entry) return;
-      server.middlewares.use('/api/aptuitive', (request, response, next) => {
+      server.middlewares.use('/api/uitive', (request, response, next) => {
         void (async () => {
           const module = (await server.ssrLoadModule(entry)) as {
             handler: (request: Request) => Promise<Response>;

@@ -1,6 +1,6 @@
-import type { Adaptation, AppliedOperation, Operation, Origin } from '@plurid/aptuitive-core';
+import type { Adaptation, AppliedOperation, Operation, Origin } from '@plurid/uitive-core';
 import type { ClientLike } from './client-like.js';
-import { AptElement } from './element.js';
+import { UitiveElement } from './element.js';
 import { escape, plural } from './html.js';
 
 const ORIGIN: Record<Origin, string> = {
@@ -10,15 +10,15 @@ const ORIGIN: Record<Origin, string> = {
 };
 
 /**
- * `<apt-your-interface>`: the user's own definition, in plain words: every change, who made
+ * `<uitive-your-interface>`: the user's own definition, in plain words: every change, who made
  * it and why, what is suggested and what is waiting, with the controls to keep, revert,
  * freeze, reset, export and import it, or forget it altogether.
  *
- * Emits `apt-export` (`detail.document`) when exporting, and `apt-import` (`detail.adaptation`,
+ * Emits `uitive-export` (`detail.document`) when exporting, and `uitive-import` (`detail.adaptation`,
  * or `detail.error`) after an import. Its heading is `::part(heading)`, for hosts that title it
  * themselves.
  */
-export class AptYourInterface extends AptElement {
+export class UitiveYourInterface extends UitiveElement {
   #editing = false;
   #message: string | undefined;
 
@@ -218,7 +218,7 @@ export class AptYourInterface extends AptElement {
     const client = this.client;
     if (!client) return undefined;
     const document_ = client.export();
-    this.emit('apt-export', { document: document_ });
+    this.emit('uitive-export', { document: document_ });
     const create = (globalThis as { URL?: { createObjectURL?(blob: Blob): string } }).URL
       ?.createObjectURL;
     if (typeof create === 'function') {
@@ -227,7 +227,7 @@ export class AptYourInterface extends AptElement {
       );
       const link = document.createElement('a');
       link.href = url;
-      link.download = `aptuitive-${client.contract.id}.json`;
+      link.download = `uitive-${client.contract.id}.json`;
       link.click();
       URL.revokeObjectURL(url);
     }
@@ -247,7 +247,7 @@ export class AptYourInterface extends AptElement {
               ? `; skipped ${adaptation.rejected.length} that no longer fit`
               : ''
           }.`;
-    this.emit('apt-import', { adaptation });
+    this.emit('uitive-import', { adaptation });
     this.update(true);
     return adaptation;
   }
@@ -313,7 +313,7 @@ export class AptYourInterface extends AptElement {
           parsed = JSON.parse(await file.text());
         } catch (error) {
           this.#message = "That file isn't valid JSON.";
-          this.emit('apt-import', { error });
+          this.emit('uitive-import', { error });
           this.update(true);
           return;
         }

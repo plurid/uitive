@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { defineElements } from '@plurid/aptuitive-dom';
-import { defineDebugElement } from '@plurid/aptuitive-dom/debug';
+import { defineElements } from '@plurid/uitive-dom';
+import { defineDebugElement } from '@plurid/uitive-dom/debug';
 import { App } from './app.tsx';
 import '../../shared/demo.css';
 import './styles.css';

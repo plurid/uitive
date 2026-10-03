@@ -12,7 +12,7 @@ export type TimeUnit = 'iso' | 's' | 'ms';
 export const FIELD_PATTERN = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 /** Where field metadata lives on a zod schema, and in its JSON Schema. */
-export const FIELD_META = 'x-aptuitive';
+export const FIELD_META = 'x-uitive';
 
 /** What a field helper records about a field, beyond its zod type. */
 export interface FieldMeta {

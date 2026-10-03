@@ -1,9 +1,9 @@
 {
-  "name": "aptuitive",
-  "description": "Integrate Aptuitive, the adaptive-interface SDK, with a coding agent: detection, sources generated from OpenAPI, curation, checks and the integration playbook.",
+  "name": "uitive",
+  "description": "Integrate Uitive, the adaptive-interface SDK, with a coding agent: detection, sources generated from OpenAPI, curation, checks and the integration playbook.",
   "author": { "name": "plurid", "url": "https://github.com/plurid" },
-  "homepage": "https://github.com/plurid/aptuitive",
-  "repository": "https://github.com/plurid/aptuitive",
+  "homepage": "https://github.com/plurid/uitive",
+  "repository": "https://github.com/plurid/uitive",
   "license": "MIT",
-  "keywords": ["aptuitive", "adaptive-ui", "mcp", "openapi"]
+  "keywords": ["uitive", "adaptive-ui", "mcp", "openapi"]
 }

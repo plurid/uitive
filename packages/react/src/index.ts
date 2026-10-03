@@ -1,7 +1,7 @@
 export { GenericBlock } from './generic.js';
 export {
   useAction,
-  useAptuitiveRouter,
+  useUitiveRouter,
   useCommand,
   useConfirmation,
   useLatest,
@@ -19,7 +19,7 @@ export {
   useUserPages,
   useView,
 } from './hooks.js';
-export { formatValue } from '@plurid/aptuitive-core';
+export { formatValue } from '@plurid/uitive-core';
 export { createKit, defaultKit, kitStyles } from './kit.js';
 export type {
   ChartPoint,
@@ -32,15 +32,15 @@ export type {
   ValueRenderers,
 } from './kit.js';
 export {
-  AptBanner,
-  AptDebug,
-  AptuitiveContext,
-  AptuitiveProvider,
-  AptYourInterface,
+  UitiveBanner,
+  UitiveDebug,
+  UitiveContext,
+  UitiveProvider,
+  UitiveYourInterface,
   Confirmations,
-  useAptuitive,
+  useUitive,
 } from './provider.js';
-export type { AptuitiveContextValue, ElementProps, ProviderProps } from './provider.js';
+export type { UitiveContextValue, ElementProps, ProviderProps } from './provider.js';
 export type { Request } from './hooks.js';
 export { Page } from './page.js';
 export type { BlockComponents, BlockProps, PageProps, RegionComponents } from './page.js';

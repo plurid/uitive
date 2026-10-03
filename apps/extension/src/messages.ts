@@ -1,4 +1,4 @@
-import { OPS } from '@plurid/aptuitive-core';
+import { OPS } from '@plurid/uitive-core';
 import { z } from 'zod';
 
 const fetchRequest = z.object({

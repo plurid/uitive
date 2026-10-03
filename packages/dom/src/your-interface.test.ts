@@ -5,14 +5,14 @@ import { defineElements } from './index.js';
 
 defineElements();
 
-function mount(aptuitive = client()) {
-  const panel = document.createElement('apt-your-interface');
+function mount(uitive = client()) {
+  const panel = document.createElement('uitive-your-interface');
   document.body.append(panel);
-  panel.client = aptuitive;
+  panel.client = uitive;
   const root = panel.shadowRoot?.querySelector('[part="content"]') as HTMLElement;
   return {
     panel,
-    aptuitive,
+    uitive,
     root,
     text: () => root.textContent ?? '',
     button: (label: string) =>
@@ -29,60 +29,60 @@ beforeEach(() => {
 
 afterEach(() => document.body.replaceChildren());
 
-describe('<apt-your-interface>', () => {
+describe('<uitive-your-interface>', () => {
   it('says plainly when nothing has changed', () => {
     expect(mount().text()).toContain('Nothing has changed yet.');
   });
 
   it('lists the user’s own change, and reverts it', () => {
-    const { aptuitive, text, button } = mount();
-    aptuitive.hide('toolbar', 'bold');
+    const { uitive, text, button } = mount();
+    uitive.hide('toolbar', 'bold');
     expect(text()).toContain('You');
     expect(text()).toContain('Bold hidden from Toolbar');
     button('Revert')?.click();
-    expect(aptuitive.getSnapshot().definition.operations[0]?.status).toBe('reverted');
+    expect(uitive.getSnapshot().definition.operations[0]?.status).toBe('reverted');
     expect(text()).toContain('Nothing has changed yet.');
   });
 
   it('edits the stated goal', () => {
-    const { aptuitive, root, button } = mount();
-    const setGoal = vi.spyOn(aptuitive, 'setGoal');
+    const { uitive, root, button } = mount();
+    const setGoal = vi.spyOn(uitive, 'setGoal');
     button('Add a goal')?.click();
     const input = root.querySelector<HTMLInputElement>('input[name="goal"]') as HTMLInputElement;
     input.value = '  I write weekly reports  ';
     input.form?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     expect(setGoal).toHaveBeenCalledWith('I write weekly reports');
-    expect(aptuitive.getSnapshot().definition.goal).toBe('I write weekly reports');
+    expect(uitive.getSnapshot().definition.goal).toBe('I write weekly reports');
     expect(root.textContent).toContain('I write weekly reports');
   });
 
   it('keeps what the user is typing when the client changes underneath', () => {
-    const { aptuitive, root, button } = mount();
+    const { uitive, root, button } = mount();
     button('Add a goal')?.click();
     const input = root.querySelector<HTMLInputElement>('input[name="goal"]') as HTMLInputElement;
     input.focus();
     input.value = 'half-typed';
-    aptuitive.hide('toolbar', 'bold');
+    uitive.hide('toolbar', 'bold');
     const again = root.querySelector<HTMLInputElement>('input[name="goal"]');
     expect(again?.value).toBe('half-typed');
   });
 
   it('switches between the user’s interface and the standard one', () => {
-    const { aptuitive, button } = mount();
+    const { uitive, button } = mount();
     button('Standard')?.click();
-    expect(aptuitive.getSnapshot().view).toBe('standard');
+    expect(uitive.getSnapshot().view).toBe('standard');
     button('Yours')?.click();
-    expect(aptuitive.getSnapshot().view).toBe('yours');
+    expect(uitive.getSnapshot().view).toBe('yours');
   });
 
   it('exports the definition, and imports it elsewhere', () => {
-    const { panel, aptuitive, button } = mount();
-    aptuitive.hide('toolbar', 'bold');
+    const { panel, uitive, button } = mount();
+    uitive.hide('toolbar', 'bold');
     const exported = vi.fn();
-    panel.addEventListener('apt-export', exported);
+    panel.addEventListener('uitive-export', exported);
     button('Export')?.click();
     const document_ = exported.mock.calls[0]?.[0].detail.document;
-    expect(document_.format).toBe('aptuitive.definition');
+    expect(document_.format).toBe('uitive.definition');
     expect(URL.createObjectURL).toHaveBeenCalledOnce();
 
     const other = mount();
@@ -95,19 +95,19 @@ describe('<apt-your-interface>', () => {
   });
 
   it('forgets everything only on a second press', () => {
-    const { aptuitive, button, text } = mount();
-    aptuitive.hide('toolbar', 'bold');
+    const { uitive, button, text } = mount();
+    uitive.hide('toolbar', 'bold');
     button('Forget my data')?.click();
-    expect(aptuitive.getSnapshot().definition.operations).toHaveLength(1);
+    expect(uitive.getSnapshot().definition.operations).toHaveLength(1);
     button('Press again to forget everything')?.click();
-    expect(aptuitive.getSnapshot().definition.operations).toHaveLength(0);
+    expect(uitive.getSnapshot().definition.operations).toHaveLength(0);
     expect(text()).toContain('Everything is forgotten');
   });
 
   it('accepts and dismisses suggestions', async () => {
-    const aptuitive = client(suggesting('Weekly summary', 'Meeting notes'));
-    const { root, text } = mount(aptuitive);
-    await aptuitive.plan();
+    const uitive = client(suggesting('Weekly summary', 'Meeting notes'));
+    const { root, text } = mount(uitive);
+    await uitive.plan();
     expect(text()).toContain('Suggestions');
     expect(text()).toContain('Suggested by model');
     const [first, second] = [...root.querySelectorAll<HTMLButtonElement>('button')].filter(
@@ -119,15 +119,15 @@ describe('<apt-your-interface>', () => {
       (entry) => entry.textContent?.trim() === 'Dismiss',
     );
     dismiss?.click();
-    const value = aptuitive.surface('snippets');
+    const value = uitive.surface('snippets');
     expect(value.items.map((entry) => entry.title)).toHaveLength(1);
     expect(value.suggestions).toHaveLength(0);
     expect(text()).not.toContain('Suggestions');
   });
 
   it('renders untrusted text as text', () => {
-    const { aptuitive, root, text } = mount();
-    aptuitive.addItem('snippets', { title: '<img src=x onerror="alert(1)">' });
+    const { uitive, root, text } = mount();
+    uitive.addItem('snippets', { title: '<img src=x onerror="alert(1)">' });
     expect(root.querySelector('img')).toBeNull();
     expect(text()).toContain('<img src=x onerror="alert(1)">');
   });

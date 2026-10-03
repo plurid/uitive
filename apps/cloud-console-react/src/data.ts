@@ -1,4 +1,4 @@
-import { random } from '@plurid/aptuitive-core';
+import { random } from '@plurid/uitive-core';
 import { byId, services } from './catalogue.ts';
 
 // Deterministic, invented data: every service always shows the same resources, metrics and logs,

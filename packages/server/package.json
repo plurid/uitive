@@ -1,17 +1,17 @@
 {
-  "name": "@plurid/aptuitive-server",
+  "name": "@plurid/uitive-server",
   "version": "0.1.0",
-  "description": "Fetch-standard handler and Claude planner for Aptuitive",
+  "description": "Fetch-standard handler and Claude planner for Uitive",
   "keywords": [
-    "aptuitive",
+    "uitive",
     "adaptive-ui",
     "llm"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/plurid/aptuitive/tree/master/packages/server#readme",
+  "homepage": "https://github.com/plurid/uitive/tree/master/packages/server#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plurid/aptuitive.git",
+    "url": "git+https://github.com/plurid/uitive.git",
     "directory": "packages/server"
   },
   "type": "module",
@@ -38,8 +38,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
-    "@plurid/aptuitive-core": "workspace:^",
-    "@plurid/aptuitive-planner": "workspace:^"
+    "@plurid/uitive-core": "workspace:^",
+    "@plurid/uitive-planner": "workspace:^"
   },
   "peerDependencies": {
     "zod": "^4.2.0"

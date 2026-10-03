@@ -62,7 +62,7 @@ export function mountMore(options: {
 }): More {
   const document = options.container.ownerDocument;
   const host = document.createElement('div');
-  host.setAttribute('data-aptuitive-more', '');
+  host.setAttribute('data-uitive-more', '');
   const shadow = host.attachShadow({ mode: 'closed' });
   const sheet = document.createElement('style');
   sheet.textContent = style;

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { editor } from './__fixtures__/editor.js';
 import { summaryOf, type Use } from './__fixtures__/usage.js';
-import { createAptuitive } from './client.js';
+import { createUitive } from './client.js';
 import { command, heuristicPlanner } from './heuristic.js';
 import type { PlanRequest, ProposedOperation } from './planner.js';
 
 function request(uses: Use[], kind: PlanRequest['kind'] = 'plan', text?: string): PlanRequest {
-  const client = createAptuitive({ contract: editor });
+  const client = createUitive({ contract: editor });
   return {
     ...client.request(kind, text),
     summary: summaryOf(uses),

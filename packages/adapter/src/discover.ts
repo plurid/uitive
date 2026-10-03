@@ -1,5 +1,5 @@
-import { humanise, terms } from '@plurid/aptuitive-core';
-import type { AnyContract } from '@plurid/aptuitive-core';
+import { humanise, terms } from '@plurid/uitive-core';
+import type { AnyContract } from '@plurid/uitive-core';
 import type { RoleNode } from './aria.js';
 import { textOf, walk } from './aria.js';
 

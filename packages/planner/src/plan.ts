@@ -10,7 +10,7 @@ import {
   type PlanRequest,
   type PlanResult,
   type Subset,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import { formText, parseAnswer, schemaProblems } from './answer.js';
 import { PlannerError, type Model, type ModelMessage, type ModelUsage } from './model.js';
 import { repairText, toOperations, type PlannerOutput } from './output.js';

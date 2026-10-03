@@ -104,7 +104,7 @@ export interface Location {
   params: Readonly<Record<string, string>>;
   /** The row the page is about, on routes that show one: what `$current` names. */
   entity?: { source: string; key: string };
-  /** One of the user's own pages, at `/apt/<slug>`. */
+  /** One of the user's own pages, at `/uitive/<slug>`. */
   userPage?: string;
 }
 
@@ -176,7 +176,7 @@ export interface Snapshot {
 /** The portable form of a definition, for export and import. */
 export interface DefinitionDocument {
   /** Says what the document is. */
-  format: 'aptuitive.definition';
+  format: 'uitive.definition';
   /** The document format's version. */
   version: 1;
   /** The contract it was exported from; an import checks its changes against the current one. */
@@ -203,10 +203,10 @@ export interface RecordOptions {
 }
 
 /**
- * What `createAptuitive` takes: the contract, and where state lives, who plans and the
+ * What `createUitive` takes: the contract, and where state lives, who plans and the
  * application's code behind the contract.
  */
-export interface AptuitiveOptions<C extends AnyContract> {
+export interface UitiveOptions<C extends AnyContract> {
   /** The contract `defineApp` returned. */
   contract: C;
   /** Where state persists. @default memoryStore() */
@@ -238,7 +238,7 @@ export interface AptuitiveOptions<C extends AnyContract> {
   /** Called when storage or a planner fails; the interface keeps working. */
   onError?: (error: unknown) => void;
   /**
-   * For pages Aptuitive adapts from outside, such as in a browser extension: what the page
+   * For pages Uitive adapts from outside, such as in a browser extension: what the page
    * offers now, sent with each request. Structure only, never the page's text.
    */
   environment?: () => Environment | undefined;
@@ -249,7 +249,7 @@ export interface AptuitiveOptions<C extends AnyContract> {
  * allows at safe moments, runs actions through the bindings, and keeps the person's definition in
  * its store.
  */
-export interface Aptuitive<C extends AnyContract = AnyContract> {
+export interface Uitive<C extends AnyContract = AnyContract> {
   /** The contract the client adapts. */
   readonly contract: C;
   /** Query results, shared and cached, when the bindings can fetch. */
@@ -297,7 +297,7 @@ export interface Aptuitive<C extends AnyContract = AnyContract> {
   attachRouter(navigate: (href: string) => void): () => void;
   /** The pages the user made, in the order they made them. */
   userPages(): readonly UserPage[];
-  /** Makes a page of the user's own; it lives at `/apt/<slug>`. */
+  /** Makes a page of the user's own; it lives at `/uitive/<slug>`. */
   createPage(
     title: string,
     value?: AnyPage | SectionsPage,
@@ -325,7 +325,7 @@ export interface Aptuitive<C extends AnyContract = AnyContract> {
    */
   plan(): Promise<Adaptation>;
   /**
-   * Plans from use once a session; the provider and `startAptuitive` call it whenever one starts.
+   * Plans from use once a session; the provider and `startUitive` call it whenever one starts.
    * Does nothing when this session was planned already, when the interface is frozen, or when the
    * client was created with `learn: false`.
    */
@@ -435,7 +435,7 @@ const NOT_ALLOWED = new Set([
  * Creates a client for one person's interface. State loads synchronously from the store, so a
  * stored interface shows on the first paint.
  */
-export function createAptuitive<C extends AnyContract>(options: AptuitiveOptions<C>): Aptuitive<C> {
+export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): Uitive<C> {
   const { contract } = options;
   const store = options.store ?? memoryStore();
   const planner = options.planner ?? heuristicPlanner();
@@ -966,7 +966,7 @@ export function createAptuitive<C extends AnyContract>(options: AptuitiveOptions
   const sameWords = (a: string, b: string) =>
     a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
 
-  const client: Aptuitive<C> = {
+  const client: Uitive<C> = {
     contract,
     data,
     getSnapshot: () => snapshot,
@@ -1139,7 +1139,7 @@ export function createAptuitive<C extends AnyContract>(options: AptuitiveOptions
     },
 
     setLocation(path) {
-      const own = /^\/apt\/([^/?#]+)/.exec(path);
+      const own = /^\/uitive\/([^/?#]+)/.exec(path);
       const matched = matchRoute(contract, path);
       const route = matched ? contract.routes[matched.route] : undefined;
       const key = route?.entity === undefined ? undefined : matched?.params[route.key ?? 'id'];
@@ -1553,7 +1553,7 @@ export function createAptuitive<C extends AnyContract>(options: AptuitiveOptions
     },
 
     export: () => ({
-      format: 'aptuitive.definition',
+      format: 'uitive.definition',
       version: 1,
       contract: { id: contract.id, hash: contract.hash },
       definition: state.definition,
@@ -1670,7 +1670,7 @@ function isDocument(value: unknown): value is DefinitionDocument {
   if (value === null || typeof value !== 'object') return false;
   const candidate = value as Partial<DefinitionDocument>;
   return (
-    candidate.format === 'aptuitive.definition' &&
+    candidate.format === 'uitive.definition' &&
     candidate.version === 1 &&
     typeof candidate.contract?.id === 'string' &&
     Array.isArray(candidate.definition?.operations)

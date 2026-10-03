@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromJson, toJson } from '@plurid/aptuitive-core';
+import { fromJson, toJson } from '@plurid/uitive-core';
 import { cloud } from '../../apps/cloud-console-react/src/contract.ts';
 
 describe('the cloud console as data', () => {

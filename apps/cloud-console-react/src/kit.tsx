@@ -1,9 +1,9 @@
-import { humanise } from '@plurid/aptuitive-core';
-import { createKit, defaultKit } from '@plurid/aptuitive-react';
+import { humanise } from '@plurid/uitive-core';
+import { createKit, defaultKit } from '@plurid/uitive-react';
 
 const STATES = new Set(['running', 'stopped', 'updating', 'critical', 'warning', 'error', 'info']);
 
-/** Aptuitive's generic blocks, drawn in the console's own style. */
+/** Uitive's generic blocks, drawn in the console's own style. */
 export const consoleKit = createKit({
   Value: (props) => {
     const { field, value } = props;

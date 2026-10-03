@@ -15,7 +15,7 @@ describe('workspace', () => {
 
   it.each(packages)('packages/%s follows the package conventions', (name) => {
     const manifest = JSON.parse(read(`packages/${name}/package.json`));
-    expect(manifest.name).toBe(`@plurid/aptuitive-${name}`);
+    expect(manifest.name).toBe(`@plurid/uitive-${name}`);
     expect(manifest.type).toBe('module');
     // `default` lets CommonJS servers require the package, which Node 22 and later can.
     expect(manifest.exports['.']).toEqual({
@@ -26,13 +26,13 @@ describe('workspace', () => {
     expect(manifest.files).toEqual(['dist']);
     expect(manifest.license).toBe('MIT');
     expect(manifest.homepage).toBe(
-      `https://github.com/plurid/aptuitive/tree/master/packages/${name}#readme`,
+      `https://github.com/plurid/uitive/tree/master/packages/${name}#readme`,
     );
     // npm packs only the package's own folder, so the licence and the README's links must work
     // from there: relative links would break on the package's page.
     expect(read(`packages/${name}/LICENSE`)).toBe(read('LICENSE'));
     expect(read(`packages/${name}/README.md`)).toContain(
-      `https://github.com/plurid/aptuitive/blob/master/docs/api/${name}.md`,
+      `https://github.com/plurid/uitive/blob/master/docs/api/${name}.md`,
     );
     expect(read(`packages/${name}/README.md`)).not.toMatch(/\]\((?!https:|#)/);
   });

@@ -19,13 +19,13 @@ async function cli(...argv: string[]) {
   return { code, out, err };
 }
 
-describe('aptuitive', () => {
+describe('uitive', () => {
   it('prints help and its version', async () => {
-    expect((await cli('--help')).out).toMatch(/^Usage: aptuitive <command>/);
+    expect((await cli('--help')).out).toMatch(/^Usage: uitive <command>/);
     expect(await cli('--version')).toMatchObject({ code: 0, out: '9.9.9\n' });
     expect(await cli('make', 'coffee')).toMatchObject({
       code: 1,
-      err: 'aptuitive: unknown command "make coffee"\n\n',
+      err: 'uitive: unknown command "make coffee"\n\n',
     });
   });
 
@@ -48,7 +48,7 @@ describe('aptuitive', () => {
   });
 
   it('generates sources into the project, honouring its curation', async () => {
-    const cwd = await mkdtemp(join(tmpdir(), 'aptuitive-'));
+    const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
     await writeFile(
       join(cwd, 'curation.json'),
       JSON.stringify({ default: 'exclude', sources: { orders: { include: true } } }),
@@ -67,7 +67,7 @@ describe('aptuitive', () => {
     expect(result.code).toBe(0);
     const report = JSON.parse(result.out) as { file: string; sources: string[]; written: boolean };
     expect(report).toMatchObject({
-      file: 'aptuitive/api.generated.ts',
+      file: 'uitive/api.generated.ts',
       written: true,
       sources: ['orders'],
     });
@@ -77,7 +77,7 @@ describe('aptuitive', () => {
   });
 
   it('asks for a curation before generating from a large API', async () => {
-    const cwd = await mkdtemp(join(tmpdir(), 'aptuitive-'));
+    const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
     const paths = Object.fromEntries(
       Array.from({ length: 41 }, (_, index) => [
         `/things${index}`,

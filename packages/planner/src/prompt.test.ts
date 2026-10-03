@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createAptuitive } from '@plurid/aptuitive-core';
+import { createUitive } from '@plurid/uitive-core';
 import { payments } from '../../core/src/__fixtures__/payments.js';
 import { ops } from './__fixtures__/ops.js';
 import { contractText, requestText, RULES } from './prompt.js';
@@ -42,7 +42,7 @@ describe('contractText with sources', () => {
 
 describe('requestText', () => {
   it('carries the words, the pages in view and the usage, nothing else', () => {
-    const client = createAptuitive({ contract: ops, now: () => 0 });
+    const client = createUitive({ contract: ops, now: () => 0 });
     client.setContext('machine', 'machine-3');
     client.record('start');
     const text = requestText(client.request('command', 'make this page compact'));

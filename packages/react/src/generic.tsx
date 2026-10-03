@@ -12,7 +12,7 @@ import {
   timeOf,
   type ActionsProps,
   type AnyPage,
-  type Aptuitive,
+  type Uitive,
   type BoardProps,
   type ChartProps,
   type DataEntry,
@@ -34,13 +34,13 @@ import {
   type RowAction,
   type TableProps,
   type TimelineProps,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import { useQueries } from './hooks.js';
 import type { ChartSeries, Kit, ListItem, TableColumn, TableRow } from './kit.js';
-import { useAptuitive } from './provider.js';
+import { useUitive } from './provider.js';
 
 interface Scope {
-  client: Aptuitive;
+  client: Uitive;
   kit: Kit;
   page: AnyPage;
   element: Element;
@@ -58,7 +58,7 @@ export function GenericBlock({
   page: AnyPage;
   current?: string;
 }) {
-  const { client, kit } = useAptuitive();
+  const { client, kit } = useUitive();
   const scope: Scope = { client, kit, page, element, current };
   switch (element.block as GenericName) {
     case 'table':
@@ -91,7 +91,7 @@ export function GenericBlock({
 const queryOf = (page: AnyPage, name: string): Query | undefined =>
   page.data.find((entry) => entry.name === name)?.query;
 
-const fieldOf = (client: Aptuitive, name: string): Field | undefined =>
+const fieldOf = (client: Uitive, name: string): Field | undefined =>
   client.contract.path(name)?.field;
 
 const numeric = (field: Field | undefined) => field?.type === 'number' || field?.type === 'money';
@@ -103,7 +103,7 @@ function withFields(query: Query, extra: readonly string[]): Query {
 }
 
 /** Fields row actions need: their `when` filters and `$row` params. */
-function actionFields(client: Aptuitive, source: string, actions: readonly RowAction[]): string[] {
+function actionFields(client: Uitive, source: string, actions: readonly RowAction[]): string[] {
   const names: string[] = [];
   for (const entry of actions) {
     for (const filter of client.contract.actions[entry.action]?.when ?? [])
@@ -137,7 +137,7 @@ function cell(scope: Scope, source: string, name: string, row: Row): ReactNode {
 }
 
 /** How a summary's numbers display: counts as numbers, money already in major units. */
-function measureField(client: Aptuitive, query: Query): Field {
+function measureField(client: Uitive, query: Query): Field {
   const counted: Field = {
     name: 'count',
     type: 'number',
@@ -156,7 +156,7 @@ function measureField(client: Aptuitive, query: Query): Field {
 }
 
 /** Each row's own page, when the contract has a route for its source. */
-function opener(client: Aptuitive, source: ResolvedSource, link: 'none' | 'entity') {
+function opener(client: Uitive, source: ResolvedSource, link: 'none' | 'entity') {
   if (link !== 'entity') return undefined;
   const route = entityRoute(client.contract, source.id);
   if (route === undefined) return undefined;
@@ -164,7 +164,7 @@ function opener(client: Aptuitive, source: ResolvedSource, link: 'none' | 'entit
   return (key: string) => client.navigate({ route, params: { [param]: key } });
 }
 
-function matchesWhen(client: Aptuitive, action: string, row: Row): boolean {
+function matchesWhen(client: Uitive, action: string, row: Row): boolean {
   for (const filter of client.contract.actions[action]?.when ?? []) {
     const path = client.contract.path(filter.field);
     if (!path || !(filter.field in row)) continue;
@@ -226,7 +226,7 @@ interface Outcome {
 
 let runs = 0;
 
-const labelOf = (client: Aptuitive, action: string) =>
+const labelOf = (client: Uitive, action: string) =>
   client.contract.actions[action]?.label ?? action;
 
 /** What a run says when it is over: its own message, else that it was done or not. */
@@ -341,7 +341,7 @@ function RunForm({
               required
             />
           ))}
-          <div className="apt-dialog-actions">
+          <div className="uitive-dialog-actions">
             <kit.Button onClick={onCancel}>Cancel</kit.Button>
             <kit.Button type="submit" tone={spec?.effect === 'destructive' ? 'danger' : 'primary'}>
               {spec?.label ?? 'Run'}
@@ -551,7 +551,7 @@ function DetailBlock({ scope, props }: { scope: Scope; props: DetailProps }) {
   return (
     <kit.Grid columns={props.columns}>
       {props.fields.map((name) => (
-        <div key={name} className="apt-detail-field">
+        <div key={name} className="uitive-detail-field">
           <kit.Text tone="muted">{fieldOf(client, name)?.label ?? name}</kit.Text>
           <kit.Text tone="strong">{cell(scope, query.source, name, row)}</kit.Text>
         </div>
@@ -561,7 +561,7 @@ function DetailBlock({ scope, props }: { scope: Scope; props: DetailProps }) {
 }
 
 /** The same query over the period before its time filter, for comparisons. */
-function previousOf(client: Aptuitive, query: Query): Query | undefined {
+function previousOf(client: Uitive, query: Query): Query | undefined {
   const period = periodOf(query, client.contract);
   if (!period) return undefined;
   const now = Date.now();
@@ -818,7 +818,7 @@ function ActionsBlock({ scope, props }: { scope: Scope; props: ActionsProps }) {
     ...props.items,
   ];
   return (
-    <div className="apt-actions" data-size={props.size}>
+    <div className="uitive-actions" data-size={props.size}>
       {buttons.map((entry, index) => {
         const spec = client.contract.actions[entry.action];
         return (
@@ -850,7 +850,7 @@ function NoteBlock({ scope, props }: { scope: Scope; props: NoteProps }) {
 function LinksBlock({ scope, props }: { scope: Scope; props: LinksProps }) {
   const { client, kit } = scope;
   return (
-    <nav className="apt-links">
+    <nav className="uitive-links">
       {props.items.map((item) => {
         const route = client.contract.routes[item.route];
         const params = route?.entity === undefined ? {} : { [route.key ?? 'id']: item.entity };

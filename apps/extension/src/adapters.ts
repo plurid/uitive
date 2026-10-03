@@ -1,6 +1,6 @@
-import { checkAdapter } from '@plurid/aptuitive-adapter';
-import type { Adapter } from '@plurid/aptuitive-adapter';
-import type { AnyContract } from '@plurid/aptuitive-core';
+import { checkAdapter } from '@plurid/uitive-adapter';
+import type { Adapter } from '@plurid/uitive-adapter';
+import type { AnyContract } from '@plurid/uitive-core';
 import stripe from '../adapters/stripe-dashboard.json';
 
 declare const __FIXTURE__: { site: string; api: string } | null;
@@ -21,7 +21,7 @@ export function adapters(): Loaded[] {
   loaded = shipped.flatMap((raw) => {
     const checked = checkAdapter(raw);
     if ('problems' in checked) {
-      console.warn('[aptuitive] adapter left out:', checked.problems);
+      console.warn('[uitive] adapter left out:', checked.problems);
       return [];
     }
     const fixture = typeof __FIXTURE__ === 'undefined' ? null : __FIXTURE__;

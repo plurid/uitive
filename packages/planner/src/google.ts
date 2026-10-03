@@ -1,4 +1,4 @@
-import type { FetchLike } from '@plurid/aptuitive-core';
+import type { FetchLike } from '@plurid/uitive-core';
 import { withoutConst } from './answer.js';
 import { failure, readEvents } from './events.js';
 import {

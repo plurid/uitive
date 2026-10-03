@@ -61,11 +61,11 @@ export type {
 export { createData } from './cache.js';
 export type { DataClient, DataEntry, DataOptions, DataScope } from './cache.js';
 
-export { createAptuitive } from './client.js';
+export { createUitive } from './client.js';
 export type {
   Adaptation,
-  Aptuitive,
-  AptuitiveOptions,
+  Uitive,
+  UitiveOptions,
   Autonomy,
   DefinitionDocument,
   Location,

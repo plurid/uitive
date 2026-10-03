@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitest/config';
-import { aptuitive } from '../vite/aptuitive.ts';
+import { uitive } from '../vite/uitive.ts';
 
 // Tests run against package source, like the apps do in development.
 export default defineConfig({
-  plugins: [aptuitive()],
+  plugins: [uitive()],
   test: {
     environment: 'node',
     root: new URL('../../', import.meta.url).pathname,

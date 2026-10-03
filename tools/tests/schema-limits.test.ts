@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { limits, outputSchema, contractText } from '@plurid/aptuitive-server';
+import { limits, outputSchema, contractText } from '@plurid/uitive-server';
 import { cloud } from '../../apps/cloud-console-react/src/contract.ts';
 
 // Structured outputs allow at most 24 optional and 16 union-typed parameters per request.

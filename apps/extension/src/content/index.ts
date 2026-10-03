@@ -1,5 +1,5 @@
 import '../zod.ts';
-import type { Strategy } from '@plurid/aptuitive-adapter';
+import type { Strategy } from '@plurid/uitive-adapter';
 import { adapterFor } from '../adapters.ts';
 import { run } from './run.ts';
 import { chromeStore } from './store.ts';

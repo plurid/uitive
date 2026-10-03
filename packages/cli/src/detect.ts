@@ -15,7 +15,7 @@ export interface Detected {
  * descriptions, coding agents and workspace.
  */
 export interface Detection {
-  /** The package's folder, where Aptuitive is set up. */
+  /** The package's folder, where Uitive is set up. */
   root: string;
   /** The package's name. */
   name: string;
@@ -35,13 +35,13 @@ export interface Detection {
   openapi: string[];
   /** Coding agents the project is set up for, so `init` can configure them. */
   agents: ('claude-code' | 'cursor' | 'vscode' | 'codex')[];
-  /** Whether Aptuitive is already set up. */
-  aptuitive: boolean;
+  /** Whether Uitive is already set up. */
+  uitive: boolean;
   /** The pinned package manager, such as `yarn@1.22.22`, from `packageManager`. */
   packageManagerPin: string | null;
   /** The repository's root, where coding agents run: the nearest folder with `.git`. */
   repository: string;
-  /** For a workspace root: its packages with an interface, where Aptuitive belongs. */
+  /** For a workspace root: its packages with an interface, where Uitive belongs. */
   workspaces: { path: string; name: string; ui: Detected | null; framework: Detected | null }[];
   /** Whether the application has its own server, where the model planner can run. */
   server: boolean;
@@ -172,7 +172,7 @@ async function workspaceFolders(
   return folders;
 }
 
-/** What a project uses: everything `init` needs to set Aptuitive up to fit. */
+/** What a project uses: everything `init` needs to set Uitive up to fit. */
 export async function detect(cwd: string = process.cwd()): Promise<Detection> {
   const root = resolve(cwd);
   const manifest = await manifestOf(root);
@@ -270,8 +270,8 @@ export async function detect(cwd: string = process.cwd()): Promise<Detection> {
     designSystems,
     openapi: await findSpecs(root),
     agents,
-    aptuitive:
-      dependencies['@plurid/aptuitive-core'] !== undefined ||
+    uitive:
+      dependencies['@plurid/uitive-core'] !== undefined ||
       (await exists(join(root, await folderOf(root), 'contract.ts'))),
     workspaces,
     server:
@@ -295,12 +295,12 @@ export function detectText(found: Detection): string {
     `  server           ${found.server ? 'yes: the model planner can run in it' : 'none found: plan with the deterministic planner, or add the handler to a backend'}`,
     `  API description  ${found.openapi.join(', ') || 'none found'}`,
     `  coding agents    ${found.agents.join(', ') || 'none found'}${found.repository === found.root ? '' : ` (at ${found.repository})`}`,
-    `  aptuitive        ${found.aptuitive ? 'set up' : 'not set up'}`,
+    `  uitive        ${found.uitive ? 'set up' : 'not set up'}`,
   ];
   if (found.workspaces.length > 0) {
     lines.push(
       '',
-      'This is a workspace root. Set Aptuitive up in the package with the interface:',
+      'This is a workspace root. Set Uitive up in the package with the interface:',
       ...found.workspaces.map(
         (entry) =>
           `  ${entry.path} (${entry.name}): ${named(entry.ui)}${entry.framework ? `, ${named(entry.framework)}` : ''}`,

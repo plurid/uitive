@@ -1,4 +1,4 @@
-import { discoverApp, factsOf, parseAriaSnapshot } from '@plurid/aptuitive-adapter';
+import { discoverApp, factsOf, parseAriaSnapshot } from '@plurid/uitive-adapter';
 import { shop } from '../shop/contract.js';
 
 // #region discover

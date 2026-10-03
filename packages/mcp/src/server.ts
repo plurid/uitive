@@ -1,5 +1,5 @@
 import { isAbsolute, join, relative, resolve } from 'node:path';
-import { MAX_SOURCES, selectSubset } from '@plurid/aptuitive-core';
+import { MAX_SOURCES, selectSubset } from '@plurid/uitive-core';
 import {
   check,
   checkText,
@@ -15,9 +15,9 @@ import {
   loadModule,
   surveySpec,
   surveyText,
-} from '@plurid/aptuitive-cli';
-import { contractText } from '@plurid/aptuitive-planner/prompt';
-import { limits, outputSchema, size } from '@plurid/aptuitive-planner/schema';
+} from '@plurid/uitive-cli';
+import { contractText } from '@plurid/uitive-planner/prompt';
+import { limits, outputSchema, size } from '@plurid/uitive-planner/schema';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
@@ -44,13 +44,13 @@ const format = z
   .describe('text is compact, for reading; json is complete, for processing.');
 
 /**
- * Aptuitive over the Model Context Protocol: the agent kit's steps as tools, so any coding agent
- * can integrate Aptuitive the way the CLI does. Every path stays inside the project root, and API
+ * Uitive over the Model Context Protocol: the agent kit's steps as tools, so any coding agent
+ * can integrate Uitive the way the CLI does. Every path stays inside the project root, and API
  * descriptions come from files unless the network is allowed, since a URL can carry data out.
  */
 export function createServer(options: ServerOptions = {}): McpServer {
   const root = resolve(options.root ?? process.cwd());
-  const server = new McpServer({ name: 'aptuitive', version: options.version ?? '0.0.0' });
+  const server = new McpServer({ name: 'uitive', version: options.version ?? '0.0.0' });
 
   const inside = (path: string | undefined, what: string) => {
     const full = resolve(root, path ?? '.');
@@ -84,7 +84,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
     .describe('The application package, relative to the project root.');
 
   server.registerTool(
-    'aptuitive_detect',
+    'uitive_detect',
     {
       title: 'Detect the project',
       description:
@@ -100,11 +100,11 @@ export function createServer(options: ServerOptions = {}): McpServer {
   );
 
   server.registerTool(
-    'aptuitive_init',
+    'uitive_init',
     {
-      title: 'Set Aptuitive up',
+      title: 'Set Uitive up',
       description:
-        "Writes the project's Aptuitive folder (contract with every page as a region, bindings, client, server handler, kit), generates sources from a small API description or writes a curation file for a large one, and configures this project for coding agents. Never overwrites a file. Installs packages only when install is true; otherwise it returns the command.",
+        "Writes the project's Uitive folder (contract with every page as a region, bindings, client, server handler, kit), generates sources from a small API description or writes a curation file for a large one, and configures this project for coding agents. Never overwrites a file. Installs packages only when install is true; otherwise it returns the command.",
       inputSchema: {
         cwd,
         openapi: z.string().optional().describe('The API description; else the first one found.'),
@@ -113,7 +113,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
           .string()
           .optional()
           .describe(
-            "Where Aptuitive's files go, relative to the project, such as app/aptuitive; recorded in package.json. Default: src/aptuitive when there is a src folder, else aptuitive.",
+            "Where Uitive's files go, relative to the project, such as app/uitive; recorded in package.json. Default: src/uitive when there is a src folder, else uitive.",
           ),
         packages: z
           .string()
@@ -135,7 +135,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
         const dir = input.dir
           ? relative(
               folder,
-              inside(join(input.cwd ?? '.', input.dir), "The folder for Aptuitive's files"),
+              inside(join(input.cwd ?? '.', input.dir), "The folder for Uitive's files"),
             )
           : undefined;
         const result = await init({
@@ -151,18 +151,18 @@ export function createServer(options: ServerOptions = {}): McpServer {
   );
 
   server.registerTool(
-    'aptuitive_openapi_survey',
+    'uitive_openapi_survey',
     {
       title: 'Survey an API description',
       description:
-        "One line per source an OpenAPI description yields: fields, filters, paging and actions, plus what was skipped and why. Marks what the curation file in the project's Aptuitive folder keeps. Use it to decide what to curate.",
+        "One line per source an OpenAPI description yields: fields, filters, paging and actions, plus what was skipped and why. Marks what the curation file in the project's Uitive folder keeps. Use it to decide what to curate.",
       inputSchema: {
         cwd,
         spec: z.string().describe('The OpenAPI 2.0, 3.0 or 3.1 file, JSON or YAML.'),
         curation: z
           .string()
           .optional()
-          .describe("Default: curation.json in the project's Aptuitive folder."),
+          .describe("Default: curation.json in the project's Uitive folder."),
         format,
       },
       annotations: { readOnlyHint: true },
@@ -183,11 +183,11 @@ export function createServer(options: ServerOptions = {}): McpServer {
   );
 
   server.registerTool(
-    'aptuitive_generate_sources',
+    'uitive_generate_sources',
     {
       title: 'Generate sources and actions',
       description:
-        "Writes api.generated.ts in the project's Aptuitive folder, from the description and the folder's curation.json: sources, actions with effect levels, and REST endpoints for restFetch and restPerform. Rerun after every curation change; never edit the generated file.",
+        "Writes api.generated.ts in the project's Uitive folder, from the description and the folder's curation.json: sources, actions with effect levels, and REST endpoints for restFetch and restPerform. Rerun after every curation change; never edit the generated file.",
       inputSchema: {
         cwd,
         spec: z.string().describe('The OpenAPI 2.0, 3.0 or 3.1 file, JSON or YAML.'),
@@ -195,7 +195,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
         out: z
           .string()
           .optional()
-          .describe("Default: api.generated.ts in the project's Aptuitive folder."),
+          .describe("Default: api.generated.ts in the project's Uitive folder."),
         dry_run: z.boolean().default(false),
       },
       annotations: { destructiveHint: false, idempotentHint: true },
@@ -215,11 +215,11 @@ export function createServer(options: ServerOptions = {}): McpServer {
   );
 
   server.registerTool(
-    'aptuitive_generate_blocks',
+    'uitive_generate_blocks',
     {
       title: 'Generate native blocks',
       description:
-        "Writes blocks.generated.ts in the project's Aptuitive folder: block specs whose props schemas come from components' TypeScript props. Literal unions become enums, optional props become required with the component's default described, and functions, content and objects are left for an adapter to supply. With check, reports drift without writing.",
+        "Writes blocks.generated.ts in the project's Uitive folder: block specs whose props schemas come from components' TypeScript props. Literal unions become enums, optional props become required with the component's default described, and functions, content and objects are left for an adapter to supply. With check, reports drift without writing.",
       inputSchema: {
         cwd,
         components: z
@@ -248,11 +248,11 @@ export function createServer(options: ServerOptions = {}): McpServer {
   );
 
   server.registerTool(
-    'aptuitive_discover',
+    'uitive_discover',
     {
       title: 'Discover the running application',
       description:
-        "Crawls the running application with Playwright, following same-origin links without pressing anything, and writes discovery.json in the project's Aptuitive folder: proposed routes (row keys collapsed to parameters), a region per route, lists from navigation and toolbars, buttons matched to the contract's actions, and buttons that open menus. Needs playwright, or playwright-core with chrome: true.",
+        "Crawls the running application with Playwright, following same-origin links without pressing anything, and writes discovery.json in the project's Uitive folder: proposed routes (row keys collapsed to parameters), a region per route, lists from navigation and toolbars, buttons matched to the contract's actions, and buttons that open menus. Needs playwright, or playwright-core with chrome: true.",
       inputSchema: {
         cwd,
         url: z.string().describe('The development server, such as http://localhost:5173/.'),
@@ -268,7 +268,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
           .string()
           .optional()
           .describe(
-            'Where to write the discovery, relative to the project. Default: discovery.json in the Aptuitive folder.',
+            'Where to write the discovery, relative to the project. Default: discovery.json in the Uitive folder.',
           ),
         storage_state: z
           .string()
@@ -306,7 +306,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
   );
 
   server.registerTool(
-    'aptuitive_check',
+    'uitive_check',
     {
       title: 'Check the integration',
       description:
@@ -339,7 +339,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
   );
 
   server.registerTool(
-    'aptuitive_preview_plan',
+    'uitive_preview_plan',
     {
       title: 'Preview what a request plans over',
       description:

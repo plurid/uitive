@@ -1,4 +1,4 @@
-import type { PlannerResponse, PlannerStream } from '@plurid/aptuitive-core';
+import type { PlannerResponse, PlannerStream } from '@plurid/uitive-core';
 import { PlannerError } from './model.js';
 
 interface DecoderLike {

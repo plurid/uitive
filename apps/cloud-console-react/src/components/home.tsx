@@ -1,6 +1,6 @@
-import { Page, useSurface } from '@plurid/aptuitive-react';
+import { Page, useSurface } from '@plurid/uitive-react';
 import { categories, services } from '../catalogue.ts';
-import { aptuitive } from '../client.ts';
+import { uitive } from '../client.ts';
 import { useConsole } from '../console.tsx';
 import { components } from './blocks.tsx';
 
@@ -28,7 +28,7 @@ function Everything() {
 
 export function Home() {
   const { view } = useConsole();
-  const yours = useSurface(aptuitive, 'home');
+  const yours = useSurface(uitive, 'home');
   return (
     <div className="page">
       <div className="page-head">

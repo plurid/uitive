@@ -1,10 +1,10 @@
-import { createAptuitive, memoryStore, simulate, type Persona } from '@plurid/aptuitive-core';
+import { createUitive, memoryStore, simulate, type Persona } from '@plurid/uitive-core';
 import { describe, expect, it } from 'vitest';
 import { contract } from '../quick-start/contract.js';
 
 // #region setup
 // A clock that only moves when told to, and state that starts empty every time.
-const fresh = () => createAptuitive({ contract, now: () => 0, store: memoryStore() });
+const fresh = () => createUitive({ contract, now: () => 0, store: memoryStore() });
 const visible = (client: ReturnType<typeof fresh>) =>
   client.surface('toolbar').visible.map((item) => item.id);
 // #endregion

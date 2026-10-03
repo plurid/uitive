@@ -2,8 +2,8 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { defineApp, fromJson, toJson } from '@plurid/aptuitive-core';
-import type { ActionSpec, AnySourceSpec } from '@plurid/aptuitive-core';
+import { defineApp, fromJson, toJson } from '@plurid/uitive-core';
+import type { ActionSpec, AnySourceSpec } from '@plurid/uitive-core';
 import { describe, expect, it } from 'vitest';
 import { curate, parseCuration, picksOf } from './curation.js';
 import type { Curation, CurationInput } from './curation.js';
@@ -306,7 +306,7 @@ describe('emit', () => {
   const core = fileURLToPath(new URL('../../core/src/index.ts', import.meta.url));
 
   async function compile(api: ApiInventory) {
-    const directory = await mkdtemp(join(tmpdir(), 'aptuitive-'));
+    const directory = await mkdtemp(join(tmpdir(), 'uitive-'));
     const file = join(directory, 'api.generated.ts');
     await writeFile(file, emit(api, { from: 'fixture', core, zod }));
     return (await import(pathToFileURL(file).href)) as {

@@ -1,6 +1,6 @@
 'use client';
 import { useId, useState, type ComponentType, type ReactNode } from 'react';
-import { formatValue, humanise, type Field } from '@plurid/aptuitive-core';
+import { formatValue, humanise, type Field } from '@plurid/uitive-core';
 
 /** One column of a kit `Table`: the key its cells are under, its header, and how it aligns. */
 export interface TableColumn {
@@ -74,7 +74,7 @@ export interface ValueProps {
 
 /**
  * The presentational parts every generic block is drawn with. Map them to a design system once,
- * one at a time if need be, and Aptuitive's blocks look native.
+ * one at a time if need be, and Uitive's blocks look native.
  */
 export interface Kit {
   /** Parts one above another, such as a form's fields and its button. */
@@ -172,8 +172,8 @@ function Tabs({
   const [active, setActive] = useState(0);
   const current = tabs[Math.min(active, tabs.length - 1)];
   return (
-    <div className="apt-tabs">
-      {label && <h2 className="apt-section-title">{label}</h2>}
+    <div className="uitive-tabs">
+      {label && <h2 className="uitive-section-title">{label}</h2>}
       <div role="tablist" aria-label={label || undefined}>
         {tabs.map((tab, index) => (
           <button
@@ -214,7 +214,7 @@ function Chart({
     const total = first?.points.reduce((sum, point) => sum + Math.max(0, point.y), 0) ?? 0;
     let angle = -Math.PI / 2;
     return (
-      <figure className="apt-chart" data-kind="pie">
+      <figure className="uitive-chart" data-kind="pie">
         <svg viewBox="-60 -60 120 120" role="img" aria-label={label}>
           {first?.points.map((point, index) => {
             const sweep = total === 0 ? 0 : (Math.max(0, point.y) / total) * Math.PI * 2;
@@ -242,7 +242,7 @@ function Chart({
   const step = width / xs.length;
   const y = (value: number) => height - (value / top) * (height - 8);
   return (
-    <figure className="apt-chart" data-kind={kind}>
+    <figure className="uitive-chart" data-kind={kind}>
       <svg
         viewBox={`0 0 ${width} ${height}`}
         role="img"
@@ -311,7 +311,7 @@ function Status({
       partial: 'Showing what loaded so far',
     }[state];
   return (
-    <div className="apt-status" data-state={state} role={state === 'error' ? 'alert' : 'status'}>
+    <div className="uitive-status" data-state={state} role={state === 'error' ? 'alert' : 'status'}>
       {text}
     </div>
   );
@@ -334,7 +334,7 @@ function FieldInput({
   const text = label ?? field.label;
   if (field.type === 'bool') {
     return (
-      <label className="apt-field" data-type="bool">
+      <label className="uitive-field" data-type="bool">
         <input
           type="checkbox"
           checked={value === 'true'}
@@ -345,7 +345,7 @@ function FieldInput({
     );
   }
   return (
-    <div className="apt-field" data-type={field.type}>
+    <div className="uitive-field" data-type={field.type}>
       <label htmlFor={id}>{text}</label>
       {field.type === 'enum' ? (
         <select
@@ -377,42 +377,42 @@ function FieldInput({
   );
 }
 
-/** Semantic HTML with `apt-*` classes, themed through `--apt-*` custom properties. */
+/** Semantic HTML with `uitive-*` classes, themed through `--uitive-*` custom properties. */
 export const defaultKit: Kit = {
-  Stack: ({ children }) => <div className="apt-stack">{children}</div>,
-  Title: ({ children }) => <h1 className="apt-page-title">{children}</h1>,
+  Stack: ({ children }) => <div className="uitive-stack">{children}</div>,
+  Title: ({ children }) => <h1 className="uitive-page-title">{children}</h1>,
   Section: ({ title, layout, depth, count, children }) => (
-    <section className="apt-section" data-layout={layout} data-depth={depth}>
-      {title && <h2 className="apt-section-title">{title}</h2>}
-      <div className="apt-blocks" data-layout={layout} data-count={count}>
+    <section className="uitive-section" data-layout={layout} data-depth={depth}>
+      {title && <h2 className="uitive-section-title">{title}</h2>}
+      <div className="uitive-blocks" data-layout={layout} data-count={count}>
         {children}
       </div>
     </section>
   ),
   Grid: ({ children, columns }) => (
-    <div className="apt-grid" data-columns={columns}>
+    <div className="uitive-grid" data-columns={columns}>
       {children}
     </div>
   ),
   Card: ({ title, children }) => (
-    <section className="apt-card">
-      {title && <h3 className="apt-card-title">{title}</h3>}
+    <section className="uitive-card">
+      {title && <h3 className="uitive-card-title">{title}</h3>}
       {children}
     </section>
   ),
   Tabs,
   Text: ({ children, tone }) => (
-    <p className="apt-text" data-tone={tone}>
+    <p className="uitive-text" data-tone={tone}>
       {children}
     </p>
   ),
   Notice: ({ tone, children }) => (
-    <p className="apt-notice" data-tone={tone} role="status">
+    <p className="uitive-notice" data-tone={tone} role="status">
       {children}
     </p>
   ),
   Table: ({ columns, rows, density, caption }) => (
-    <table className="apt-table" data-density={density ?? 'comfortable'}>
+    <table className="uitive-table" data-density={density ?? 'comfortable'}>
       {caption && <caption>{caption}</caption>}
       <thead>
         <tr>
@@ -423,7 +423,7 @@ export const defaultKit: Kit = {
           ))}
           {rows.some((row) => row.actions) && (
             <th scope="col">
-              <span className="apt-hidden">Actions</span>
+              <span className="uitive-hidden">Actions</span>
             </th>
           )}
         </tr>
@@ -434,7 +434,7 @@ export const defaultKit: Kit = {
             {columns.map((column, index) => (
               <td key={column.key} data-align={column.align}>
                 {index === 0 && row.onOpen ? (
-                  <button type="button" className="apt-open" onClick={row.onOpen}>
+                  <button type="button" className="uitive-open" onClick={row.onOpen}>
                     {row.cells[column.key]}
                   </button>
                 ) : (
@@ -442,27 +442,27 @@ export const defaultKit: Kit = {
                 )}
               </td>
             ))}
-            {row.actions !== undefined && <td className="apt-row-actions">{row.actions}</td>}
+            {row.actions !== undefined && <td className="uitive-row-actions">{row.actions}</td>}
           </tr>
         ))}
       </tbody>
     </table>
   ),
   List: ({ items }) => (
-    <ul className="apt-list">
+    <ul className="uitive-list">
       {items.map((item) => (
         <li key={item.key}>
-          <div className="apt-list-main">
+          <div className="uitive-list-main">
             {item.onOpen ? (
-              <button type="button" className="apt-open" onClick={item.onOpen}>
+              <button type="button" className="uitive-open" onClick={item.onOpen}>
                 {item.title}
               </button>
             ) : (
               <strong>{item.title}</strong>
             )}
-            {item.subtitle && <span className="apt-list-subtitle">{item.subtitle}</span>}
+            {item.subtitle && <span className="uitive-list-subtitle">{item.subtitle}</span>}
           </div>
-          {item.meta && <span className="apt-list-meta">{item.meta}</span>}
+          {item.meta && <span className="uitive-list-meta">{item.meta}</span>}
           {item.badge}
           {item.actions}
         </li>
@@ -470,15 +470,15 @@ export const defaultKit: Kit = {
     </ul>
   ),
   Stat: ({ label, value, change, partial }) => (
-    <div className="apt-stat">
-      <span className="apt-stat-label">{label}</span>
-      <strong className="apt-stat-value">
-        {partial && <span className="apt-stat-least">at least </span>}
+    <div className="uitive-stat">
+      <span className="uitive-stat-label">{label}</span>
+      <strong className="uitive-stat-value">
+        {partial && <span className="uitive-stat-least">at least </span>}
         {value}
       </strong>
       {change !== undefined && Number.isFinite(change) && (
         <span
-          className="apt-stat-change"
+          className="uitive-stat-change"
           data-direction={change > 0 ? 'up' : change < 0 ? 'down' : 'flat'}
         >
           {`${change > 0 ? '+' : ''}${Math.round(change * 100)}% on the period before`}
@@ -488,19 +488,19 @@ export const defaultKit: Kit = {
   ),
   Chart,
   Badge: ({ children, tone }) => (
-    <span className="apt-badge" data-tone={tone ?? 'neutral'}>
+    <span className="uitive-badge" data-tone={tone ?? 'neutral'}>
       {children}
     </span>
   ),
   Value: ({ field, value, currency }) => (
-    <span className="apt-value" data-type={field.type}>
+    <span className="uitive-value" data-type={field.type}>
       {formatValue(field, value, currency)}
     </span>
   ),
   Button: ({ children, onClick, tone, size, disabled, type }) => (
     <button
       type={type ?? 'button'}
-      className="apt-button"
+      className="uitive-button"
       data-tone={tone ?? 'plain'}
       data-size={size ?? 'regular'}
       disabled={disabled}
@@ -511,7 +511,7 @@ export const defaultKit: Kit = {
   ),
   Link: ({ href, children, onClick }) => (
     <a
-      className="apt-link"
+      className="uitive-link"
       href={href}
       onClick={(event) => {
         if (!onClick) return;
@@ -527,11 +527,11 @@ export const defaultKit: Kit = {
     const id = useId();
     return (
       <div
-        className="apt-dialog-backdrop"
+        className="uitive-dialog-backdrop"
         onKeyDown={(event) => event.key === 'Escape' && onClose()}
       >
-        <div className="apt-dialog" role="dialog" aria-modal="true" aria-labelledby={id}>
-          <h2 id={id} className="apt-dialog-title">
+        <div className="uitive-dialog" role="dialog" aria-modal="true" aria-labelledby={id}>
+          <h2 id={id} className="uitive-dialog-title">
             {title}
           </h2>
           {children}
@@ -566,55 +566,55 @@ export function createKit(overrides: Partial<Kit> & { values?: ValueRenderers } 
 
 /** The default kit's styles, as a string: for a `<style>`, or a shadow root. */
 export const kitStyles = `
-:where(.apt-blocks) { display: grid; gap: var(--apt-gap, 16px); }
-:where(.apt-blocks[data-layout='grid']) { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-:where(.apt-blocks[data-layout='columns']) { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-:where(.apt-blocks[data-layout='columns'][data-count='2']) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
-:where(.apt-blocks[data-layout='columns'][data-count='3']) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 720px) { :where(.apt-blocks[data-layout='columns']) { grid-template-columns: 1fr; } }
-:where(.apt-block) { min-width: 0; }
-:where(.apt-blocks[data-layout='grid'] > .apt-block[data-block='metric'] .apt-stat) { border: 1px solid var(--apt-border, rgba(127, 127, 127, 0.3)); border-radius: var(--apt-radius, 8px); padding: 12px 16px; background: var(--apt-surface, transparent); }
-.apt-page, .apt-stack { display: grid; gap: var(--apt-gap, 16px); }
-.apt-grid { display: grid; gap: var(--apt-gap, 16px); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-.apt-grid[data-columns='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.apt-grid[data-columns='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.apt-card { border: 1px solid var(--apt-border, rgba(127, 127, 127, 0.3)); border-radius: var(--apt-radius, 8px); padding: var(--apt-gap, 16px); background: var(--apt-surface, transparent); }
-.apt-card-title, .apt-section-title, .apt-dialog-title { margin: 0 0 8px; font-size: 1em; font-weight: 600; }
-.apt-text { margin: 0; } .apt-text[data-tone='muted'] { opacity: 0.7; } .apt-text[data-tone='strong'] { font-weight: 600; }
-.apt-notice { margin: 0; font-size: 0.9em; } .apt-notice[data-tone='error'] { color: var(--apt-bad, #c92a2a); }
-.apt-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.apt-table th, .apt-table td { padding: 8px; text-align: start; border-bottom: 1px solid var(--apt-border, rgba(127, 127, 127, 0.25)); }
-.apt-table[data-density='compact'] th, .apt-table[data-density='compact'] td { padding: 4px 8px; }
-.apt-table [data-align='end'] { text-align: end; }
-.apt-row-actions { white-space: nowrap; text-align: end; }
-.apt-open { all: unset; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-.apt-open:focus-visible, .apt-button:focus-visible, .apt-link:focus-visible { outline: 2px solid var(--apt-accent, Highlight); outline-offset: 2px; }
-.apt-list { list-style: none; margin: 0; padding: 0; display: grid; }
-.apt-list li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--apt-border, rgba(127, 127, 127, 0.25)); }
-.apt-list-main { display: grid; flex: 1; min-width: 0; } .apt-list-subtitle, .apt-list-meta { opacity: 0.7; font-size: 0.9em; }
-.apt-stat { display: grid; gap: 4px; } .apt-stat-label { opacity: 0.7; } .apt-stat-value { font-size: 1.8em; font-variant-numeric: tabular-nums; }
-.apt-stat-least { font-size: 0.5em; font-weight: 400; opacity: 0.7; }
-.apt-stat-change[data-direction='up'] { color: var(--apt-good, green); } .apt-stat-change[data-direction='down'] { color: var(--apt-bad, firebrick); }
-.apt-chart { margin: 0; } .apt-chart svg { width: 100%; height: 140px; }
-.apt-chart rect, .apt-chart polygon, .apt-chart path { fill: var(--apt-accent, currentColor); opacity: 0.8; }
-.apt-chart [data-series='1'] { opacity: 0.55; } .apt-chart [data-series='2'] { opacity: 0.35; }
-.apt-chart polyline { stroke: var(--apt-accent, currentColor); stroke-width: 2; fill: none; }
-.apt-chart figcaption { display: flex; justify-content: space-between; opacity: 0.7; font-size: 0.85em; }
-.apt-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.85em; background: var(--apt-badge, rgba(127, 127, 127, 0.18)); }
-.apt-button { font: inherit; padding: 6px 12px; border-radius: var(--apt-radius, 8px); border: 1px solid var(--apt-border, rgba(127, 127, 127, 0.4)); background: transparent; color: inherit; cursor: pointer; }
-.apt-button[data-tone='primary'] { background: var(--apt-accent, #3b5bdb); border-color: transparent; color: var(--apt-on-accent, white); }
-.apt-button[data-tone='danger'] { background: var(--apt-bad, #c92a2a); border-color: transparent; color: white; }
-.apt-button[data-size='small'] { padding: 2px 8px; font-size: 0.9em; } .apt-button[data-size='large'] { padding: 12px 20px; font-size: 1.1em; }
-.apt-button:disabled { opacity: 0.5; cursor: not-allowed; }
-.apt-field { display: grid; gap: 4px; } .apt-field[data-type='bool'] { display: flex; align-items: center; gap: 8px; }
-.apt-field input, .apt-field select { font: inherit; padding: 6px 8px; border-radius: var(--apt-radius, 8px); border: 1px solid var(--apt-border, rgba(127, 127, 127, 0.4)); background: transparent; color: inherit; }
-.apt-dialog-backdrop { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.4); z-index: 1000; }
-.apt-dialog { display: grid; gap: 12px; min-width: min(420px, 92vw); max-width: 92vw; padding: 20px; border-radius: var(--apt-radius, 8px); background: var(--apt-dialog, Canvas); color: var(--apt-text, CanvasText); }
-.apt-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
-.apt-params { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; } .apt-params dt { opacity: 0.7; } .apt-params dd { margin: 0; }
-.apt-status { padding: 12px; opacity: 0.75; } .apt-status[data-state='error'] { color: var(--apt-bad, firebrick); opacity: 1; }
-.apt-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.apt-tabs [role='tablist'] { display: flex; gap: 4px; margin-bottom: 8px; }
-.apt-tabs [role='tab'] { font: inherit; padding: 4px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: inherit; cursor: pointer; }
-.apt-tabs [role='tab'][aria-selected='true'] { border-bottom-color: var(--apt-accent, currentColor); }
+:where(.uitive-blocks) { display: grid; gap: var(--uitive-gap, 16px); }
+:where(.uitive-blocks[data-layout='grid']) { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+:where(.uitive-blocks[data-layout='columns']) { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+:where(.uitive-blocks[data-layout='columns'][data-count='2']) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+:where(.uitive-blocks[data-layout='columns'][data-count='3']) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 720px) { :where(.uitive-blocks[data-layout='columns']) { grid-template-columns: 1fr; } }
+:where(.uitive-block) { min-width: 0; }
+:where(.uitive-blocks[data-layout='grid'] > .uitive-block[data-block='metric'] .uitive-stat) { border: 1px solid var(--uitive-border, rgba(127, 127, 127, 0.3)); border-radius: var(--uitive-radius, 8px); padding: 12px 16px; background: var(--uitive-surface, transparent); }
+.uitive-page, .uitive-stack { display: grid; gap: var(--uitive-gap, 16px); }
+.uitive-grid { display: grid; gap: var(--uitive-gap, 16px); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.uitive-grid[data-columns='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.uitive-grid[data-columns='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.uitive-card { border: 1px solid var(--uitive-border, rgba(127, 127, 127, 0.3)); border-radius: var(--uitive-radius, 8px); padding: var(--uitive-gap, 16px); background: var(--uitive-surface, transparent); }
+.uitive-card-title, .uitive-section-title, .uitive-dialog-title { margin: 0 0 8px; font-size: 1em; font-weight: 600; }
+.uitive-text { margin: 0; } .uitive-text[data-tone='muted'] { opacity: 0.7; } .uitive-text[data-tone='strong'] { font-weight: 600; }
+.uitive-notice { margin: 0; font-size: 0.9em; } .uitive-notice[data-tone='error'] { color: var(--uitive-bad, #c92a2a); }
+.uitive-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.uitive-table th, .uitive-table td { padding: 8px; text-align: start; border-bottom: 1px solid var(--uitive-border, rgba(127, 127, 127, 0.25)); }
+.uitive-table[data-density='compact'] th, .uitive-table[data-density='compact'] td { padding: 4px 8px; }
+.uitive-table [data-align='end'] { text-align: end; }
+.uitive-row-actions { white-space: nowrap; text-align: end; }
+.uitive-open { all: unset; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.uitive-open:focus-visible, .uitive-button:focus-visible, .uitive-link:focus-visible { outline: 2px solid var(--uitive-accent, Highlight); outline-offset: 2px; }
+.uitive-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.uitive-list li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--uitive-border, rgba(127, 127, 127, 0.25)); }
+.uitive-list-main { display: grid; flex: 1; min-width: 0; } .uitive-list-subtitle, .uitive-list-meta { opacity: 0.7; font-size: 0.9em; }
+.uitive-stat { display: grid; gap: 4px; } .uitive-stat-label { opacity: 0.7; } .uitive-stat-value { font-size: 1.8em; font-variant-numeric: tabular-nums; }
+.uitive-stat-least { font-size: 0.5em; font-weight: 400; opacity: 0.7; }
+.uitive-stat-change[data-direction='up'] { color: var(--uitive-good, green); } .uitive-stat-change[data-direction='down'] { color: var(--uitive-bad, firebrick); }
+.uitive-chart { margin: 0; } .uitive-chart svg { width: 100%; height: 140px; }
+.uitive-chart rect, .uitive-chart polygon, .uitive-chart path { fill: var(--uitive-accent, currentColor); opacity: 0.8; }
+.uitive-chart [data-series='1'] { opacity: 0.55; } .uitive-chart [data-series='2'] { opacity: 0.35; }
+.uitive-chart polyline { stroke: var(--uitive-accent, currentColor); stroke-width: 2; fill: none; }
+.uitive-chart figcaption { display: flex; justify-content: space-between; opacity: 0.7; font-size: 0.85em; }
+.uitive-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.85em; background: var(--uitive-badge, rgba(127, 127, 127, 0.18)); }
+.uitive-button { font: inherit; padding: 6px 12px; border-radius: var(--uitive-radius, 8px); border: 1px solid var(--uitive-border, rgba(127, 127, 127, 0.4)); background: transparent; color: inherit; cursor: pointer; }
+.uitive-button[data-tone='primary'] { background: var(--uitive-accent, #3b5bdb); border-color: transparent; color: var(--uitive-on-accent, white); }
+.uitive-button[data-tone='danger'] { background: var(--uitive-bad, #c92a2a); border-color: transparent; color: white; }
+.uitive-button[data-size='small'] { padding: 2px 8px; font-size: 0.9em; } .uitive-button[data-size='large'] { padding: 12px 20px; font-size: 1.1em; }
+.uitive-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.uitive-field { display: grid; gap: 4px; } .uitive-field[data-type='bool'] { display: flex; align-items: center; gap: 8px; }
+.uitive-field input, .uitive-field select { font: inherit; padding: 6px 8px; border-radius: var(--uitive-radius, 8px); border: 1px solid var(--uitive-border, rgba(127, 127, 127, 0.4)); background: transparent; color: inherit; }
+.uitive-dialog-backdrop { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.4); z-index: 1000; }
+.uitive-dialog { display: grid; gap: 12px; min-width: min(420px, 92vw); max-width: 92vw; padding: 20px; border-radius: var(--uitive-radius, 8px); background: var(--uitive-dialog, Canvas); color: var(--uitive-text, CanvasText); }
+.uitive-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.uitive-params { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; } .uitive-params dt { opacity: 0.7; } .uitive-params dd { margin: 0; }
+.uitive-status { padding: 12px; opacity: 0.75; } .uitive-status[data-state='error'] { color: var(--uitive-bad, firebrick); opacity: 1; }
+.uitive-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.uitive-tabs [role='tablist'] { display: flex; gap: 4px; margin-bottom: 8px; }
+.uitive-tabs [role='tab'] { font: inherit; padding: 4px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: inherit; cursor: pointer; }
+.uitive-tabs [role='tab'][aria-selected='true'] { border-bottom-color: var(--uitive-accent, currentColor); }
 `;

@@ -1,12 +1,12 @@
-import { Page, useStandard, useSurface } from '@plurid/aptuitive-react';
+import { Page, useStandard, useSurface } from '@plurid/uitive-react';
 import { byId } from '../catalogue.ts';
-import { aptuitive } from '../client.ts';
+import { uitive } from '../client.ts';
 import { useConsole } from '../console.tsx';
 
 export function ServicePage({ id, onHome }: { id: string; onHome(): void }) {
   const { view } = useConsole();
-  const yours = useSurface(aptuitive, 'servicePage', id);
-  const standard = useStandard(aptuitive, 'servicePage', id);
+  const yours = useSurface(uitive, 'servicePage', id);
+  const standard = useStandard(uitive, 'servicePage', id);
   const service = byId.get(id);
   if (!service) return null;
   return (

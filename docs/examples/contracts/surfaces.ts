@@ -1,4 +1,4 @@
-import { action, choice, collection, defineApp, list } from '@plurid/aptuitive-core';
+import { action, choice, collection, defineApp, list } from '@plurid/uitive-core';
 import { z } from 'zod';
 
 // #region choice

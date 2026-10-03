@@ -1,5 +1,5 @@
-import { fromJson } from '@plurid/aptuitive-core';
-import type { AnyContract, ContractJson } from '@plurid/aptuitive-core';
+import { fromJson } from '@plurid/uitive-core';
+import type { AnyContract, ContractJson } from '@plurid/uitive-core';
 import { adapterSchema } from './format.js';
 import type { Adapter } from './format.js';
 

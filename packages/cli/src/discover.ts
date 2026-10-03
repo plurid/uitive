@@ -8,13 +8,13 @@ import {
   parseAriaSnapshot,
   pathOf,
   templateOf,
-} from '@plurid/aptuitive-adapter';
-import type { Discovery, PageFacts } from '@plurid/aptuitive-adapter';
+} from '@plurid/uitive-adapter';
+import type { Discovery, PageFacts } from '@plurid/uitive-adapter';
 import { contractIn, loadModule } from './check.js';
 import { folderOf } from './folder.js';
 
-/** Where `discover` writes, in a project that keeps Aptuitive's files in `aptuitive/`; commands use the project's own folder (`folderOf`). */
-export const DISCOVERY = 'aptuitive/discovery.json';
+/** Where `discover` writes, in a project that keeps Uitive's files in `uitive/`; commands use the project's own folder (`folderOf`). */
+export const DISCOVERY = 'uitive/discovery.json';
 
 /** The part of Playwright discovery uses. */
 interface Browser {
@@ -67,11 +67,11 @@ export interface DiscoverOptions {
   storageState?: string;
   /** Uses the installed Chrome instead of Playwright's Chromium. @default false */
   chrome?: boolean;
-  /** Where to write the discovery. @default 'discovery.json' in the project's Aptuitive folder */
+  /** Where to write the discovery. @default 'discovery.json' in the project's Uitive folder */
   out?: string;
   /**
    * Matches buttons against this contract's actions, when it exists.
-   * @default 'contract.ts' in the project's Aptuitive folder
+   * @default 'contract.ts' in the project's Uitive folder
    */
   contract?: string;
 }

@@ -68,16 +68,16 @@ importers:
 
   apps/cloud-console-react:
     dependencies:
-      '@plurid/aptuitive-core':
+      '@plurid/uitive-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@plurid/aptuitive-dom':
+      '@plurid/uitive-dom':
         specifier: workspace:*
         version: link:../../packages/dom
-      '@plurid/aptuitive-react':
+      '@plurid/uitive-react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@plurid/aptuitive-server':
+      '@plurid/uitive-server':
         specifier: workspace:*
         version: link:../../packages/server
       react:
@@ -108,19 +108,19 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.131.0
         version: 0.131.0(zod@4.6.5)
-      '@plurid/aptuitive-adapter':
+      '@plurid/uitive-adapter':
         specifier: workspace:*
         version: link:../../packages/adapter
-      '@plurid/aptuitive-core':
+      '@plurid/uitive-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@plurid/aptuitive-dom':
+      '@plurid/uitive-dom':
         specifier: workspace:*
         version: link:../../packages/dom
-      '@plurid/aptuitive-planner':
+      '@plurid/uitive-planner':
         specifier: workspace:*
         version: link:../../packages/planner
-      '@plurid/aptuitive-react':
+      '@plurid/uitive-react':
         specifier: workspace:*
         version: link:../../packages/react
       dom-accessibility-api:
@@ -157,7 +157,7 @@ importers:
 
   packages/adapter:
     dependencies:
-      '@plurid/aptuitive-core':
+      '@plurid/uitive-core':
         specifier: workspace:^
         version: link:../core
     devDependencies:
@@ -167,13 +167,13 @@ importers:
 
   packages/cli:
     dependencies:
-      '@plurid/aptuitive-adapter':
+      '@plurid/uitive-adapter':
         specifier: workspace:^
         version: link:../adapter
-      '@plurid/aptuitive-core':
+      '@plurid/uitive-core':
         specifier: workspace:^
         version: link:../core
-      '@plurid/aptuitive-planner':
+      '@plurid/uitive-planner':
         specifier: workspace:^
         version: link:../planner
       '@scalar/openapi-parser':
@@ -201,7 +201,7 @@ importers:
 
   packages/dom:
     dependencies:
-      '@plurid/aptuitive-core':
+      '@plurid/uitive-core':
         specifier: workspace:^
         version: link:../core
     devDependencies:
@@ -214,13 +214,13 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.31.0
         version: 1.31.0(zod@4.6.5)
-      '@plurid/aptuitive-cli':
+      '@plurid/uitive-cli':
         specifier: workspace:^
         version: link:../cli
-      '@plurid/aptuitive-core':
+      '@plurid/uitive-core':
         specifier: workspace:^
         version: link:../core
-      '@plurid/aptuitive-planner':
+      '@plurid/uitive-planner':
         specifier: workspace:^
         version: link:../planner
       zod:
@@ -229,7 +229,7 @@ importers:
 
   packages/planner:
     dependencies:
-      '@plurid/aptuitive-core':
+      '@plurid/uitive-core':
         specifier: workspace:^
         version: link:../core
     devDependencies:
@@ -242,10 +242,10 @@ importers:
 
   packages/react:
     dependencies:
-      '@plurid/aptuitive-core':
+      '@plurid/uitive-core':
         specifier: workspace:^
         version: link:../core
-      '@plurid/aptuitive-dom':
+      '@plurid/uitive-dom':
         specifier: workspace:^
         version: link:../dom
       react:
@@ -261,10 +261,10 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.131.0
         version: 0.131.0(zod@4.6.5)
-      '@plurid/aptuitive-core':
+      '@plurid/uitive-core':
         specifier: workspace:^
         version: link:../core
-      '@plurid/aptuitive-planner':
+      '@plurid/uitive-planner':
         specifier: workspace:^
         version: link:../planner
     devDependencies:

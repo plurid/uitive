@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { editor } from '../../packages/core/src/__fixtures__/editor.js';
 import {
-  createAptuitive,
+  createUitive,
   DEFAULT_STABILISER,
   simulate,
   type Persona,
   type SessionReport,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 
 // Persona evaluation with the deterministic planner: the properties every planner must keep.
 
@@ -32,7 +32,7 @@ const analyst: Persona = {
 
 async function run(persona: Persona, seed = 1, sessions = 12): Promise<SessionReport[]> {
   let time = 0;
-  const client = createAptuitive({ contract: editor, now: () => (time += 1000) });
+  const client = createUitive({ contract: editor, now: () => (time += 1000) });
   return simulate(client, persona, { sessions, seed });
 }
 

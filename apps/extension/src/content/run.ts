@@ -1,15 +1,15 @@
-import { compileEffects, routeOf } from '@plurid/aptuitive-adapter';
-import type { Adapter, Effect, Strategy, Values } from '@plurid/aptuitive-adapter';
-import { buildPath, createAptuitive, heuristicPlanner } from '@plurid/aptuitive-core';
+import { compileEffects, routeOf } from '@plurid/uitive-adapter';
+import type { Adapter, Effect, Strategy, Values } from '@plurid/uitive-adapter';
+import { buildPath, createUitive, heuristicPlanner } from '@plurid/uitive-core';
 import type {
   AnyContract,
   AnyPage,
-  Aptuitive,
+  Uitive,
   Environment,
   ListValue,
   PlanRequest,
   Store,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import { toContent } from '../messages.ts';
 import type { PageReport } from '../messages.ts';
 import { resolveAnchors, unmapped } from './anchors.ts';
@@ -32,7 +32,7 @@ export interface RunOptions {
 }
 
 /** The interface the client holds now, in the shape effects are compiled from. */
-function valuesOf(client: Aptuitive<AnyContract>, adapter: Adapter): Values {
+function valuesOf(client: Uitive<AnyContract>, adapter: Adapter): Values {
   const lists: Record<string, { visible: string[]; overflow: string[] }> = {};
   for (const surface of Object.keys(adapter.lists)) {
     const value = client.surface(surface) as ListValue;
@@ -52,7 +52,7 @@ function valuesOf(client: Aptuitive<AnyContract>, adapter: Adapter): Values {
 }
 
 /**
- * Runs Aptuitive on a page it doesn't own: finds the adapter's anchors, keeps the client's
+ * Runs Uitive on a page it doesn't own: finds the adapter's anchors, keeps the client's
  * location in step with the page, and applies the person's interface as effects, again whenever
  * the page re-renders. Page text never leaves the page: requests carry structure only.
  */
@@ -91,7 +91,7 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
     unmapped: unmapped(document, anchors),
   });
 
-  const client = createAptuitive({
+  const client = createUitive({
     contract,
     store,
     planner: fallback(
@@ -112,7 +112,7 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
       },
     },
     environment,
-    onError: (error) => console.warn('[aptuitive]', error),
+    onError: (error) => console.warn('[uitive]', error),
   });
 
   const engine = createEngine(document);
@@ -202,7 +202,7 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
         } else {
           const visible = Object.values(adapter.lists[surface]?.items ?? {})
             .map((name) => anchors.get(name)?.element)
-            .find((element) => element && !element.hasAttribute('data-apt'));
+            .find((element) => element && !element.hasAttribute('data-uitive'));
           mores.set(
             surface,
             mountMore({
@@ -267,7 +267,7 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
     const now = Date.now();
     over = [...over.filter((entry) => now - entry.at < 60_000), { at: now, ms: took }];
     if (over.reduce((total, entry) => total + entry.ms, 0) > 3_000) {
-      paused = 'This page changes faster than Aptuitive can follow, so it shows the page as it is.';
+      paused = 'This page changes faster than Uitive can follow, so it shows the page as it is.';
       observer.disconnect();
       engine.original(true);
       sync();

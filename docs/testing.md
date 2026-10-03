@@ -1,6 +1,6 @@
 # Testing
 
-Aptuitive is deterministic when you need it to be: a clock that moves only when told, state held in memory, sessions on demand and a planner without a model. Adaptation can be tested like the rest of an application, in any test runner. The examples here use Vitest, and they run with this repository's tests.
+Uitive is deterministic when you need it to be: a clock that moves only when told, state held in memory, sessions on demand and a planner without a model. Adaptation can be tested like the rest of an application, in any test runner. The examples here use Vitest, and they run with this repository's tests.
 
 ## Set up
 
@@ -10,7 +10,7 @@ Give each test a fresh client, with a fixed clock and a memory store:
 
 ```ts
 // A clock that only moves when told to, and state that starts empty every time.
-const fresh = () => createAptuitive({ contract, now: () => 0, store: memoryStore() });
+const fresh = () => createUitive({ contract, now: () => 0, store: memoryStore() });
 const visible = (client: ReturnType<typeof fresh>) =>
   client.surface('toolbar').visible.map((item) => item.id);
 ```
@@ -98,14 +98,14 @@ it('serves a writer who quotes and links, over weeks of use', async () => {
 
 Each session starts at a safe moment, the persona works through 12 to 24 actions, and a plan follows; `plan: false` leaves planning out. Each report holds the session's visible lists and what applied or was planned. A persona's `shift` changes its habits from a given session on, to test that the interface follows; `palette` is how often it searches for an action instead of opening More.
 
-`<apt-debug>` runs the same simulation in a browser, with its "Simulate a week" buttons: see [Without React](without-react.md#the-elements).
+`<uitive-debug>` runs the same simulation in a browser, with its "Simulate a week" buttons: see [Without React](without-react.md#the-elements).
 
 ## Components
 
-Test components as usual, such as with Testing Library: render them inside `AptuitiveProvider` with a fresh client. The provider plans once when it mounts, so render inside an async `act`, or await what the test expects. A page's generic blocks read through the bindings: give the client `fromRows` bindings, or a stubbed `fetch`, so tests never reach a real API.
+Test components as usual, such as with Testing Library: render them inside `UitiveProvider` with a fresh client. The provider plans once when it mounts, so render inside an async `act`, or await what the test expects. A page's generic blocks read through the bindings: give the client `fromRows` bindings, or a stubbed `fetch`, so tests never reach a real API.
 
 ## In CI
 
-- `aptuitive check` exits with 1 when the contract or the bindings fail a check: run it with the other checks.
-- `aptuitive generate blocks --check` exits with 1 when generated block specs no longer match their components.
+- `uitive check` exits with 1 when the contract or the bindings fail a check: run it with the other checks.
+- `uitive generate blocks --check` exits with 1 when generated block specs no longer match their components.
 - A model planner never runs in tests: leave `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` and `GOOGLE_API_KEY` empty in the test environment, and test the server's handler with the deterministic planner, as `docs/examples/server/handler.ts` does when there is no key.

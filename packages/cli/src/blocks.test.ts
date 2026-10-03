@@ -2,7 +2,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { BlockSpec } from '@plurid/aptuitive-core';
+import type { BlockSpec } from '@plurid/uitive-core';
 import { describe, expect, it } from 'vitest';
 import { emitBlocks, readBlocks } from './blocks.js';
 
@@ -78,7 +78,7 @@ describe('readBlocks', () => {
 
 describe('emitBlocks', () => {
   it('writes blocks whose schemas accept the props', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'aptuitive-'));
+    const directory = await mkdtemp(join(tmpdir(), 'uitive-'));
     const path = join(directory, 'blocks.generated.ts');
     const code = emitBlocks(
       result.blocks,

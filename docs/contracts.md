@@ -78,7 +78,7 @@ const actions = {
 
 - `label` and `description` are read by people and by models alike: they are how "hide Customers" finds `go.customers`. Make each label distinct; `check` warns when two actions share one.
 - `group` groups related actions, for display and for the model.
-- An action **without an `effect`** belongs to the interface only, as a link or a tool does: the application handles it, and Aptuitive records its use.
+- An action **without an `effect`** belongs to the interface only, as a link or a tool does: the application handles it, and Uitive records its use.
 - An action **with an `effect`** runs through the bindings' `perform`. `read` changes nothing; `write` changes data and waits for the person's yes; `destructive` can't be undone and waits for a typed phrase, the label unless `confirm` says otherwise.
 - `params` is a flat zod object, like a source's row. A `ref` param makes it a row action, offered on each row of that source; `when` limits it to some rows, such as orders not yet shipped.
 - `invalidates` names the sources a run changes, so results that read them refresh.
@@ -190,7 +190,7 @@ A contract also exists as data: `toJson` writes it, and `fromJson` reads it back
 
 ## What `check` checks
 
-`aptuitive check` loads the contract and the bindings and runs four checks:
+`uitive check` loads the contract and the bindings and runs four checks:
 
 - **contract**: it loads, compiles and validates.
 - **json**: it reads back from JSON unchanged.

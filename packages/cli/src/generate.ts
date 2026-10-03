@@ -10,10 +10,10 @@ import { CURATE_ACTIONS, CURATE_SOURCES, survey } from './survey.js';
 import type { Survey } from './survey.js';
 import { folderOf } from './folder.js';
 
-/** Where the curation is, in a project that keeps Aptuitive's files in `aptuitive/`; commands use the project's own folder (`folderOf`). */
-export const CURATION = 'aptuitive/curation.json';
-/** Where `generate sources` writes, in a project that keeps Aptuitive's files in `aptuitive/`; commands use the project's own folder (`folderOf`). */
-export const GENERATED = 'aptuitive/api.generated.ts';
+/** Where the curation is, in a project that keeps Uitive's files in `uitive/`; commands use the project's own folder (`folderOf`). */
+export const CURATION = 'uitive/curation.json';
+/** Where `generate sources` writes, in a project that keeps Uitive's files in `uitive/`; commands use the project's own folder (`folderOf`). */
+export const GENERATED = 'uitive/api.generated.ts';
 
 /** Where an API description is, and its curation. */
 export interface SpecOptions {
@@ -21,7 +21,7 @@ export interface SpecOptions {
   spec: string;
   /** The project's root. @default process.cwd() */
   cwd?: string;
-  /** The curation file; used when it exists. @default 'curation.json' in the project's Aptuitive folder */
+  /** The curation file; used when it exists. @default 'curation.json' in the project's Uitive folder */
   curation?: string;
 }
 
@@ -87,7 +87,7 @@ export async function surveySpec(options: SpecOptions): Promise<Survey & { probl
 
 /** What `generate sources` takes: the description, its curation, and where to write. */
 export interface GenerateSourcesOptions extends SpecOptions {
-  /** Where to write. @default 'api.generated.ts' in the project's Aptuitive folder */
+  /** Where to write. @default 'api.generated.ts' in the project's Uitive folder */
   out?: string;
   /** Reports without writing. @default false */
   dryRun?: boolean;
@@ -128,7 +128,7 @@ export async function generateSources(
     (curated.sources.length > CURATE_SOURCES || curated.actions.length > CURATE_ACTIONS)
   ) {
     problems.push(
-      `This API has ${curated.sources.length} sources and ${curated.actions.length} actions; past ${CURATE_SOURCES} and ${CURATE_ACTIONS}, models choose worse. Run \`aptuitive survey\` and keep what the frontend shows in ${curationName}.`,
+      `This API has ${curated.sources.length} sources and ${curated.actions.length} actions; past ${CURATE_SOURCES} and ${CURATE_ACTIONS}, models choose worse. Run \`uitive survey\` and keep what the frontend shows in ${curationName}.`,
     );
   }
   const notes = [

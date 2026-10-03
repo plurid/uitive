@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { View, Via } from '@plurid/aptuitive-core';
-import { AptuitiveProvider, Confirmations, useSurface, useView } from '@plurid/aptuitive-react';
+import type { View, Via } from '@plurid/uitive-core';
+import { UitiveProvider, Confirmations, useSurface, useView } from '@plurid/uitive-react';
 import { byId, services, totalActions, verbs, type Verb } from './catalogue.ts';
-import { aptuitive, handlers } from './client.ts';
+import { uitive, handlers } from './client.ts';
 import { Catalogue } from './components/catalogue.tsx';
 import { Header } from './components/header.tsx';
 import { Home } from './components/home.tsx';
@@ -19,9 +19,9 @@ type Route = { page: 'home' } | { page: 'service'; id: string };
 type Panel = 'none' | 'interface' | 'debug';
 
 export function App() {
-  const view = useView(aptuitive);
-  const density = useSurface(aptuitive, 'density');
-  const yours = useSurface(aptuitive, 'services');
+  const view = useView(uitive);
+  const density = useSurface(uitive, 'density');
+  const yours = useSurface(uitive, 'services');
   const [route, setRoute] = useState<Route>({ page: 'home' });
   const [catalogue, setCatalogue] = useState(false);
   const [palette, setPalette] = useState(false);
@@ -37,7 +37,7 @@ export function App() {
   // Runs from anywhere, the console's controls or a generated page, end up here.
   useEffect(() => {
     handlers.open = (id) => {
-      aptuitive.setContext('service', id);
+      uitive.setContext('service', id);
       setRoute({ page: 'service', id });
     };
     handlers.run = (verb) => {
@@ -50,7 +50,7 @@ export function App() {
       const match = /^\/services\/([^/?#]+)/.exec(href);
       if (match?.[1]) handlers.open(decodeURIComponent(match[1]));
       else if (href === '/') {
-        aptuitive.setContext('service', undefined);
+        uitive.setContext('service', undefined);
         setRoute({ page: 'home' });
       }
     };
@@ -58,7 +58,7 @@ export function App() {
 
   // The console's own controls run actions too, so usage is recorded without record() calls.
   const open = useCallback((id: string, via: Via, typed?: boolean) => {
-    void aptuitive.perform(id, undefined, {
+    void uitive.perform(id, undefined, {
       origin: 'native',
       via,
       surface: 'services',
@@ -67,39 +67,39 @@ export function App() {
   }, []);
 
   const home = useCallback(() => {
-    aptuitive.setContext('service', undefined);
+    uitive.setContext('service', undefined);
     setRoute({ page: 'home' });
   }, []);
 
   const run = useCallback(async (verb: string, via: Via, typed?: boolean, on?: string) => {
     // An action on another service than the open one happens in that service's context.
-    if (on !== undefined) aptuitive.setContext('service', on);
-    await aptuitive.perform(verb, undefined, {
+    if (on !== undefined) uitive.setContext('service', on);
+    await uitive.perform(verb, undefined, {
       origin: 'native',
       via,
       surface: 'serviceToolbar',
       ...(typed === undefined ? {} : { typed }),
     });
-    if (on !== undefined) aptuitive.setContext('service', here.current);
+    if (on !== undefined) uitive.setContext('service', here.current);
   }, []);
 
   const runQuick = useCallback(
     async (quick: QuickAction) => {
       for (const step of quick.steps) {
-        aptuitive.setContext('service', step.service);
-        await aptuitive.perform(step.verb, undefined, {
+        uitive.setContext('service', step.service);
+        await uitive.perform(step.verb, undefined, {
           origin: 'native',
           via: 'shortcut',
           surface: 'serviceToolbar',
         });
       }
-      aptuitive.setContext('service', here.current);
+      uitive.setContext('service', here.current);
       push(`${quick.label}: ${quick.steps.length} steps simulated`);
     },
     [push],
   );
 
-  const ask = useCallback((text: string) => void aptuitive.ask(text), []);
+  const ask = useCallback((text: string) => void uitive.ask(text), []);
   const consoleValue = useMemo<Console>(
     () => ({
       view,
@@ -107,7 +107,7 @@ export function App() {
       open: (id, via) => open(id, via),
       run: (verb, via, service) => void run(verb, via, undefined, service),
       runQuick: (quick) => void runQuick(quick),
-      ask: (text, options) => aptuitive.ask(text, options),
+      ask: (text, options) => uitive.ask(text, options),
     }),
     [view, current, open, run, runQuick],
   );
@@ -130,14 +130,14 @@ export function App() {
   };
 
   return (
-    <AptuitiveProvider client={aptuitive} kit={consoleKit}>
+    <UitiveProvider client={uitive} kit={consoleKit}>
       <ConsoleContext.Provider value={consoleValue}>
         <div className="console" data-density={density} data-view={view}>
           <Header
             view={view}
             counts={counts}
             panel={panel}
-            onView={(next: View) => aptuitive.setView(next)}
+            onView={(next: View) => uitive.setView(next)}
             onSearch={() => setPalette(true)}
             onPanel={(next) => setPanel((shown) => (shown === next ? 'none' : next))}
             onHome={home}
@@ -155,13 +155,13 @@ export function App() {
             </main>
             {panel === 'interface' && (
               <aside className="side-panel" aria-label="Your interface">
-                <apt-your-interface client={aptuitive} />
+                <uitive-your-interface client={uitive} />
               </aside>
             )}
           </div>
           {panel === 'debug' && (
             <div className="debug-dock">
-              <apt-debug client={aptuitive} personas={personas} />
+              <uitive-debug client={uitive} personas={personas} />
             </div>
           )}
           {catalogue && (
@@ -182,11 +182,11 @@ export function App() {
               onClose={() => setPalette(false)}
             />
           )}
-          <apt-banner client={aptuitive} />
+          <uitive-banner client={uitive} />
           <Confirmations />
           <Toasts toasts={toasts} />
         </div>
       </ConsoleContext.Provider>
-    </AptuitiveProvider>
+    </UitiveProvider>
   );
 }

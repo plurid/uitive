@@ -1,4 +1,4 @@
-/** One node of an accessibility tree: what assistive technology, and Aptuitive, see of a page. */
+/** One node of an accessibility tree: what assistive technology, and Uitive, see of a page. */
 export interface RoleNode {
   /** Its ARIA role, such as `button` or `navigation`. */
   role: string;

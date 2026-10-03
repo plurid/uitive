@@ -12,27 +12,27 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import type { AnyContract, Aptuitive, Confirmation, Persona } from '@plurid/aptuitive-core';
-import { defineElements } from '@plurid/aptuitive-dom';
-import { defineDebugElement } from '@plurid/aptuitive-dom/debug';
+import type { AnyContract, Uitive, Confirmation, Persona } from '@plurid/uitive-core';
+import { defineElements } from '@plurid/uitive-dom';
+import { defineDebugElement } from '@plurid/uitive-dom/debug';
 import { useConfirmation, useLifecycle } from './hooks.js';
 import { defaultKit, kitStyles, type Kit } from './kit.js';
 
 /** What the provider shares below it: the client, and the kit generic blocks draw with. */
-export interface AptuitiveContextValue {
+export interface UitiveContextValue {
   /** The client pages, hooks and confirmations use. */
-  client: Aptuitive;
+  client: Uitive;
   /** The kit generic blocks draw with. */
   kit: Kit;
 }
 
-/** The provider's context; `useAptuitive` reads it. */
-export const AptuitiveContext = createContext<AptuitiveContextValue | undefined>(undefined);
+/** The provider's context; `useUitive` reads it. */
+export const UitiveContext = createContext<UitiveContextValue | undefined>(undefined);
 
-/** What `AptuitiveProvider` takes: the client, and the kit generic blocks draw with. */
+/** What `UitiveProvider` takes: the client, and the kit generic blocks draw with. */
 export interface ProviderProps<C extends AnyContract> {
-  /** The client from `createAptuitive`. */
-  client: Aptuitive<C>;
+  /** The client from `createUitive`. */
+  client: Uitive<C>;
   /** What generic blocks are drawn with. @default defaultKit */
   kit?: Kit;
   /** Adds the default kit's styles, which kits built with `createKit` still use. @default true */
@@ -45,26 +45,26 @@ export interface ProviderProps<C extends AnyContract> {
  * Makes a client and a kit available to pages, generic blocks and confirmations below it, and
  * connects the page's lifecycle (see `useLifecycle`).
  */
-export function AptuitiveProvider<C extends AnyContract>({
+export function UitiveProvider<C extends AnyContract>({
   client,
   kit = defaultKit,
   styles,
   children,
 }: ProviderProps<C>) {
   useLifecycle(client);
-  const value = useMemo(() => ({ client: client as unknown as Aptuitive, kit }), [client, kit]);
+  const value = useMemo(() => ({ client: client as unknown as Uitive, kit }), [client, kit]);
   return (
-    <AptuitiveContext.Provider value={value}>
+    <UitiveContext.Provider value={value}>
       {(styles ?? true) && <style>{kitStyles}</style>}
       {children}
-    </AptuitiveContext.Provider>
+    </UitiveContext.Provider>
   );
 }
 
 /** The client and kit from the nearest provider. */
-export function useAptuitive(): AptuitiveContextValue {
-  const found = useContext(AptuitiveContext);
-  if (!found) throw new Error('Wrap this in <AptuitiveProvider client={...}>');
+export function useUitive(): UitiveContextValue {
+  const found = useContext(UitiveContext);
+  if (!found) throw new Error('Wrap this in <UitiveProvider client={...}>');
   return found;
 }
 
@@ -74,7 +74,7 @@ export function useAptuitive(): AptuitiveContextValue {
  * it, generated interfaces can't write at all.
  */
 export function Confirmations() {
-  const { client, kit } = useAptuitive();
+  const { client, kit } = useUitive();
   const { confirmation, confirm, cancel } = useConfirmation(client);
   useEffect(() => client.confirmations(), [client]);
   if (!confirmation) return null;
@@ -111,7 +111,7 @@ function ConfirmDialog({
     <kit.Dialog title={confirmation.label} onClose={cancel}>
       <kit.Text>{confirmation.description}</kit.Text>
       {confirmation.fields.length > 0 && (
-        <dl className="apt-params">
+        <dl className="uitive-params">
           {confirmation.fields.map((field) => (
             <div key={field.name} style={{ display: 'contents' }}>
               <dt>{field.label}</dt>
@@ -138,7 +138,7 @@ function ConfirmDialog({
           required
         />
       )}
-      <div className="apt-dialog-actions">
+      <div className="uitive-dialog-actions">
         <kit.Button onClick={cancel}>Cancel</kit.Button>
         <kit.Button
           tone={confirmation.effect === 'destructive' ? 'danger' : 'primary'}
@@ -180,23 +180,23 @@ function wrapper<P extends ElementProps>(
 }
 
 /**
- * `<apt-banner>`: what just changed and why, with Revert and Keep. It floats at the bottom right;
+ * `<uitive-banner>`: what just changed and why, with Revert and Keep. It floats at the bottom right;
  * `docked` puts it in the page's flow.
  */
-export const AptBanner = wrapper<ElementProps & { docked?: boolean }>(
-  'apt-banner',
+export const UitiveBanner = wrapper<ElementProps & { docked?: boolean }>(
+  'uitive-banner',
   ['client'],
   defineElements,
 );
-/** `<apt-your-interface>`: the user's definition, readable and revertible. */
-export const AptYourInterface = wrapper<ElementProps>(
-  'apt-your-interface',
+/** `<uitive-your-interface>`: the user's definition, readable and revertible. */
+export const UitiveYourInterface = wrapper<ElementProps>(
+  'uitive-your-interface',
   ['client'],
   defineElements,
 );
-/** `<apt-debug>`: the developer panel. */
-export const AptDebug = wrapper<ElementProps & { personas?: readonly Persona[] }>(
-  'apt-debug',
+/** `<uitive-debug>`: the developer panel. */
+export const UitiveDebug = wrapper<ElementProps & { personas?: readonly Persona[] }>(
+  'uitive-debug',
   ['client', 'personas'],
   defineDebugElement,
 );

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { payments } from './__fixtures__/payments.js';
-import { createAptuitive } from './client.js';
+import { createUitive } from './client.js';
 import { heuristicPlanner } from './heuristic.js';
 import { ui } from './page.js';
 import { remotePlanner, type FetchLike, type PlanProgress, type PlanResult } from './planner.js';
@@ -36,15 +36,14 @@ function streamed(chunks: string[]): Awaited<ReturnType<FetchLike>> {
   };
 }
 
-const request = () =>
-  createAptuitive({ contract: payments, now: () => 0 }).request('command', 'hi');
+const request = () => createUitive({ contract: payments, now: () => 0 }).request('command', 'hi');
 
 describe('remotePlanner', () => {
   it('reads progress and the result from a stream, across chunk boundaries', async () => {
     const seen: PlanProgress[] = [];
     let accept: string | undefined;
     const planner = remotePlanner({
-      url: '/api/aptuitive/',
+      url: '/api/uitive/',
       fetch: async (_url, init) => {
         accept = init.headers.accept;
         const lines = [

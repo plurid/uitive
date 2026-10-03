@@ -1,4 +1,4 @@
-import { restFetch, restPerform, type Bindings } from '@plurid/aptuitive-core';
+import { restFetch, restPerform, type Bindings } from '@plurid/uitive-core';
 import type { shop } from './contract.js';
 
 // #region bindings

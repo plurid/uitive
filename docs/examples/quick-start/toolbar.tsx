@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useSurface } from '@plurid/aptuitive-react';
-import { aptuitive } from './client.js';
+import { useSurface } from '@plurid/uitive-react';
+import { uitive } from './client.js';
 
 /** The toolbar each person shaped: what fits, then the rest under More. */
 export function Toolbar({ run }: { run(action: string): void }) {
-  const toolbar = useSurface(aptuitive, 'toolbar');
+  const toolbar = useSurface(uitive, 'toolbar');
   const [more, setMore] = useState(false);
   return (
     <div role="toolbar" aria-label="Formatting">
@@ -13,7 +13,7 @@ export function Toolbar({ run }: { run(action: string): void }) {
           key={item.id}
           type="button"
           onClick={() => {
-            aptuitive.record(item.id, { via: 'region', surface: 'toolbar' });
+            uitive.record(item.id, { via: 'region', surface: 'toolbar' });
             run(item.id);
           }}
         >
@@ -34,7 +34,7 @@ export function Toolbar({ run }: { run(action: string): void }) {
               role="menuitem"
               onClick={() => {
                 setMore(false);
-                aptuitive.record(item.id, { via: 'overflow', surface: 'toolbar' });
+                uitive.record(item.id, { via: 'overflow', surface: 'toolbar' });
                 run(item.id);
               }}
             >

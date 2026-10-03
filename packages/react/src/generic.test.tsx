@@ -2,19 +2,12 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  createAptuitive,
-  fromRows,
-  query,
-  ui,
-  type AnyPage,
-  type Perform,
-} from '@plurid/aptuitive-core';
+import { createUitive, fromRows, query, ui, type AnyPage, type Perform } from '@plurid/uitive-core';
 import { NOW, payments, rows } from '../../core/src/__fixtures__/payments.js';
-import { useAptuitiveRouter } from './hooks.js';
+import { useUitiveRouter } from './hooks.js';
 import { createKit } from './kit.js';
 import { Page } from './page.js';
-import { AptBanner, AptuitiveProvider, Confirmations } from './provider.js';
+import { UitiveBanner, UitiveProvider, Confirmations } from './provider.js';
 
 afterEach(cleanup);
 
@@ -27,7 +20,7 @@ function setup() {
       return { message: `${action} done` };
     };
   const navigate = vi.fn();
-  const client = createAptuitive({
+  const client = createUitive({
     contract: payments,
     now: () => NOW * 1000,
     bindings: {
@@ -45,10 +38,10 @@ function setup() {
 
 function show(client: ReturnType<typeof setup>['client'], value: AnyPage, kit = createKit()) {
   return render(
-    <AptuitiveProvider client={client} kit={kit}>
+    <UitiveProvider client={client} kit={kit}>
       <Confirmations />
       <Page value={value} blocks={{}} />
-    </AptuitiveProvider>,
+    </UitiveProvider>,
   );
 }
 
@@ -215,7 +208,7 @@ describe('generic blocks', () => {
     const fortnight = rows.payments.filter((row) => row.created >= NOW - 14 * 86_400).length;
     expect(await screen.findByText(String(fortnight))).toBeTruthy();
     expect(await screen.findByText(/on the period before/)).toBeTruthy();
-    expect(container.querySelectorAll('.apt-chart rect').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.uitive-chart rect').length).toBeGreaterThan(0);
   });
 
   it('draw lists, timelines, boards and the page’s own row', async () => {
@@ -329,7 +322,7 @@ describe('generic blocks', () => {
       },
     });
     let fail = false;
-    const client = createAptuitive({
+    const client = createUitive({
       contract: payments,
       now: () => NOW * 1000,
       bindings: {
@@ -377,7 +370,7 @@ describe('generic blocks', () => {
         blocks={{}}
       />,
     );
-    expect(screen.getByText(/Wrap the page in <AptuitiveProvider>/)).toBeTruthy();
+    expect(screen.getByText(/Wrap the page in <UitiveProvider>/)).toBeTruthy();
     expect(client).toBeTruthy();
   });
 
@@ -412,7 +405,7 @@ describe('integration helpers', () => {
     const { client } = setup();
     const push = vi.fn();
     function Router({ path }: { path: string }) {
-      useAptuitiveRouter(client, { path, navigate: push });
+      useUitiveRouter(client, { path, navigate: push });
       return null;
     }
     const view = render(<Router path="/payments/ch_003" />);
@@ -425,9 +418,9 @@ describe('integration helpers', () => {
 
   it('give custom elements their client as a property, registering them on first use', () => {
     const { client } = setup();
-    const { container } = render(<AptBanner client={client} id="banner" />);
-    const element = container.querySelector('apt-banner') as HTMLElement & { client?: unknown };
-    expect(customElements.get('apt-banner')).toBeDefined();
+    const { container } = render(<UitiveBanner client={client} id="banner" />);
+    const element = container.querySelector('uitive-banner') as HTMLElement & { client?: unknown };
+    expect(customElements.get('uitive-banner')).toBeDefined();
     expect(element.shadowRoot).not.toBeNull();
     expect(element.client).toBe(client);
     expect(element.id).toBe('banner');

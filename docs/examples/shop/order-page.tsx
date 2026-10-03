@@ -1,5 +1,5 @@
-import { Page, useSurface, type BlockComponents } from '@plurid/aptuitive-react';
-import { aptuitive } from './client.js';
+import { Page, useSurface, type BlockComponents } from '@plurid/uitive-react';
+import { uitive } from './client.js';
 import type { orderBlocks } from './contract.js';
 
 /** Stands for the application's own order page, which stays exactly as it is. */
@@ -16,7 +16,7 @@ const blocks: BlockComponents<typeof orderBlocks> = {
 };
 
 export function OrderPage() {
-  const value = useSurface(aptuitive, 'order');
+  const value = useSurface(uitive, 'order');
   return <Page value={value} blocks={blocks} regions={{ order: OrderDetail }} />;
 }
 // #endregion

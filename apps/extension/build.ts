@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import react from '@vitejs/plugin-react';
 import { build, createServer } from 'vite';
 import type { InlineConfig } from 'vite';
-import { aptuitive } from '../../tools/vite/aptuitive.ts';
+import { uitive } from '../../tools/vite/uitive.ts';
 import { manifest } from './manifest.ts';
 
 // The bundles are always production builds, whatever environment runs this, such as a test runner.
@@ -29,7 +29,7 @@ async function adapters() {
   const server = await createServer({
     root,
     configFile: false,
-    plugins: [aptuitive()],
+    plugins: [uitive()],
     logLevel: 'error',
   });
   try {
@@ -50,7 +50,7 @@ const shared = (): InlineConfig => ({
   configFile: false,
   mode: 'production',
   logLevel: 'warn',
-  plugins: [aptuitive(), react()],
+  plugins: [uitive(), react()],
   define: {
     __FIXTURE__: JSON.stringify(fixture),
     'process.env.NODE_ENV': JSON.stringify('production'),
@@ -64,7 +64,7 @@ async function script(entry: string, name: string, format: 'es' | 'iife') {
     ...config,
     build: {
       ...config.build,
-      lib: { entry, formats: [format], name: 'aptuitive', fileName: () => name },
+      lib: { entry, formats: [format], name: 'uitive', fileName: () => name },
       // Service workers can't import(), so everything goes in one file.
       rolldownOptions: { output: { codeSplitting: false } },
     },

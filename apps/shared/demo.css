@@ -1,4 +1,4 @@
-/* Shared foundations for every Aptuitive demonstration: one quiet palette, one type scale. */
+/* Shared foundations for every Uitive demonstration: one quiet palette, one type scale. */
 
 :root {
   color-scheme: light dark;
@@ -43,13 +43,13 @@
   --text-xl: 22px;
 
   /* The meta layer (banner, "Your interface", debug) reads these. */
-  --apt-accent: var(--accent);
-  --apt-surface: var(--surface);
-  --apt-text: var(--text);
-  --apt-muted: var(--muted);
-  --apt-border: var(--border);
-  --apt-radius: var(--radius-l);
-  --apt-font: var(--font);
+  --uitive-accent: var(--accent);
+  --uitive-surface: var(--surface);
+  --uitive-text: var(--text);
+  --uitive-muted: var(--muted);
+  --uitive-border: var(--border);
+  --uitive-radius: var(--radius-l);
+  --uitive-font: var(--font);
 }
 
 @media (prefers-color-scheme: dark) {

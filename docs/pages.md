@@ -10,7 +10,7 @@ A page's standard is what everyone sees until they ask for a change. Start each 
 
 ```tsx
 export function OrdersPage() {
-  const value = useSurface(aptuitive, 'orders');
+  const value = useSurface(uitive, 'orders');
   return <Page value={value} blocks={{}} regions={{ orders: OrdersList }} />;
 }
 ```
@@ -71,7 +71,7 @@ A page holds at most 40 elements, nests at most 4 deep and runs at most 8 querie
 
 ## Generic blocks
 
-Generic blocks are drawn by Aptuitive from the contract's sources and actions, with the kit you map to your design system, so a redesign isn't limited to blocks someone anticipated.
+Generic blocks are drawn by Uitive from the contract's sources and actions, with the kit you map to your design system, so a redesign isn't limited to blocks someone anticipated.
 
 | Block      | What it shows                                      | Key props                                                          |
 | ---------- | -------------------------------------------------- | ------------------------------------------------------------------ |
@@ -123,12 +123,12 @@ const blocks: BlockComponents<typeof orderBlocks> = {
 };
 
 export function OrderPage() {
-  const value = useSurface(aptuitive, 'order');
+  const value = useSurface(uitive, 'order');
   return <Page value={value} blocks={blocks} regions={{ order: OrderDetail }} />;
 }
 ```
 
-`aptuitive generate blocks src/fulfilment.tsx#Fulfilment` writes block specs from components' TypeScript props: literal unions become enums, optional props become required with their defaults described, and props that can't be data, such as callbacks, are reported.
+`uitive generate blocks src/fulfilment.tsx#Fulfilment` writes block specs from components' TypeScript props: literal unions become enums, optional props become required with their defaults described, and props that can't be data, such as callbacks, are reported.
 
 ## Redesigns
 
@@ -145,7 +145,7 @@ Applying a redesign on the person's behalf is one call, checked like any plan:
 ```ts
 /** The person's own redesign: policy checks it like any plan, and Revert brings the page back. */
 export function redesignOrders() {
-  return aptuitive.setPage('orders', needsAttention);
+  return uitive.setPage('orders', needsAttention);
 }
 ```
 
@@ -153,4 +153,4 @@ A planner may not place destructive actions on a page it suggests unasked, or fi
 
 ## Pages people make
 
-People can make pages of their own, up to twenty each, from generic blocks and regions not tied to a row. They live at `/apt/<slug>`. `createPage`, `renamePage`, `setUserPage` and `deletePage` manage them, `useUserPages` lists them, and planners never create, rename, redesign or delete them unasked.
+People can make pages of their own, up to twenty each, from generic blocks and regions not tied to a row. They live at `/uitive/<slug>`. `createPage`, `renamePage`, `setUserPage` and `deletePage` manage them, `useUserPages` lists them, and planners never create, rename, redesign or delete them unasked.

@@ -1,7 +1,7 @@
-import type { AnyPage } from '@plurid/aptuitive-core';
+import type { AnyPage } from '@plurid/uitive-core';
 import type { Adapter } from './format.js';
 
-/** What to do to a page Aptuitive doesn't own. Pure data: the DOM side only applies it. */
+/** What to do to a page Uitive doesn't own. Pure data: the DOM side only applies it. */
 export type Effect =
   | { kind: 'hide'; anchor: string }
   | { kind: 'order'; container: string; items: string[] }

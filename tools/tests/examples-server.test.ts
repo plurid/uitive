@@ -1,19 +1,19 @@
 import { readFileSync } from 'node:fs';
-import { createAptuitive, query, remotePlanner, type FetchLike } from '@plurid/aptuitive-core';
-import { parseCuration } from '@plurid/aptuitive-cli';
+import { createUitive, query, remotePlanner, type FetchLike } from '@plurid/uitive-core';
+import { parseCuration } from '@plurid/uitive-cli';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { discovery } from '../../docs/examples/adapter/discover.ts';
 import { shop } from '../../docs/examples/shop/contract.ts';
 
 // The examples read keys from the environment; a developer's own must never be used here.
 let handler: (request: Request) => Promise<Response>;
-let client: (typeof import('../../docs/examples/shop/client.ts'))['aptuitive'];
+let client: (typeof import('../../docs/examples/shop/client.ts'))['uitive'];
 beforeAll(async () => {
   for (const key of ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_API_KEY']) {
     vi.stubEnv(key, '');
   }
   ({ handler } = await import('../../docs/examples/server/handler.ts'));
-  ({ aptuitive: client } = await import('../../docs/examples/shop/client.ts'));
+  ({ uitive: client } = await import('../../docs/examples/shop/client.ts'));
 });
 
 afterEach(() => {
@@ -88,34 +88,34 @@ describe('the shop example', () => {
 
 describe('the server example', () => {
   const body = JSON.stringify(
-    createAptuitive({ contract: shop, now: () => 0 }).request('command', 'hide Customers'),
+    createUitive({ contract: shop, now: () => 0 }).request('command', 'hide Customers'),
   );
   const post = (headers: Record<string, string> = {}) =>
     handler(
-      new Request('https://shop.example/api/aptuitive/command', { method: 'POST', body, headers }),
+      new Request('https://shop.example/api/uitive/command', { method: 'POST', body, headers }),
     );
 
   it('plans for signed-in people only', async () => {
     expect((await post({ cookie: 'session=abc' })).status).toBe(200);
     expect((await post()).status).toBe(401);
-    expect((await handler(new Request('https://shop.example/api/aptuitive/command'))).status).toBe(
+    expect((await handler(new Request('https://shop.example/api/uitive/command'))).status).toBe(
       404,
     );
   });
 
   it('answers the client through remotePlanner', async () => {
     const send = vi.fn<FetchLike>((url, init) => handler(new Request(url, init as RequestInit)));
-    const planned = createAptuitive({
+    const planned = createUitive({
       contract: shop,
       now: () => 0,
       planner: remotePlanner({
-        url: 'https://shop.example/api/aptuitive',
+        url: 'https://shop.example/api/uitive',
         headers: { cookie: 'session=abc' },
         fetch: send,
       }),
     });
     await planned.plan();
-    expect(send).toHaveBeenCalledWith('https://shop.example/api/aptuitive/plan', expect.anything());
+    expect(send).toHaveBeenCalledWith('https://shop.example/api/uitive/plan', expect.anything());
   });
 });
 

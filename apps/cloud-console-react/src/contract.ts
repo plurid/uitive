@@ -13,7 +13,7 @@ import {
   route,
   source,
   ui,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 import { byId, categories, serviceIds, services, verbIds, verbs, type Verb } from './catalogue.ts';
 import { metricNames, regions, sizes, states } from './data.ts';
 
@@ -71,7 +71,7 @@ export const quickAction = z.object({
 
 export type QuickAction = z.infer<typeof quickAction>;
 
-/** The console's own blocks; everything else on its pages is drawn by Aptuitive. */
+/** The console's own blocks; everything else on its pages is drawn by Uitive. */
 export const blocks = {
   goal: block({
     label: 'Goal',

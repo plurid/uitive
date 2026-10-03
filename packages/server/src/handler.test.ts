@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { createAptuitive, heuristicPlanner, type Planner } from '@plurid/aptuitive-core';
+import { createUitive, heuristicPlanner, type Planner } from '@plurid/uitive-core';
 import { ops } from '../../planner/src/__fixtures__/ops.js';
-import { PlannerError } from '@plurid/aptuitive-planner';
-import { createAptuitiveHandler } from './handler.js';
+import { PlannerError } from '@plurid/uitive-planner';
+import { createUitiveHandler } from './handler.js';
 
 const body = (kind: 'plan' | 'command' = 'command', text = 'compact') =>
   JSON.stringify(
-    createAptuitive({ contract: ops, now: () => 0 }).request(
+    createUitive({ contract: ops, now: () => 0 }).request(
       kind,
       kind === 'command' ? text : undefined,
     ),
   );
 
 const post = (path: string, payload: string, host = 'localhost') =>
-  new Request(`http://${host}:5171/api/aptuitive/${path}`, { method: 'POST', body: payload });
+  new Request(`http://${host}:5171/api/uitive/${path}`, { method: 'POST', body: payload });
 
-describe('createAptuitiveHandler', () => {
-  const handler = createAptuitiveHandler({ contract: ops, planner: heuristicPlanner() });
+describe('createUitiveHandler', () => {
+  const handler = createUitiveHandler({ contract: ops, planner: heuristicPlanner() });
 
   it('plans for local requests', async () => {
     const response = await handler(post('command', body()));
@@ -29,7 +29,7 @@ describe('createAptuitiveHandler', () => {
 
   it('refuses what it should', async () => {
     const statuses = await Promise.all([
-      handler(new Request('http://localhost/api/aptuitive/plan')),
+      handler(new Request('http://localhost/api/uitive/plan')),
       handler(post('plan', body('plan'), 'example.com')),
       handler(post('command', 'x'.repeat(140_000))),
       handler(post('command', 'not json')),
@@ -41,7 +41,7 @@ describe('createAptuitiveHandler', () => {
   });
 
   it('limits requests per minute', async () => {
-    const strict = createAptuitiveHandler({
+    const strict = createUitiveHandler({
       contract: ops,
       planner: heuristicPlanner(),
       perMinute: 2,
@@ -59,7 +59,7 @@ describe('createAptuitiveHandler', () => {
         throw new PlannerError('No Anthropic credentials', 503);
       },
     };
-    const response = await createAptuitiveHandler({ contract: ops, planner: failing })(
+    const response = await createUitiveHandler({ contract: ops, planner: failing })(
       post('command', body()),
     );
     expect(response.status).toBe(503);
@@ -76,8 +76,8 @@ describe('createAptuitiveHandler', () => {
       },
     };
     const lines = async (planner: Planner) => {
-      const response = await createAptuitiveHandler({ contract: ops, planner })(
-        new Request('http://localhost:5171/api/aptuitive/command', {
+      const response = await createUitiveHandler({ contract: ops, planner })(
+        new Request('http://localhost:5171/api/uitive/command', {
           method: 'POST',
           body: body(),
           headers: { accept: 'application/x-ndjson' },

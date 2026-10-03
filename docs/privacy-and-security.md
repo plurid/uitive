@@ -1,6 +1,6 @@
 # Privacy and security
 
-Aptuitive adapts an interface from how it is used, so it is built to learn as little as it needs and to keep it with the person. This page lists exactly what leaves the device, who holds keys, and what stands between a model and the application.
+Uitive adapts an interface from how it is used, so it is built to learn as little as it needs and to keep it with the person. This page lists exactly what leaves the device, who holds keys, and what stands between a model and the application.
 
 ## What a planner sees
 
@@ -13,7 +13,7 @@ Aptuitive adapts an interface from how it is used, so it is built to learn as li
 | `state`    | The interface as IDs: each list's visible and pinned items, choices, the pages in view, the person's own decisions and cooldowns |
 | `contexts` | Context values active now, such as `tool: pen`                                                                                   |
 | `route`    | The route in view, such as `orders.detail`; never the row it shows                                                               |
-| `text`     | A request, in the words the person typed into Aptuitive                                                                          |
+| `text`     | A request, in the words the person typed into Uitive                                                                             |
 | `goal`     | The goal the person stated, if any                                                                                               |
 
 It never holds:
@@ -37,7 +37,7 @@ Model calls cost money, and the key belongs to whoever pays for them ([ADR 0006]
 
 ## The server
 
-`createAptuitiveHandler` is the only part that spends money, so it guards itself:
+`createUitiveHandler` is the only part that spends money, so it guards itself:
 
 - **`authorize`** decides who may plan. The default allows only requests to localhost, so a deployed handler refuses everyone until you check the session, as in [Planning](planning.md#a-model-on-your-server).
 - **Limits**: 20 requests a minute per client by default (`perMinute`), told apart by `X-Forwarded-For`, so put the handler behind a proxy that sets it; bodies up to 128 KiB (`maxBody`); commands up to 500 characters.
@@ -60,8 +60,8 @@ The invariants behind these rules are in [CONTEXT.md](../CONTEXT.md#invariants).
 
 - The elements escape every value they render, and render in shadow roots.
 - `adaptMarkup` hides items with a constructable stylesheet, which works under a strict `style-src` policy, and moves no nodes.
-- Actions with effects run through your bindings, with the person's own session, so Aptuitive can do nothing the person couldn't.
+- Actions with effects run through your bindings, with the person's own session, so Uitive can do nothing the person couldn't.
 
 ## The browser extension
 
-The extension prototype applies Aptuitive to sites it doesn't own. Page text never reaches a planner: only the structure it found. It reads data through official APIs with the person's own key, never by replaying a site's internal requests, keeps everything on the device, and "Forget everything" deletes it all. Its README has the details: [apps/extension/README.md](../apps/extension/README.md).
+The extension prototype applies Uitive to sites it doesn't own. Page text never reaches a planner: only the structure it found. It reads data through official APIs with the person's own key, never by replaying a site's internal requests, keeps everything on the device, and "Forget everything" deletes it all. Its README has the details: [apps/extension/README.md](../apps/extension/README.md).

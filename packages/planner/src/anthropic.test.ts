@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createAptuitive } from '@plurid/aptuitive-core';
+import { createUitive } from '@plurid/uitive-core';
 import { ops } from './__fixtures__/ops.js';
 import { anthropic } from './anthropic.js';
 import { PlannerError, type ModelCall } from './model.js';
@@ -148,7 +148,7 @@ describe('anthropic', () => {
     });
     const { client } = fake({ text });
     const result = await modelPlanner({ model: anthropic({ client }) }).plan(
-      createAptuitive({ contract: ops, now: () => 0 }).request('command', 'tidy up'),
+      createUitive({ contract: ops, now: () => 0 }).request('command', 'tidy up'),
       ops,
     );
     expect(result.meta).toMatchObject({

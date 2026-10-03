@@ -3,7 +3,7 @@
 
 const open = () =>
   new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open('aptuitive', 1);
+    const request = indexedDB.open('uitive', 1);
     request.onupgradeneeded = () => request.result.createObjectStore('secrets');
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error('IndexedDB is unavailable'));

@@ -1,11 +1,6 @@
-import type {
-  Adaptation,
-  AnyContract,
-  AppliedOperation,
-  CommandStatus,
-} from '@plurid/aptuitive-core';
+import type { Adaptation, AnyContract, AppliedOperation, CommandStatus } from '@plurid/uitive-core';
 import type { ClientLike } from './client-like.js';
-import { AptElement } from './element.js';
+import { UitiveElement } from './element.js';
 import { escape, plural } from './html.js';
 
 const COMMAND: Record<Exclude<CommandStatus, 'unavailable'>, string> = {
@@ -52,14 +47,14 @@ function heading(
 }
 
 /**
- * `<apt-banner>`: tells the user what just changed in their interface and why, with Revert and
+ * `<uitive-banner>`: tells the user what just changed in their interface and why, with Revert and
  * Keep for each change, and answers their commands, including refusals and their reasons.
  * Floats at the bottom right by default; restyle `:host` to place it elsewhere, or add `docked`
  * to put it in the page's flow, such as inside the application's own notification area.
  *
- * Emits `apt-dismiss` (`detail.adaptation`: the adaptation's ID) when closed.
+ * Emits `uitive-dismiss` (`detail.adaptation`: the adaptation's ID) when closed.
  */
-export class AptBanner extends AptElement {
+export class UitiveBanner extends UitiveElement {
   #dismissed = new Set<string>();
   #seen: { client: ClientLike; ids: Set<string> } | undefined;
 
@@ -229,7 +224,7 @@ export class AptBanner extends AptElement {
       const current = this.#current(client);
       if (!current) return;
       this.#dismissed.add(current.id);
-      this.emit('apt-dismiss', { adaptation: current.id });
+      this.emit('uitive-dismiss', { adaptation: current.id });
       this.update(true);
       return;
     }

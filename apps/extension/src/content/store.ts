@@ -1,4 +1,4 @@
-import type { Store } from '@plurid/aptuitive-core';
+import type { Store } from '@plurid/uitive-core';
 
 /**
  * The person's interface in the extension's local storage, read once before the client starts

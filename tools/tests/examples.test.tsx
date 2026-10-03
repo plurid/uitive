@@ -4,11 +4,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { movedOut } from '@plurid/aptuitive-dom';
+import { movedOut } from '@plurid/uitive-dom';
 import { Editor } from '../../docs/examples/quick-start/app.tsx';
-import { aptuitive as notes } from '../../docs/examples/quick-start/client.ts';
+import { uitive as notes } from '../../docs/examples/quick-start/client.ts';
 import { Admin } from '../../docs/examples/shop/admin.tsx';
-import { aptuitive as shop } from '../../docs/examples/shop/client.ts';
+import { uitive as shop } from '../../docs/examples/shop/client.ts';
 import { redesignOrders } from '../../docs/examples/shop/redesign.ts';
 
 // happy-dom replaces URL, so paths are built from this file's own.
@@ -67,7 +67,7 @@ describe('the quick start', () => {
       );
     });
     expect(toolbar()).not.toContain('Bold');
-    const banner = document.querySelector('apt-banner');
+    const banner = document.querySelector('uitive-banner');
     expect(banner?.shadowRoot?.textContent).toContain('Bold hidden from Toolbar');
   });
 });
@@ -76,11 +76,11 @@ describe('without React', () => {
   it('adapts the markup the page already has', async () => {
     document.body.innerHTML = example('without-react/menu.html');
     await import('../../docs/examples/without-react/start.ts');
-    const { aptuitive } = await import('../../docs/examples/without-react/client.ts');
-    await aptuitive.ask('hide Chart');
-    expect(movedOut(aptuitive, 'insert').map((item) => item.id)).toEqual(['chart']);
+    const { uitive } = await import('../../docs/examples/without-react/client.ts');
+    await uitive.ask('hide Chart');
+    expect(movedOut(uitive, 'insert').map((item) => item.id)).toEqual(['chart']);
     // happy-dom doesn't restyle on a stylesheet change, so this asks the rules.
-    const chart = document.querySelector('[data-apt-item="chart"]') as Element;
+    const chart = document.querySelector('[data-uitive-item="chart"]') as Element;
     const rules = document.adoptedStyleSheets.flatMap((sheet) => [...sheet.cssRules]);
     expect(
       rules.some(
@@ -90,7 +90,7 @@ describe('without React', () => {
           (rule as CSSStyleRule).style.display === 'none',
       ),
     ).toBe(true);
-    const more = document.querySelector('apt-more')?.shadowRoot;
+    const more = document.querySelector('uitive-more')?.shadowRoot;
     expect(more?.textContent).toContain('More');
   });
 });

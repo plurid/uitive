@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
-import { createAptuitive } from './client.js';
+import { createUitive } from './client.js';
 import { action, block, defineApp, page } from './contract.js';
 import {
   emptyDefinition,
@@ -475,7 +475,7 @@ describe('standard pages and regions in contracts', () => {
         }),
       },
     });
-    const client = createAptuitive({ contract, now: () => 0 });
+    const client = createUitive({ contract, now: () => 0 });
     const onHome = client.setPage('home', ui.page(ui.section('', 'stack', [ui.region('profile')])));
     expect(onHome.rejected[0]?.message).toBe('No region "profile" on this page');
   });
@@ -483,7 +483,7 @@ describe('standard pages and regions in contracts', () => {
 
 describe('pages in the client', () => {
   const fresh = (planner?: Planner) =>
-    createAptuitive({ contract: ops, now: () => 0, ...(planner ? { planner } : {}) });
+    createUitive({ contract: ops, now: () => 0, ...(planner ? { planner } : {}) });
 
   it('applies the user’s redesign at once, explains it, and resets it', async () => {
     const client = fresh();
@@ -569,7 +569,7 @@ describe('pages in the client', () => {
       autonomy: 'mixed',
       counter: 1,
     });
-    const client = createAptuitive({ contract: ops, store, now: () => 0 });
+    const client = createUitive({ contract: ops, store, now: () => 0 });
     expect(client.getSnapshot().definition.schemaVersion).toBe(2);
     expect(client.surface('service', 'vm')).toEqual(fromSections(v1Service('Stored')));
   });
@@ -577,7 +577,7 @@ describe('pages in the client', () => {
   it('imports version 1 documents', () => {
     const client = fresh();
     const result = client.import({
-      format: 'aptuitive.definition',
+      format: 'uitive.definition',
       version: 1,
       contract: { id: 'ops', hash: 'old' },
       definition: {

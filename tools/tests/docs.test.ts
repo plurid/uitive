@@ -41,7 +41,7 @@ const documents = files.filter(
 
 /** Links to this repository on GitHub, which npm pages need, mapped to their files. */
 const GITHUB =
-  /^https:\/\/(?:github\.com\/plurid\/aptuitive\/(?:blob|tree)\/master|raw\.githubusercontent\.com\/plurid\/aptuitive\/master)\/(.*)$/;
+  /^https:\/\/(?:github\.com\/plurid\/uitive\/(?:blob|tree)\/master|raw\.githubusercontent\.com\/plurid\/uitive\/master)\/(.*)$/;
 
 describe('the documentation', () => {
   it('embeds every example as its file says, keeps the API pages current, and is formatted', async () => {
@@ -76,6 +76,17 @@ describe('the documentation', () => {
 
   it('uses no em dashes, anywhere', () => {
     expect(text.filter((path) => read(path).includes(EM_DASH))).toEqual([]);
+  });
+
+  it('uses the name Uitive, but in the records that keep the old one', () => {
+    // Decision records are immutable, and the findings say which name their runs used (ADR 0009).
+    const records = /^(docs\/adr\/000[1-9]-|docs\/findings\.md$)/;
+    // The old name is built from parts, so this file doesn't trip its own check.
+    const name = new RegExp(['ap', 'tuitive'].join(''), 'i');
+    // Its prefix too, in class names and on its own, as elements, attributes and paths had it.
+    const prefix = /\bApt[A-Z]|\bapt\b/;
+    const stale = (path: string) => name.test(read(path)) || prefix.test(read(path));
+    expect(text.filter((path) => !records.test(path) && stale(path))).toEqual([]);
   });
 
   it('gives every code block a language', () => {

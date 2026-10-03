@@ -16,7 +16,7 @@ export {
   size,
   toOperations,
   vocabulary,
-} from '@plurid/aptuitive-planner';
+} from '@plurid/uitive-planner';
 export type {
   AnthropicOptions,
   GoogleOptions,
@@ -31,6 +31,6 @@ export type {
   PlannerOutput,
   SchemaOptions,
   Vocabulary,
-} from '@plurid/aptuitive-planner';
-export { createAptuitiveHandler } from './handler.js';
+} from '@plurid/uitive-planner';
+export { createUitiveHandler } from './handler.js';
 export type { HandlerOptions } from './handler.js';

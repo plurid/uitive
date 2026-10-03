@@ -29,14 +29,14 @@ export interface InitOptions {
   install?: boolean;
   /** Configures the coding agents found: MCP servers and the integration skill. @default true */
   agents?: boolean;
-  /** How agents start the MCP server. @default 'npx -y @plurid/aptuitive-mcp' */
+  /** How agents start the MCP server. @default 'npx -y @plurid/uitive-mcp' */
   mcp?: string;
   /** A folder of package tarballs (`pnpm pack`) to install from, such as a local build. */
   packages?: string;
   /**
-   * Where Aptuitive's files go, relative to the project, such as `app/aptuitive` for a build that
-   * compiles only `app`. Recorded in package.json as `aptuitive.dir`, where every command reads it.
-   * @default the recorded folder, else 'src/aptuitive' when there is a src folder, else 'aptuitive'
+   * Where Uitive's files go, relative to the project, such as `app/uitive` for a build that
+   * compiles only `app`. Recorded in package.json as `uitive.dir`, where every command reads it.
+   * @default the recorded folder, else 'src/uitive' when there is a src folder, else 'uitive'
    */
   dir?: string;
 }
@@ -63,7 +63,7 @@ const exists = (path: string) =>
     () => false,
   );
 
-const short = (name: string) => name.replace('@plurid/aptuitive-', '');
+const short = (name: string) => name.replace('@plurid/uitive-', '');
 
 /**
  * Sets entries under `overrides` in a pnpm-workspace.yaml, keeping everything else as written:
@@ -90,17 +90,17 @@ export function withOverrides(yaml: string, overrides: Readonly<Record<string, s
 
 /**
  * The packages a project needs: React bindings or the DOM package, a server package only with a
- * server, and zod, which Aptuitive shares with the application, unless it has it already.
+ * server, and zod, which Uitive shares with the application, unless it has it already.
  */
 function wanted(detection: Detection, existing: ReadonlySet<string>) {
   return {
     runtime: [
-      '@plurid/aptuitive-core',
+      '@plurid/uitive-core',
       ...(existing.has('zod') ? [] : ['zod']),
-      detection.ui?.name === 'react' ? '@plurid/aptuitive-react' : '@plurid/aptuitive-dom',
-      ...(detection.server ? ['@plurid/aptuitive-server'] : []),
+      detection.ui?.name === 'react' ? '@plurid/uitive-react' : '@plurid/uitive-dom',
+      ...(detection.server ? ['@plurid/uitive-server'] : []),
     ],
-    dev: ['@plurid/aptuitive-cli'],
+    dev: ['@plurid/uitive-cli'],
   };
 }
 
@@ -143,16 +143,16 @@ async function useTarballs(
   packages: ReturnType<typeof wanted>,
 ): Promise<string[]> {
   const files = (await readdir(folder)).filter((name) =>
-    /^plurid-aptuitive-[a-z]+-.+\.tgz$/.test(name),
+    /^plurid-uitive-[a-z]+-.+\.tgz$/.test(name),
   );
-  if (files.length === 0) throw new Error(`No @plurid/aptuitive tarballs in ${folder}`);
+  if (files.length === 0) throw new Error(`No @plurid/uitive tarballs in ${folder}`);
   // Paths relative to each package.json, so the project stays movable.
   const from = (base: string) =>
     new Map(
       files.map((name) => {
         const path = relative(base, resolve(folder, name));
         return [
-          /^plurid-aptuitive-([a-z]+)-/.exec(name)?.[1] ?? '',
+          /^plurid-uitive-([a-z]+)-/.exec(name)?.[1] ?? '',
           `file:${path.startsWith('.') ? path : `./${path}`}`,
         ];
       }),
@@ -175,7 +175,7 @@ async function useTarballs(
   // left to the registry would install another build, or none.
   const top = await workspaceRoot(root, detection.repository);
   const overrides = Object.fromEntries(
-    [...from(top)].map(([name, tarball]) => [`@plurid/aptuitive-${name}`, tarball]),
+    [...from(top)].map(([name, tarball]) => [`@plurid/uitive-${name}`, tarball]),
   );
   const written = ['package.json'];
   const shared = top === root ? own : await read(join(top, 'package.json'));
@@ -291,22 +291,22 @@ async function mergeJson(path: string, update: (value: Record<string, unknown>) 
   );
 }
 
-/** Records where Aptuitive's files go in the project's package.json, and returns it. */
+/** Records where Uitive's files go in the project's package.json, and returns it. */
 async function recordFolder(root: string, dir: string): Promise<string> {
   const folder = dir.trim().replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
   const path = join(root, 'package.json');
   const manifest = JSON.parse(await readFile(path, 'utf8')) as Manifest & {
-    aptuitive?: { dir?: string };
+    uitive?: { dir?: string };
   };
-  if (manifest.aptuitive?.dir !== folder) {
-    manifest.aptuitive = { ...manifest.aptuitive, dir: folder };
+  if (manifest.uitive?.dir !== folder) {
+    manifest.uitive = { ...manifest.uitive, dir: folder };
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`);
   }
   return folder;
 }
 
 /**
- * Sets Aptuitive up in a project: packages, a folder (`src/aptuitive/` or `aptuitive/`)
+ * Sets Uitive up in a project: packages, a folder (`src/uitive/` or `uitive/`)
  * whose contract starts with every page as a region, sources generated from an API description
  * when one is small enough, and the coding agents' MCP servers and skill, at the repository's
  * root. Never overwrites a file.
@@ -343,7 +343,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     !(await exists(join(root, FOLDER, 'contract.ts'))) &&
     (await exists(join(root, 'src')))
   ) {
-    folder = await recordFolder(root, 'src/aptuitive');
+    folder = await recordFolder(root, 'src/uitive');
   }
   if (folder !== FOLDER) written.push('package.json');
   const curation = `${folder}/curation.json`;
@@ -371,7 +371,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
         )}\n`,
       );
       next.push(
-        `Choose what the frontend shows in ${curation} (set "include": true), then run \`aptuitive generate sources --openapi ${spec}\` and spread \`sources\` and \`actions\` into the contract.`,
+        `Choose what the frontend shows in ${curation} (set "include": true), then run \`uitive generate sources --openapi ${spec}\` and spread \`sources\` and \`actions\` into the contract.`,
       );
     } else {
       const result = await generateSources({ spec, cwd: root });
@@ -405,8 +405,8 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     await put(`${folder}/server.ts`, serverTemplate(extension));
     if (detection.framework?.name === 'next') {
       const app = (await exists(join(root, 'src', 'app'))) ? 'src/app' : 'app';
-      // One route for both: the client posts to /api/aptuitive/plan and /api/aptuitive/command.
-      const route = `${app}/api/aptuitive/[kind]/route.ts`;
+      // One route for both: the client posts to /api/uitive/plan and /api/uitive/command.
+      const route = `${app}/api/uitive/[kind]/route.ts`;
       const target = relative(dirname(join(root, route)), join(root, folder, 'server'));
       await put(
         route,
@@ -414,12 +414,12 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
       );
     } else {
       next.push(
-        `Mount the \`handler\` from ${folder}/server.ts at /api/aptuitive in the application's server; in Express, app.use('/api/aptuitive', toNodeListener(handler)) with toNodeListener from @plurid/aptuitive-server/node.`,
+        `Mount the \`handler\` from ${folder}/server.ts at /api/uitive in the application's server; in Express, app.use('/api/uitive', toNodeListener(handler)) with toNodeListener from @plurid/uitive-server/node.`,
       );
     }
   } else {
     next.push(
-      'No server found, so the client plans with the deterministic planner: commands such as "hide …", "pin …" and choice values work without a key. For model planning, mount @plurid/aptuitive-server\'s handler in a backend and switch the client to remotePlanner.',
+      'No server found, so the client plans with the deterministic planner: commands such as "hide …", "pin …" and choice values work without a key. For model planning, mount @plurid/uitive-server\'s handler in a backend and switch the client to remotePlanner.',
     );
   }
 
@@ -432,8 +432,8 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     if (detection.agents.length === 0) {
       next.push(
         deferred
-          ? 'No coding agents found, so Claude Code is configured: the integrate-aptuitive skill.'
-          : 'No coding agents found, so Claude Code is configured: .mcp.json and the integrate-aptuitive skill.',
+          ? 'No coding agents found, so Claude Code is configured: the integrate-uitive skill.'
+          : 'No coding agents found, so Claude Code is configured: .mcp.json and the integrate-uitive skill.',
       );
     }
     const shown = (path: string) => relative(root, join(top, path)) || path;
@@ -442,17 +442,17 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
         'With local packages, the MCP server is left unconfigured: pass --mcp "node <repository>/packages/mcp/dist/bin.js" to configure it.',
       );
     } else {
-      const [command = 'npx', ...args] = (options.mcp ?? 'npx -y @plurid/aptuitive-mcp').split(' ');
+      const [command = 'npx', ...args] = (options.mcp ?? 'npx -y @plurid/uitive-mcp').split(' ');
       const stdio = { command, args };
       if (claude) {
         await mergeJson(join(top, '.mcp.json'), (value) => {
-          value.mcpServers = { ...(value.mcpServers as object | undefined), aptuitive: stdio };
+          value.mcpServers = { ...(value.mcpServers as object | undefined), uitive: stdio };
         });
         written.push(shown('.mcp.json'));
       }
       if (detection.agents.includes('cursor')) {
         await mergeJson(join(top, '.cursor', 'mcp.json'), (value) => {
-          value.mcpServers = { ...(value.mcpServers as object | undefined), aptuitive: stdio };
+          value.mcpServers = { ...(value.mcpServers as object | undefined), uitive: stdio };
         });
         written.push(shown('.cursor/mcp.json'));
       }
@@ -460,14 +460,14 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
         await mergeJson(join(top, '.vscode', 'mcp.json'), (value) => {
           value.servers = {
             ...(value.servers as object | undefined),
-            aptuitive: { type: 'stdio', ...stdio },
+            uitive: { type: 'stdio', ...stdio },
           };
         });
         written.push(shown('.vscode/mcp.json'));
       }
     }
     if (claude)
-      await put(relative(root, join(top, '.claude/skills/integrate-aptuitive/SKILL.md')), SKILL);
+      await put(relative(root, join(top, '.claude/skills/integrate-uitive/SKILL.md')), SKILL);
   }
 
   const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')) as Manifest;
@@ -480,7 +480,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
   const [major = 0, minor = 0] = (/(\d+)(?:\.(\d+))?/.exec(zod ?? '') ?? []).slice(1).map(Number);
   if (zod !== undefined && (major < 4 || (major === 4 && minor < 2))) {
     next.push(
-      `Aptuitive shares zod with the application and needs 4.2 or later; this project has ${zod}, so upgrade it first.`,
+      `Uitive shares zod with the application and needs 4.2 or later; this project has ${zod}, so upgrade it first.`,
     );
   }
   const add = detection.packageManager === 'npm' ? 'install' : 'add';
@@ -489,7 +489,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     [add, ...packages.runtime],
     [add, dev, ...packages.dev],
   ];
-  if (options.packages && !detection.aptuitive) {
+  if (options.packages && !detection.uitive) {
     written.push(
       ...(await useTarballs(root, detection, resolve(root, options.packages), packages)),
     );
@@ -498,7 +498,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
   const pm = detection.packageManagerPin ?? detection.packageManager;
   const command = steps.map((step) => `${detection.packageManager} ${step.join(' ')}`).join(' && ');
   const install: InitResult['install'] = { command, ran: false };
-  if ((options.install ?? true) && !detection.aptuitive) {
+  if ((options.install ?? true) && !detection.uitive) {
     install.ran = true;
     for (const step of steps) {
       const result = await runPackageManager(detection, step, root);
@@ -511,14 +511,14 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
         break;
       }
     }
-  } else if (!detection.aptuitive) {
+  } else if (!detection.uitive) {
     next.unshift(`Install the packages: ${command}`);
   }
   next.push(
     detection.ui?.name === 'react'
-      ? 'Wrap the application in <AptuitiveProvider client={aptuitive} kit={kit}> with <Confirmations />, and render each route through <Page> with the page as a region; the integrate-aptuitive skill has the steps.'
-      : 'Without React, use @plurid/aptuitive-dom: call startAptuitive(aptuitive) at startup, mark lists with data-apt-list and their items with data-apt-item, and place <apt-ask>, <apt-banner>, <apt-more> and <apt-confirm>; the integrate-aptuitive skill has the steps.',
-    'Run `aptuitive check`.',
+      ? 'Wrap the application in <UitiveProvider client={uitive} kit={kit}> with <Confirmations />, and render each route through <Page> with the page as a region; the integrate-uitive skill has the steps.'
+      : 'Without React, use @plurid/uitive-dom: call startUitive(uitive) at startup, mark lists with data-uitive-list and their items with data-uitive-item, and place <uitive-ask>, <uitive-banner>, <uitive-more> and <uitive-confirm>; the integrate-uitive skill has the steps.',
+    'Run `uitive check`.',
   );
   return { detection, written: [...new Set(written)], kept, install, next };
 }

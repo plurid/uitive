@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { selectSubset } from '@plurid/aptuitive-core';
+import { selectSubset } from '@plurid/uitive-core';
 import { payments } from '../../core/src/__fixtures__/payments.js';
 import { scale } from '../../core/src/__fixtures__/scale.js';
 import { ops } from './__fixtures__/ops.js';

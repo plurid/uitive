@@ -6,7 +6,7 @@ import {
   type ActionView,
   type Adaptation,
   type AnyContract,
-  type Aptuitive,
+  type Uitive,
   type Confirmation,
   type DataEntry,
   type DataScope,
@@ -21,13 +21,13 @@ import {
   type SurfaceValueOf,
   type UserPage,
   type View,
-} from '@plurid/aptuitive-core';
+} from '@plurid/uitive-core';
 
 /**
  * The client's whole snapshot. It changes with every usage event, so use it for panels, not for
  * the interface itself; prefer {@link useSurface} there.
  */
-export function useSnapshot<C extends AnyContract>(client: Aptuitive<C>): Snapshot {
+export function useSnapshot<C extends AnyContract>(client: Uitive<C>): Snapshot {
   return useSyncExternalStore(client.subscribe, client.getSnapshot, client.getSnapshot);
 }
 
@@ -37,7 +37,7 @@ export function useSnapshot<C extends AnyContract>(client: Aptuitive<C>): Snapsh
  * user's definition follows on the client.
  */
 export function useSurface<C extends AnyContract, K extends SurfaceIdOf<C>>(
-  client: Aptuitive<C>,
+  client: Uitive<C>,
   id: K,
   context?: string,
 ): SurfaceValueOf<C, K> {
@@ -48,7 +48,7 @@ export function useSurface<C extends AnyContract, K extends SurfaceIdOf<C>>(
 
 /** A surface as the application ships it, whatever the user's definition. */
 export function useStandard<C extends AnyContract, K extends SurfaceIdOf<C>>(
-  client: Aptuitive<C>,
+  client: Uitive<C>,
   id: K,
   context?: string,
 ): SurfaceValueOf<C, K> {
@@ -58,25 +58,25 @@ export function useStandard<C extends AnyContract, K extends SurfaceIdOf<C>>(
 
 /** Every action, ranked for a palette by how the user reaches for them. */
 export function useRanked<C extends AnyContract>(
-  client: Aptuitive<C>,
+  client: Uitive<C>,
 ): readonly ActionView<ActionIdOf<C>>[] {
   return useSyncExternalStore(client.subscribe, client.ranked, client.ranked);
 }
 
 /** Whether the user is looking at their own interface or the standard one. */
-export function useView<C extends AnyContract>(client: Aptuitive<C>): View {
+export function useView<C extends AnyContract>(client: Uitive<C>): View {
   const read = useCallback(() => client.getSnapshot().view, [client]);
   return useSyncExternalStore(client.subscribe, read, read);
 }
 
 /** The latest adaptation, for banners. Re-renders only when a new one arrives. */
-export function useLatest<C extends AnyContract>(client: Aptuitive<C>): Adaptation | undefined {
+export function useLatest<C extends AnyContract>(client: Uitive<C>): Adaptation | undefined {
   const read = useCallback(() => client.getSnapshot().latest, [client]);
   return useSyncExternalStore(client.subscribe, read, read);
 }
 
 /** Changes waiting for the next safe moment. */
-export function usePending<C extends AnyContract>(client: Aptuitive<C>): readonly Pending[] {
+export function usePending<C extends AnyContract>(client: Uitive<C>): readonly Pending[] {
   const read = useCallback(() => client.getSnapshot().pending, [client]);
   return useSyncExternalStore(client.subscribe, read, read);
 }
@@ -92,7 +92,7 @@ export interface Request<T> {
 }
 
 /** Asks in the user's own words, tracking the request for the interface. */
-export function useCommand<C extends AnyContract>(client: Aptuitive<C>) {
+export function useCommand<C extends AnyContract>(client: Uitive<C>) {
   const [state, setState] = useState<Request<Adaptation>>({
     pending: false,
     result: undefined,
@@ -116,7 +116,7 @@ export function useCommand<C extends AnyContract>(client: Aptuitive<C>) {
 }
 
 /** Plans on request, tracking it for the interface. */
-export function usePlan<C extends AnyContract>(client: Aptuitive<C>) {
+export function usePlan<C extends AnyContract>(client: Uitive<C>) {
   const [state, setState] = useState<Request<Adaptation>>({
     pending: false,
     result: undefined,
@@ -140,10 +140,10 @@ export function usePlan<C extends AnyContract>(client: Aptuitive<C>) {
  * Connects the page's lifecycle to sessions: coming back to a tab after an idle gap applies
  * pending changes before the user acts, each session is planned from use once (see `learn`), and
  * leaving the page writes state to storage. Starts no sessions itself and plans a session only
- * once, so React's development double-mounting changes nothing. `AptuitiveProvider` calls it;
+ * once, so React's development double-mounting changes nothing. `UitiveProvider` calls it;
  * call it yourself only for a client used without the provider.
  */
-export function useLifecycle<C extends AnyContract>(client: Aptuitive<C>): void {
+export function useLifecycle<C extends AnyContract>(client: Uitive<C>): void {
   useEffect(() => {
     void client.learn();
     const onVisibility = () => {
@@ -175,7 +175,7 @@ const silent = () => () => {};
  * or it went stale; renders from the cache meanwhile.
  */
 export function useQuery<C extends AnyContract>(
-  client: Aptuitive<C>,
+  client: Uitive<C>,
   query: Query | undefined,
   scope: DataScope = {},
 ): DataEntry {
@@ -184,7 +184,7 @@ export function useQuery<C extends AnyContract>(
 
 /** Several queries' results at once, in order; an undefined query reads as loading. */
 export function useQueries<C extends AnyContract>(
-  client: Aptuitive<C>,
+  client: Uitive<C>,
   queries: readonly (Query | undefined)[],
   scope: DataScope = {},
 ): readonly DataEntry[] {
@@ -216,7 +216,7 @@ export function useQueries<C extends AnyContract>(
 }
 
 /** Runs actions; writes from generated interfaces wait for the user's yes. */
-export function usePerform<C extends AnyContract>(client: Aptuitive<C>) {
+export function usePerform<C extends AnyContract>(client: Uitive<C>) {
   return useCallback(
     <A extends ActionIdOf<C>>(action: A, params?: ParamsOf<C, A>, options?: PerformOptions) =>
       client.perform(action, params, options),
@@ -229,7 +229,7 @@ export function usePerform<C extends AnyContract>(client: Aptuitive<C>) {
  * `record()`), and the application confirms in its own way.
  */
 export function useAction<C extends AnyContract, A extends ActionIdOf<C>>(
-  client: Aptuitive<C>,
+  client: Uitive<C>,
   action: A,
 ): (params?: ParamsOf<C, A>, options?: Omit<PerformOptions, 'origin'>) => Promise<PerformResult> {
   return useCallback(
@@ -239,7 +239,7 @@ export function useAction<C extends AnyContract, A extends ActionIdOf<C>>(
 }
 
 /** The run waiting for the user's yes, with the means to answer it. */
-export function useConfirmation<C extends AnyContract>(client: Aptuitive<C>) {
+export function useConfirmation<C extends AnyContract>(client: Uitive<C>) {
   const read = useCallback(() => client.getSnapshot().confirmation, [client]);
   const confirmation: Confirmation | undefined = useSyncExternalStore(
     client.subscribe,
@@ -257,23 +257,23 @@ export function useConfirmation<C extends AnyContract>(client: Aptuitive<C>) {
 }
 
 /** Where the user is, as the router last reported it. */
-export function useLocation<C extends AnyContract>(client: Aptuitive<C>): Location | undefined {
+export function useLocation<C extends AnyContract>(client: Uitive<C>): Location | undefined {
   const read = useCallback(() => client.getSnapshot().location, [client]);
   return useSyncExternalStore(client.subscribe, read, () => undefined);
 }
 
 /** The pages the user made. */
-export function useUserPages<C extends AnyContract>(client: Aptuitive<C>): readonly UserPage[] {
+export function useUserPages<C extends AnyContract>(client: Uitive<C>): readonly UserPage[] {
   return useSyncExternalStore(client.subscribe, client.userPages, client.userPages);
 }
 
 /**
  * Connects any router: tells the client every route change and lets it follow links through
- * the router. With React Router, `useAptuitiveRouter(client, { path: pathname + search,
+ * the router. With React Router, `useUitiveRouter(client, { path: pathname + search,
  * navigate })`; with Next.js, `{ path: usePathname(), navigate: useRouter().push }`.
  */
-export function useAptuitiveRouter<C extends AnyContract>(
-  client: Aptuitive<C>,
+export function useUitiveRouter<C extends AnyContract>(
+  client: Uitive<C>,
   router: { path: string; navigate: (href: string) => void },
 ): void {
   const navigate = useRef(router.navigate);

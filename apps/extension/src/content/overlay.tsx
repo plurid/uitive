@@ -1,5 +1,5 @@
-import { AptuitiveProvider, Page } from '@plurid/aptuitive-react';
-import type { AnyContract, AnyPage, Aptuitive } from '@plurid/aptuitive-core';
+import { UitiveProvider, Page } from '@plurid/uitive-react';
+import type { AnyContract, AnyPage, Uitive } from '@plurid/uitive-core';
 import { createRoot } from 'react-dom/client';
 
 export interface Overlay {
@@ -11,9 +11,9 @@ export interface Overlay {
 }
 
 const frame = `
-.apt-overlay { font: inherit; color: var(--apt-text, inherit); display: grid; gap: 12px; margin-block-end: 16px; }
-.apt-overlay-bar { display: flex; gap: 8px; align-items: center; font-size: 0.85em; opacity: 0.75; }
-.apt-overlay-bar button { font: inherit; background: none; border: 0; color: var(--apt-accent, inherit); cursor: pointer; padding: 0; text-decoration: underline; }
+.uitive-overlay { font: inherit; color: var(--uitive-text, inherit); display: grid; gap: 12px; margin-block-end: 16px; }
+.uitive-overlay-bar { display: flex; gap: 8px; align-items: center; font-size: 0.85em; opacity: 0.75; }
+.uitive-overlay-bar button { font: inherit; background: none; border: 0; color: var(--uitive-accent, inherit); cursor: pointer; padding: 0; text-decoration: underline; }
 `;
 
 /** How the region sits in the page's layout, so the overlay takes the same place. */
@@ -54,36 +54,36 @@ function fit(host: HTMLElement, region: Element) {
 export function mountOverlay(options: {
   region: Element;
   regionName: string;
-  client: Aptuitive<AnyContract>;
+  client: Uitive<AnyContract>;
   page: AnyPage;
   theme: Readonly<Record<string, string>>;
   onShowOriginal(): void;
 }): Overlay {
   const document = options.region.ownerDocument;
   const host = document.createElement('div');
-  host.setAttribute('data-aptuitive-overlay', '');
+  host.setAttribute('data-uitive-overlay', '');
   fit(host, options.region);
   options.region.before(host);
   const shadow = host.attachShadow({ mode: 'closed' });
   const style = document.createElement('style');
   style.textContent = frame;
   const container = document.createElement('div');
-  container.className = 'apt-overlay';
+  container.className = 'uitive-overlay';
   for (const [name, value] of Object.entries(options.theme))
     container.style.setProperty(name, value);
   shadow.append(style, container);
   const root = createRoot(container);
   const render = (page: AnyPage) =>
     root.render(
-      <AptuitiveProvider client={options.client}>
-        <div className="apt-overlay-bar">
+      <UitiveProvider client={options.client}>
+        <div className="uitive-overlay-bar">
           <span>Your page</span>
           <button type="button" onClick={options.onShowOriginal}>
             Show the original
           </button>
         </div>
         <Page value={page} blocks={{}} regions={{ [options.regionName]: () => null }} />
-      </AptuitiveProvider>,
+      </UitiveProvider>,
     );
   render(options.page);
   return {
@@ -111,8 +111,8 @@ export function themeOf(document: Document, region: Element | undefined): Record
   return {
     'font-family': body.fontFamily,
     'font-size': body.fontSize,
-    '--apt-text': body.color,
-    ...(link ? { '--apt-accent': view.getComputedStyle(link).color } : {}),
-    ...(surface && surface !== 'rgba(0, 0, 0, 0)' ? { '--apt-surface': surface } : {}),
+    '--uitive-text': body.color,
+    ...(link ? { '--uitive-accent': view.getComputedStyle(link).color } : {}),
+    ...(surface && surface !== 'rgba(0, 0, 0, 0)' ? { '--uitive-surface': surface } : {}),
   };
 }

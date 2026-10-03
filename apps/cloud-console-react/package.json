@@ -1,5 +1,5 @@
 {
-  "name": "@aptuitive/cloud-console-react",
+  "name": "@uitive/cloud-console-react",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,10 +9,10 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@plurid/aptuitive-core": "workspace:*",
-    "@plurid/aptuitive-dom": "workspace:*",
-    "@plurid/aptuitive-react": "workspace:*",
-    "@plurid/aptuitive-server": "workspace:*",
+    "@plurid/uitive-core": "workspace:*",
+    "@plurid/uitive-dom": "workspace:*",
+    "@plurid/uitive-react": "workspace:*",
+    "@plurid/uitive-server": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zod": "^4.6.5"

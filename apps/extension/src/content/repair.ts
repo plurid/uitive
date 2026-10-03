@@ -1,5 +1,5 @@
 import { computeAccessibleName, getRole } from 'dom-accessibility-api';
-import type { Strategy } from '@plurid/aptuitive-adapter';
+import type { Strategy } from '@plurid/uitive-adapter';
 import { candidates } from './anchors.ts';
 
 const literal = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -52,7 +52,7 @@ export function pick(document: Document, label: string): Promise<Element | undef
       return;
     }
     const host = document.createElement('div');
-    host.setAttribute('data-aptuitive-pick', '');
+    host.setAttribute('data-uitive-pick', '');
     host.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 2147483647;';
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');

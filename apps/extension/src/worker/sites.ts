@@ -5,7 +5,7 @@ const id = (origin: string) => `site-${origin.replace(/[^a-z0-9]+/gi, '-')}`;
 /** Runs the content script on an origin the person enabled; the permission is theirs to give. */
 export async function enable(origin: string): Promise<void> {
   if (!(await chrome.permissions.contains({ origins: [pattern(origin)] }))) {
-    throw new Error(`Allow Aptuitive on ${origin} first`);
+    throw new Error(`Allow Uitive on ${origin} first`);
   }
   const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [id(origin)] });
   if (existing.length > 0) return;

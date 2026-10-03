@@ -1,4 +1,4 @@
-import type { Fetch, FetchResult, Planner, PlanRequest, PlanResult } from '@plurid/aptuitive-core';
+import type { Fetch, FetchResult, Planner, PlanRequest, PlanResult } from '@plurid/uitive-core';
 import type { PlanReply } from '../messages.ts';
 
 export class PlannerError extends Error {

@@ -1,16 +1,16 @@
-import { AptBanner, AptuitiveProvider, AptYourInterface } from '@plurid/aptuitive-react';
+import { UitiveBanner, UitiveProvider, UitiveYourInterface } from '@plurid/uitive-react';
 import { Ask } from './ask.js';
-import { aptuitive } from './client.js';
+import { uitive } from './client.js';
 import { Toolbar } from './toolbar.js';
 
 export function Editor({ run }: { run(action: string): void }) {
   return (
-    <AptuitiveProvider client={aptuitive}>
+    <UitiveProvider client={uitive}>
       <Toolbar run={run} />
       <Ask />
       {/* What just changed and why, with Revert and Keep; and every change, owned by the person. */}
-      <AptBanner client={aptuitive} />
-      <AptYourInterface client={aptuitive} />
-    </AptuitiveProvider>
+      <UitiveBanner client={uitive} />
+      <UitiveYourInterface client={uitive} />
+    </UitiveProvider>
   );
 }

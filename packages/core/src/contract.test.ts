@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 import { editor } from './__fixtures__/editor.js';
-import { createAptuitive } from './client.js';
+import { createUitive } from './client.js';
 import {
   action,
   choice,
@@ -152,7 +152,7 @@ describe('defineApp', () => {
 
 describe('types', () => {
   it('infers action and surface IDs, and each surface value', () => {
-    const client = createAptuitive({ contract: editor });
+    const client = createUitive({ contract: editor });
     expectTypeOf<ActionIdOf<typeof editor>>().toEqualTypeOf<
       | 'save'
       | 'undo'

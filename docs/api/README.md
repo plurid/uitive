@@ -4,13 +4,13 @@
 
 Every package's public API, generated from its type declarations and JSDoc. The guides explain how the pieces fit; these pages say exactly what each one takes and returns.
 
-| Package                                   | What it holds                                                                                                     |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| [`@plurid/aptuitive-adapter`](adapter.md) | Aptuitive for pages it doesn't own: role trees, discovery, and adapters as data, wherever JavaScript runs         |
-| [`@plurid/aptuitive-cli`](cli.md)         | Aptuitive for coding agents: detect, scaffold, generate sources and blocks, discover, and check an integration    |
-| [`@plurid/aptuitive-core`](core.md)       | Typed contracts, usage learning and policy for interfaces that adapt to each user                                 |
-| [`@plurid/aptuitive-dom`](dom.md)         | Plain-HTML bindings and framework-agnostic web components for Aptuitive                                           |
-| [`@plurid/aptuitive-mcp`](mcp.md)         | Aptuitive over the Model Context Protocol: the agent kit's steps as tools any coding agent can call               |
-| [`@plurid/aptuitive-planner`](planner.md) | Aptuitive's model planner: contracts compiled to structured outputs, prompts and Claude, wherever JavaScript runs |
-| [`@plurid/aptuitive-react`](react.md)     | React bindings for Aptuitive: interfaces that adapt to each user within the app's contract                        |
-| [`@plurid/aptuitive-server`](server.md)   | Fetch-standard handler and Claude planner for Aptuitive                                                           |
+| Package                                | What it holds                                                                                                  |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| [`@plurid/uitive-adapter`](adapter.md) | Uitive for pages it doesn't own: role trees, discovery, and adapters as data, wherever JavaScript runs         |
+| [`@plurid/uitive-cli`](cli.md)         | Uitive for coding agents: detect, scaffold, generate sources and blocks, discover, and check an integration    |
+| [`@plurid/uitive-core`](core.md)       | Typed contracts, usage learning and policy for interfaces that adapt to each user                              |
+| [`@plurid/uitive-dom`](dom.md)         | Plain-HTML bindings and framework-agnostic web components for Uitive                                           |
+| [`@plurid/uitive-mcp`](mcp.md)         | Uitive over the Model Context Protocol: the agent kit's steps as tools any coding agent can call               |
+| [`@plurid/uitive-planner`](planner.md) | Uitive's model planner: contracts compiled to structured outputs, prompts and Claude, wherever JavaScript runs |
+| [`@plurid/uitive-react`](react.md)     | React bindings for Uitive: interfaces that adapt to each user within the app's contract                        |
+| [`@plurid/uitive-server`](server.md)   | Fetch-standard handler and Claude planner for Uitive                                                           |

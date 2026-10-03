@@ -1,5 +1,5 @@
-import type { Persona } from '@plurid/aptuitive-core';
-import type { ClientLike } from '@plurid/aptuitive-dom';
+import type { Persona } from '@plurid/uitive-core';
+import type { ClientLike } from '@plurid/uitive-dom';
 import type { DetailedHTMLProps, HTMLAttributes } from 'react';
 
 type Element<Properties> = DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> & Properties;
@@ -7,9 +7,9 @@ type Element<Properties> = DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLEl
 declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
-      'apt-banner': Element<{ client?: ClientLike }>;
-      'apt-your-interface': Element<{ client?: ClientLike }>;
-      'apt-debug': Element<{ client?: ClientLike; personas?: readonly Persona[] }>;
+      'uitive-banner': Element<{ client?: ClientLike }>;
+      'uitive-your-interface': Element<{ client?: ClientLike }>;
+      'uitive-debug': Element<{ client?: ClientLike; personas?: readonly Persona[] }>;
     }
   }
 }

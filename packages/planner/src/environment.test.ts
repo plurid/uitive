@@ -16,7 +16,7 @@ describe('environmentModel', () => {
       name: DEFAULT_MODELS.google,
     });
     expect(
-      environmentModel({ GEMINI_API_KEY: 'g', APTUITIVE_MODEL: 'gemini-3.1-pro-preview' })?.name,
+      environmentModel({ GEMINI_API_KEY: 'g', UITIVE_MODEL: 'gemini-3.1-pro-preview' })?.name,
     ).toBe('gemini-3.1-pro-preview');
     expect(environmentModel({ ANTHROPIC_API_KEY: '' })).toBeUndefined();
     expect(environmentModel({})).toBeUndefined();
@@ -28,7 +28,7 @@ describe('environmentModel', () => {
       delete process.env.ANTHROPIC_API_KEY;
       delete process.env.GEMINI_API_KEY;
       delete process.env.GOOGLE_API_KEY;
-      delete process.env.APTUITIVE_MODEL;
+      delete process.env.UITIVE_MODEL;
       process.env.OPENAI_API_KEY = 'o';
       expect(environmentModel()?.provider).toBe('openai');
     } finally {
