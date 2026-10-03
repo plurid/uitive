@@ -162,7 +162,7 @@ function Panel() {
               : 'That isn’t something this page allows.',
           tokens > 0 ? `${tokens.toLocaleString()} tokens.` : '',
           result.meta?.fellBack
-            ? `Claude didn’t answer (${result.meta.fellBack}), so simple commands were used.`
+            ? `The model didn’t answer (${result.meta.fellBack}), so simple commands were used.`
             : '',
         ]
           .filter(Boolean)
@@ -356,14 +356,28 @@ function Panel() {
           <section>
             <h2>Keys</h2>
             <p className="muted">
-              Kept in this browser only. Claude plans what you ask; restricted keys read data for
-              redesigned pages.
+              Kept in this browser only. The first model you have a key for plans what you ask:
+              Claude, then OpenAI, then Gemini. Restricted keys read data for redesigned pages.
             </p>
             <KeyField
               label="Claude API key"
               hint="sk-ant-..."
               name="anthropic"
               present={secrets.includes('anthropic')}
+              onChange={() => void refresh()}
+            />
+            <KeyField
+              label="OpenAI API key"
+              hint="sk-..."
+              name="openai"
+              present={secrets.includes('openai')}
+              onChange={() => void refresh()}
+            />
+            <KeyField
+              label="Gemini API key"
+              hint="AIza..."
+              name="google"
+              present={secrets.includes('google')}
               onChange={() => void refresh()}
             />
             {status.connectors.map((connector) => (

@@ -108,4 +108,4 @@ Test components as usual, such as with Testing Library: render them inside `Aptu
 
 - `aptuitive check` exits with 1 when the contract or the bindings fail a check: run it with the other checks.
 - `aptuitive generate blocks --check` exits with 1 when generated block specs no longer match their components.
-- A model planner never runs in tests: leave `ANTHROPIC_API_KEY` empty in the test environment, and test the server's handler with the deterministic planner, as `docs/examples/server/handler.ts` does when there is no key.
+- A model planner never runs in tests: leave `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` and `GOOGLE_API_KEY` empty in the test environment, and test the server's handler with the deterministic planner, as `docs/examples/server/handler.ts` does when there is no key.

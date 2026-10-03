@@ -1,6 +1,6 @@
 # Planning
 
-A planner turns use and requests into proposed operations, which policy then checks. Aptuitive has two. The **deterministic planner** in core needs no model, no key and no network: it answers plain commands and learns from use. **Claude**, through the model planner on your server, answers requests in plain words, works towards a person's stated goal and redesigns pages. Whoever pays holds the key: the model planner runs on your server, and the browser only ever talks to your server.
+A planner turns use and requests into proposed operations, which policy then checks. Aptuitive has two. The **deterministic planner** in core needs no model, no key and no network: it answers plain commands and learns from use. **A language model**, from any provider, through the model planner on your server, answers requests in plain words, works towards a person's stated goal and redesigns pages. Whoever pays holds the key: the model planner runs on your server, and the browser only ever talks to your server.
 
 ## Without a model
 
@@ -24,26 +24,31 @@ The provider in React, and `startAptuitive` without it, call `client.learn()` wh
 
 With a model planner, each of those plans is one request to your server. Pass `learn: false` to `createAptuitive` to plan only when you call `client.plan()` yourself, such as from a button through `usePlan`.
 
-## Claude on your server
+## A model on your server
 
 The server owns the contract and the key. Create a handler with the contract, a planner and a way to tell who may ask:
 
 <!-- example: docs/examples/server/handler.ts#handler -->
 
 ```ts
+// Whichever model the server has a key for: Anthropic, OpenAI or Gemini.
+const model = environmentModel();
+
 export const handler = createAptuitiveHandler({
   contract: shop,
-  // Claude where the server has a key; the deterministic planner otherwise, as in development.
-  planner: process.env.ANTHROPIC_API_KEY ? anthropicPlanner() : heuristicPlanner(),
+  // Without a key, as in development, the deterministic planner answers plain commands.
+  planner: model ? modelPlanner({ model }) : heuristicPlanner(),
   // Planning spends money: only signed-in people may ask. The default allows localhost only.
   authorize: (request) => /(^|;\s*)session=/.test(request.headers.get('cookie') ?? ''),
 });
 ```
 
+`environmentModel()` picks whichever provider the server has a key for: `ANTHROPIC_API_KEY`, else `OPENAI_API_KEY`, else `GEMINI_API_KEY`, with `APTUITIVE_MODEL` naming the model. To choose one yourself, see [Choosing a model](#choosing-a-model).
+
 | Option      | What it does                                                                                                                                                                       |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `contract`  | The contract the application's clients use. Clients send only its hash; another hash answers 409.                                                                                  |
-| `planner`   | Who plans, such as `anthropicPlanner()`.                                                                                                                                           |
+| `planner`   | Who plans, such as `modelPlanner({ model })`.                                                                                                                                      |
 | `authorize` | Whether a request may plan. Planning spends money, so the default only allows requests to localhost: in production, check the session.                                             |
 | `maxBody`   | The largest request body, in bytes. The default is 131072 (128 KiB).                                                                                                               |
 | `perMinute` | Requests per minute per client, told apart by `X-Forwarded-For`, so serve it behind a proxy that sets that header; without it, every request shares one budget. The default is 20. |
@@ -84,7 +89,7 @@ export const aptuitive = createAptuitive({
   contract: shop,
   store: localStore('shop'),
   bindings,
-  // Claude through the application's server; simple commands still work when it can't answer.
+  // A model through the application's server; simple commands still work when it can't answer.
   planner: remotePlanner({ url: '/api/aptuitive', fallback: heuristicPlanner() }),
 });
 ```
@@ -95,40 +100,114 @@ export const aptuitive = createAptuitive({
 - Simple commands never reach the server: "hide Bold" is answered in the browser, at no cost.
 - When the server fails, the fallback answers, and the reason, such as "server answered 401: Not allowed", is kept in the adaptation's `meta.fellBack`. A request only a model could answer then says so: `unavailable`.
 
-## The model planner
+## Choosing a model
 
-`anthropicPlanner()` plans with Claude through structured outputs: the contract compiles to the schema the model must answer in, so an answer can only name what the application offers. It reads the server's key from `ANTHROPIC_API_KEY` or an `ant auth login` profile.
+`modelPlanner({ model })` plans with any language model that can answer in JSON. The contract compiles to the JSON Schema the answer must follow, so a model that keeps to it can only name what the application offers. Every answer is checked against the schema all the same, and one that strays, or that policy would partly reject, goes back once for repair.
 
-| Option      | What it sets                                                    | Default              |
-| ----------- | --------------------------------------------------------------- | -------------------- |
-| `model`     | The model                                                       | `'claude-opus-5-5'`  |
-| `effort`    | How much it thinks before answering; `low` keeps commands quick | `'low'`              |
-| `maxTokens` | The most it may write, thinking included                        | `16000`              |
-| `timeoutMs` | How long a plan may take                                        | `60000`              |
-| `fallbacks` | The server-side refusal fallback                                | `true`               |
-| `client`    | The Anthropic client, such as one with your own settings        | from the environment |
+<!-- example: docs/examples/server/models.ts#providers -->
 
-- **Keys** stay on the server. In development, keep the key in a gitignored `.env.local`; never put it in client code or in a variable the bundler exposes, such as `VITE_` or `NEXT_PUBLIC_`.
-- **Caching**: one schema per contract, or per part of a large one, keeps the compiled grammar and the prompt cache warm between requests.
-- **Repair**: when policy would reject part of a plan, the model gets one more round to repair it.
-- **Cost** hasn't been measured with a live key yet.
+```ts
+// Claude: reads ANTHROPIC_API_KEY, or an `ant auth login` profile.
+export const claude = modelPlanner({ model: anthropic({ model: 'claude-sonnet-5-5' }) });
+
+// OpenAI: reads OPENAI_API_KEY.
+export const gpt = modelPlanner({ model: openai({ model: 'gpt-6.1-sol' }) });
+
+// Gemini: reads GEMINI_API_KEY.
+export const gemini = modelPlanner({ model: google({ model: 'gemini-3.8-flash' }) });
+```
+
+| Model               | Provider                                     | Key                                                 | How it keeps to the schema                                  |
+| ------------------- | -------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------- |
+| `anthropic()`       | Anthropic                                    | `ANTHROPIC_API_KEY`, or an `ant auth login` profile | Structured outputs                                          |
+| `openai({ model })` | OpenAI, and every server that speaks its API | `OPENAI_API_KEY`, for OpenAI's own API              | Strict JSON Schema; `json` or `text` for servers without it |
+| `google({ model })` | Gemini                                       | `GEMINI_API_KEY` or `GOOGLE_API_KEY`                | Structured output (`responseJsonSchema`)                    |
+
+- Each takes `apiKey`, for runtimes without a process environment such as Cloudflare Workers, where `environmentModel(env)` takes their variables too, and `timeoutMs`, 60 seconds by default.
+- `anthropic()` also takes `effort` (`low` by default), `fallbacks` and a `client`. It needs `@anthropic-ai/sdk`, which the server package brings.
+- `openai()` takes `baseURL`, `headers`, `structured`, `reasoningEffort` and `prices`; `google()` takes `baseURL`, `structured`, `thinkingBudget` and `prices`. Both call `fetch`, with no SDK.
+- `modelPlanner` takes `maxTokens`, 16000 by default. The [API reference](api/planner.md#models) has every option.
+
+**Local models and other providers**: Ollama, vLLM, LM Studio, OpenRouter, Groq and most others speak OpenAI's API, so `openai()` reaches them through `baseURL`.
+
+<!-- example: docs/examples/server/models.ts#local -->
+
+```ts
+// Any server that speaks OpenAI's API, such as Ollama on this machine: no key, and JSON mode for
+// models without structured outputs.
+export const local = modelPlanner({
+  model: openai({ model: 'qwen3', baseURL: 'http://localhost:11434/v1', structured: 'json' }),
+});
+```
+
+Models that can't constrain their answer to a schema still plan. With `structured: 'json'` or `'text'`, the schema goes in the prompt, and answers are checked and repaired once. Policy checks every operation either way, so a weaker model can make worse plans, never unsafe ones.
+
+**Any other model**: implement `Model`, one `generate` call that returns the answer's text, how it stopped and the tokens it used.
+
+<!-- example: docs/examples/server/models.ts#custom -->
+
+```ts
+// Any other provider: one call that returns the answer's text, how it stopped and what it used.
+export const acme: Model = {
+  provider: 'acme',
+  name: 'acme-large',
+  structured: 'json',
+  async generate(call) {
+    const response = await fetch('https://llm.acme.example/v1/generate', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${process.env.ACME_API_KEY ?? ''}`,
+      },
+      body: JSON.stringify({
+        system: `${call.rules}\n\n${call.contract}`,
+        messages: call.messages,
+        maxTokens: call.maxTokens,
+      }),
+    });
+    const answer = (await response.json()) as {
+      text: string;
+      truncated: boolean;
+      tokens: { read: number; written: number };
+    };
+    return {
+      text: answer.text,
+      stop: answer.truncated ? 'cut' : 'done',
+      model: 'acme-large',
+      usage: {
+        input: answer.tokens.read,
+        output: answer.tokens.written,
+        cacheRead: 0,
+        cacheWrite: 0,
+      },
+    };
+  },
+};
+```
+
+- **Keys** stay on the server. In development, keep them in a gitignored `.env.local`; never put one in client code or in a variable the bundler exposes, such as `VITE_` or `NEXT_PUBLIC_`.
+- **Caching**: the rules and the contract lead every call unchanged, so providers' prompt caches serve them; Anthropic's is marked explicitly. One schema per contract, or per part of a large one, keeps compiled grammars warm.
+- **Schemas too big** for a provider are planned again over a smaller part of the contract.
+- **Cost**: Claude models report what each plan cost; for others, give `prices`. Plans haven't been measured with live keys yet.
+
+[ADR 0008](adr/0008-any-model-plans.md) records why planning works this way.
 
 ## Statuses
 
 The handler answers with these statuses; on any but 200, `remotePlanner` falls back:
 
-| Status | When                                                                                        |
-| ------ | ------------------------------------------------------------------------------------------- |
-| 200    | A plan, or with `Accept: application/x-ndjson`, progress lines, then the result or an error |
-| 400    | The body isn't JSON or a plan request, or a command is over 500 characters                  |
-| 401    | `authorize` said no: "Not allowed"                                                          |
-| 404    | Anything but `POST …/plan` or `POST …/command`                                              |
-| 409    | The client's contract isn't the server's: "The application changed; reload the page"        |
-| 413    | The body is over `maxBody`                                                                  |
-| 429    | Over `perMinute`, or Anthropic's rate limit                                                 |
-| 502    | The model declined, the plan was cut short, or Anthropic answered with an error             |
-| 500    | Anything else went wrong: "Planning failed", with the details for `onError` only            |
-| 503    | No Anthropic credentials, or Anthropic rejected them                                        |
+| Status | When                                                                                                                |
+| ------ | ------------------------------------------------------------------------------------------------------------------- |
+| 200    | A plan, or with `Accept: application/x-ndjson`, progress lines, then the result or an error                         |
+| 400    | The body isn't JSON or a plan request, or a command is over 500 characters                                          |
+| 401    | `authorize` said no: "Not allowed"                                                                                  |
+| 404    | Anything but `POST …/plan` or `POST …/command`                                                                      |
+| 409    | The client's contract isn't the server's: "The application changed; reload the page"                                |
+| 413    | The body is over `maxBody`                                                                                          |
+| 429    | Over `perMinute`, or the provider's rate limit                                                                      |
+| 502    | The model declined, the plan was cut short or strayed from the schema twice, or the provider answered with an error |
+| 500    | Anything else went wrong: "Planning failed", with the details for `onError` only                                    |
+| 503    | No credentials for the model's provider, or the provider rejected them                                              |
 
 ## Large contracts
 

@@ -11,8 +11,6 @@ npx @plurid/aptuitive-cli detect   # what the project uses; at a monorepo root, 
 npx @plurid/aptuitive-cli init     # packages, the Aptuitive folder and the agents' configuration
 ```
 
-Until the packages are published, build and pack them as in [Getting started](getting-started.md#install), run the CLI from this repository, and give `init` the tarballs with `--packages <folder>`.
-
 Then ask the agent to integrate Aptuitive. `init` installs the playbook, a skill named `integrate-aptuitive`, which takes the agent from the contract to bindings, pages, the kit and checks, one checked step at a time.
 
 ## What `init` writes

@@ -6,8 +6,6 @@ The agent kit as Model Context Protocol tools, for coding agents that prefer too
 { "mcpServers": { "aptuitive": { "command": "npx", "args": ["-y", "@plurid/aptuitive-mcp"] } } }
 ```
 
-Aptuitive is a preview and not yet published: until it is, start the server built in the repository, with `node <repository>/packages/mcp/dist/bin.js` as the command, which `aptuitive init --mcp` also takes.
-
 | Tool                         | What it does                                                                                 |
 | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | `aptuitive_detect`           | What the application uses. Start here                                                        |

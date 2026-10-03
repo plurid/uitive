@@ -281,7 +281,7 @@ describe('init with local packages', () => {
     });
     expect(app.devDependencies).toEqual({ '@plurid/aptuitive-cli': tarball('cli') });
     // Yarn reads resolutions from the workspace root, for the packages' own dependencies too:
-    // every tarball, since any package left to the registry fails before publication.
+    // every tarball, since any package left to the registry would install another build.
     const top = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
     expect(Object.keys(top.resolutions).sort()).toEqual(
       ['cli', 'core', 'planner', 'react', 'server'].map((name) => `@plurid/aptuitive-${name}`),

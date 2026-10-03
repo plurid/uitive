@@ -19,6 +19,8 @@ const fromPanel = (sender: chrome.runtime.MessageSender) =>
 /** Which secret a name is, and the pattern its value must fit. */
 function secretRule(name: string): { pattern: RegExp; label: string } | undefined {
   if (name === 'anthropic') return { pattern: /^sk-ant-/, label: 'a Claude API key (sk-ant-...)' };
+  if (name === 'openai') return { pattern: /^sk-(?!ant-)/, label: 'an OpenAI API key (sk-...)' };
+  if (name === 'google') return { pattern: /^AIza/, label: 'a Gemini API key (AIza...)' };
   const [, adapterId, connectorName, mode] =
     /^connector:([^:]+):([^:]+):(test|live)$/.exec(name) ?? [];
   const connector = adapterId

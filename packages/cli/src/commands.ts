@@ -73,7 +73,7 @@ Options:
                         compiles app. Recorded in package.json. Default: src/aptuitive when
                         there is a src folder, else aptuitive.
   --openapi <spec>      The API description to use. Default: the first one found.
-  --packages <folder>   Installs from package tarballs (pnpm pack), before publication.
+  --packages <folder>   Installs from package tarballs (pnpm pack), such as a local build.
   --no-install          Writes the files and prints the install command instead.
   --no-agents           Leaves coding agents' configuration alone.
   --mcp <command>       How agents start the MCP server. Default: npx -y @plurid/aptuitive-mcp

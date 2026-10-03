@@ -10,7 +10,7 @@ export interface HandlerOptions {
    * The contract the application's clients use; requests made with another are refused with 409.
    */
   contract: AnyContract;
-  /** Who plans, such as `anthropicPlanner()`, which reads the server's own key. */
+  /** Who plans, such as `modelPlanner({ model: environmentModel() })`, with the server's own key. */
   planner: Planner;
   /**
    * Whether a request may plan. Planning spends money, so the default only allows requests

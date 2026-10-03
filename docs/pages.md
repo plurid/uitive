@@ -134,7 +134,7 @@ export function OrderPage() {
 
 A redesign replaces a page's value, for this person only.
 
-- **The person's own**: a command planned by Claude, or your code on their behalf, applies at once on their own layer. Policy checks it like any plan.
+- **The person's own**: a command planned by a model, or your code on their behalf, applies at once on their own layer. Policy checks it like any plan.
 - **A planner's suggestion**: a redesign the person didn't ask for is only ever a suggestion. They preview it in place, then accept or dismiss it.
 - **Back to standard**: Revert undoes a redesign, `resetPage` and the command "reset this page" put a page back, and the standard view shows the application as shipped.
 

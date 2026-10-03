@@ -12,7 +12,7 @@ Work in this order. Each step ends with a check; don't move on while it fails. E
 ## 1. Set up
 
 - Run `aptuitive detect`. In a monorepo, run it at the root first: it lists the packages with an interface. Set Aptuitive up in that package, not at the root.
-- Run `aptuitive init` in that package (with `--no-install` to install yourself; before the packages are published, add `--packages <folder of tarballs>`). It writes the Aptuitive folder, `src/aptuitive/` when there is a `src` folder and `aptuitive/` otherwise (below, `aptuitive/` means that folder), puts the coding agents' configuration at the repository's root, and never overwrites a file. When the build compiles another folder, add `--dir <that folder>/aptuitive`: every command finds the files there.
+- Run `aptuitive init` in that package (with `--no-install` to install yourself). It writes the Aptuitive folder, `src/aptuitive/` when there is a `src` folder and `aptuitive/` otherwise (below, `aptuitive/` means that folder), puts the coding agents' configuration at the repository's root, and never overwrites a file. When the build compiles another folder, add `--dir <that folder>/aptuitive`: every command finds the files there.
 - Check: `aptuitive check` passes, with the home page as one region. A page that is one region renders the application itself, so its layout stays exactly as it was.
 
 ## 2. Data and actions

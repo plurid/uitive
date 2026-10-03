@@ -6,7 +6,7 @@ Aptuitive for pages without React. It adapts the markup an application already r
 pnpm add @plurid/aptuitive-core @plurid/aptuitive-dom zod
 ```
 
-Aptuitive is a preview and not yet published: until it is, install it from the repository's tarballs, as [Getting started](https://github.com/plurid/aptuitive/blob/master/docs/getting-started.md#install) shows. Mark each list's container and its items, wherever the application builds that markup:
+Mark each list's container and its items, wherever the application builds that markup:
 
 <!-- example: docs/examples/without-react/menu.html -->
 

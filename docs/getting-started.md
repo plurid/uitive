@@ -6,27 +6,21 @@ Aptuitive needs three things: a contract that says what may adapt, a client that
 
 Aptuitive needs React 18.3 or 19 for its React bindings, zod 4.2 or later, and Node 22 or later for its tools.
 
-It is a preview and isn't published yet. Build the packages from this repository, pack them, and let `init` install them: it points your package manager at the tarballs. The commands assume this repository, your application and the tarballs sit side by side.
-
 ```sh
-# In this repository
-pnpm install && pnpm build
-mkdir -p ../tarballs
-for name in core react dom planner server adapter cli mcp; do
-  (cd packages/$name && pnpm pack --pack-destination ../../../tarballs)
-done
-
-# In your application
-node ../aptuitive/packages/cli/dist/bin.js init --packages ../tarballs
+pnpm add @plurid/aptuitive-core @plurid/aptuitive-react zod
 ```
 
-Once the packages are published, this becomes `pnpm add @plurid/aptuitive-core @plurid/aptuitive-react zod`.
+Or let `init` install them, and write a starting folder too:
 
-`init` also writes `contract.ts`, `bindings.ts` and `client.ts` into `src/aptuitive/` (or `aptuitive/` when there is no `src`), and `kit.tsx` with React. The steps below fill them in for a notes editor: replace `contract.ts` with the contract below, keep `bindings.ts` and `client.ts`, and put the components with your application's own. The examples keep every file in one folder and import with `.js` extensions, which TypeScript resolves to `.ts` files under `"moduleResolution": "bundler"` or `"nodenext"`.
+```sh
+npx @plurid/aptuitive-cli init
+```
+
+It writes `contract.ts`, `bindings.ts` and `client.ts` into `src/aptuitive/` (or `aptuitive/` when there is no `src`), and `kit.tsx` with React. The steps below fill them in for a notes editor: replace `contract.ts` with the contract below, keep `bindings.ts` and `client.ts`, and put the components with your application's own. The examples keep every file in one folder and import with `.js` extensions, which TypeScript resolves to `.ts` files under `"moduleResolution": "bundler"` or `"nodenext"`.
 
 ## Declare a contract
 
-The contract is the boundary: everything a person or a model may change, and nothing else. This one declares eight actions and a toolbar that shows up to five of them, with the rest under More and Share always shown. It replaces the contract `init` wrote.
+The contract is the boundary: everything a person or a model may change, and nothing else. This one declares eight actions and a toolbar that shows up to five of them, with the rest under More and Share always shown. It goes in `contract.ts`, replacing the one `init` wrote, if you ran it.
 
 <!-- example: docs/examples/quick-start/contract.ts -->
 
@@ -63,7 +57,7 @@ Labels and descriptions are written for people and for models alike: they are ho
 
 ## Create a client
 
-A client holds one person's interface: how they use the application, what they changed, and what the system learned. Its store keeps that between visits; `localStore` keeps it in the browser. The `client.ts` that `init` wrote already creates one, with bindings for later; with this contract, it amounts to this:
+A client holds one person's interface: how they use the application, what they changed, and what the system learned. Its store keeps that between visits; `localStore` keeps it in the browser. The `client.ts` that `init` writes creates one, with bindings for later; with this contract, it amounts to this:
 
 <!-- example: docs/examples/quick-start/client.ts -->
 
@@ -78,7 +72,7 @@ export const aptuitive = createAptuitive({
 });
 ```
 
-With no planner given, the client plans with the deterministic planner: it answers plain commands and learns from use, offline, with no model and no key. [Planning](planning.md) adds Claude on your server.
+With no planner given, the client plans with the deterministic planner: it answers plain commands and learns from use, offline, with no model and no key. [Planning](planning.md) adds a language model, from any provider, on your server.
 
 ## Draw the toolbar
 
@@ -259,5 +253,5 @@ npx aptuitive check
 
 - [Data and actions](data-and-actions.md): sources the interface can show, and actions that change data, with confirmation.
 - [Pages](pages.md): whole pages people can redesign, from generic blocks on your data.
-- [Planning](planning.md): requests in plain words, planned by Claude on your server.
+- [Planning](planning.md): requests in plain words, planned by a model of your choice on your server.
 - [React](react.md): every hook, the page renderer and the kit.

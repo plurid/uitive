@@ -32,14 +32,14 @@ The person controls all of it in "Your interface": **export** downloads their de
 
 Model calls cost money, and the key belongs to whoever pays for them ([ADR 0006](adr/0006-two-front-doors.md)).
 
-- **In an application**, the planner runs on your server, with your key. The browser talks to your server, never to Anthropic, and never sees a key. Keep `ANTHROPIC_API_KEY` in the server's environment, in a gitignored `.env.local` in development, and never in a variable the bundler exposes, such as `VITE_` or `NEXT_PUBLIC_`.
-- **In the browser extension**, the person's own key stays with the extension's service worker, and no planner ever receives a third-party page's text.
+- **In an application**, the planner runs on your server, with your key for the model's provider. The browser talks to your server, never to the provider, and never sees a key. Keep the key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GEMINI_API_KEY`) in the server's environment, in a gitignored `.env.local` in development, and never in a variable the bundler exposes, such as `VITE_` or `NEXT_PUBLIC_`.
+- **In the browser extension**, the person's own key, for Claude, OpenAI or Gemini, stays with the extension's service worker, and no planner ever receives a third-party page's text.
 
 ## The server
 
 `createAptuitiveHandler` is the only part that spends money, so it guards itself:
 
-- **`authorize`** decides who may plan. The default allows only requests to localhost, so a deployed handler refuses everyone until you check the session, as in [Planning](planning.md#claude-on-your-server).
+- **`authorize`** decides who may plan. The default allows only requests to localhost, so a deployed handler refuses everyone until you check the session, as in [Planning](planning.md#a-model-on-your-server).
 - **Limits**: 20 requests a minute per client by default (`perMinute`), told apart by `X-Forwarded-For`, so put the handler behind a proxy that sets it; bodies up to 128 KiB (`maxBody`); commands up to 500 characters.
 - **The contract stays on the server**. Clients send only its hash, and a request made with another hash is refused, so no client can widen what a planner may name.
 - **Bodies are never logged**. `onError` hears of failures without them.
@@ -48,7 +48,7 @@ Model calls cost money, and the key belongs to whoever pays for them ([ADR 0006]
 
 A model's answer is data, never code, and it passes through the same checks as any change:
 
-- The contract compiles to the schema the model must answer in, so it can only name the application's actions, surfaces, blocks and fields.
+- The contract compiles to the schema the model must answer in, so a model that keeps to it can only name the application's actions, surfaces, blocks and fields. Answers from models that can't keep to a schema are checked against it, and nothing they name outside the contract gets past policy.
 - Policy checks every operation: required items stay, every action stays reachable, the person's own decisions outrank the model's, and the application's validators run. What fails is refused with a reason the person reads.
 - Pages pass their schemas, size and depth limits, and every query passes field by field before it runs. A page never executes anything.
 - Planners never run actions. Nothing changes data without the person's yes: one step for a write, a typed phrase for a destructive run, and with no interface able to ask, the run is refused.

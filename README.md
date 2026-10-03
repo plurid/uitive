@@ -28,13 +28,17 @@
 Large applications show everything to everyone; each person uses a small, personal part of it. Aptuitive lets an interface converge on that part, learned from usage and redesigned by asking in plain language, within the boundaries the application declares.
 
 - **The application declares a contract** of what may adapt: toolbars and menus, settings, whole pages built from its own components and its data, and the actions people can run.
-- **Planners propose, within it.** A deterministic planner learns from use and answers plain commands, offline and without a key. Claude, on the application's server, answers requests in plain words and redesigns pages; structured outputs make anything outside the contract unrepresentable.
+- **Planners propose, within it.** A deterministic planner learns from use and answers plain commands, offline and without a key. A language model on the application's server, from any provider (Claude, GPT, Gemini or a local model), answers requests in plain words and redesigns pages; structured outputs make anything outside the contract unrepresentable.
 - **Policy decides what applies, and when**: required items stay, every action stays reachable, nothing moves while someone works, and nothing changes data without the person's yes.
 - **The person owns the result**: every change is listed with its reason, and can be kept, reverted, exported or reset.
 
 ## Quick start
 
-Aptuitive is a preview and isn't on npm yet: [Getting started](docs/getting-started.md#install) installs it from this repository. Then declare what may adapt, such as a notes editor's toolbar:
+```sh
+pnpm add @plurid/aptuitive-core @plurid/aptuitive-react zod
+```
+
+Declare what may adapt, such as a notes editor's toolbar:
 
 <!-- example: docs/examples/quick-start/contract.ts -->
 
@@ -142,21 +146,20 @@ Wrap the editor in `AptuitiveProvider`, and add `<AptBanner>` and an ask box bui
 ### With a coding agent
 
 ```sh
-node ../aptuitive/packages/cli/dist/bin.js init --packages ../tarballs   # until the packages are published
-npx @plurid/aptuitive-cli init                                           # once they are
+npx @plurid/aptuitive-cli init
 ```
 
 `init` installs the packages, writes an Aptuitive folder with every page as the page it already is, and configures your coding agents with a playbook they follow step by step; `aptuitive check` is the gate. Then ask the agent to integrate Aptuitive. In Claude Code, the plugin brings the same to every project: `/plugin marketplace add plurid/aptuitive`, then `/plugin install aptuitive@plurid-aptuitive`. See [Coding agents](docs/coding-agents.md).
 
 ## What people can ask for
 
-| They say or do                                                    | What happens                                                        | Planner                                 |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------- |
-| "hide Bold", "move Table to the top", "compact"                   | The toolbar or setting changes at once                              | Deterministic                           |
-| Open Table from More, session after session                       | Table joins the toolbar at the start of a later session             | Deterministic                           |
-| "I watch costs and budgets"                                       | What serves that goal comes forward, as in the picture above        | Claude, or shared words without a model |
-| "make my home a morning check of what needs attention"            | A redesigned page, from the application's own blocks and data       | Claude                                  |
-| "put each customer's lifetime value beside their failed payments" | A table joining two sources, read with the person's own permissions | Claude                                  |
+| They say or do                                                    | What happens                                                        | Planner                              |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------ |
+| "hide Bold", "move Table to the top", "compact"                   | The toolbar or setting changes at once                              | Deterministic                        |
+| Open Table from More, session after session                       | Table joins the toolbar at the start of a later session             | Deterministic                        |
+| "I watch costs and budgets"                                       | What serves that goal comes forward, as in the picture above        | A model, or shared words without one |
+| "make my home a morning check of what needs attention"            | A redesigned page, from the application's own blocks and data       | A model                              |
+| "put each customer's lifetime value beside their failed payments" | A table joining two sources, read with the person's own permissions | A model                              |
 
 ## How it works
 
@@ -165,7 +168,7 @@ flowchart LR
   use[The person uses the app] --> record[Usage, recorded]
   ask[The person asks] --> planner
   record --> summary[Usage summary]
-  summary --> planner[Planner: deterministic or Claude]
+  summary --> planner[Planner: deterministic or a model]
   planner --> proposal[Proposed operations]
   proposal --> policy{Policy}
   policy -- refused, with a reason --> banner[Banner]
@@ -188,7 +191,7 @@ pnpm install
 pnpm --filter @aptuitive/cloud-console-react dev   # at localhost:5171
 ```
 
-Say what you use the cloud for on the home page, ask for changes with ⌘K, compare Standard and Yours, and open Debug to simulate a week of use as a persona. With an `ANTHROPIC_API_KEY` in `apps/cloud-console-react/.env.local`, requests in plain words are planned by Claude on the dev server; without one, the deterministic planner answers.
+Say what you use the cloud for on the home page, ask for changes with ⌘K, compare Standard and Yours, and open Debug to simulate a week of use as a persona. With a key in `apps/cloud-console-react/.env.local` (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GEMINI_API_KEY`), requests in plain words are planned by that provider's model on the dev server; without one, the deterministic planner answers.
 
 **The extension** reshapes a fictional payments dashboard: build it and load it unpacked, as [its README](apps/extension/README.md#try-it-on-the-fictional-dashboard) shows.
 
@@ -196,18 +199,18 @@ Say what you use the cloud for on the home page, ask for changes with ⌘K, comp
 
 ## Packages
 
-| Package                                                   | What it holds                                                                                       |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| [`@plurid/aptuitive-core`](packages/core/README.md)       | Contracts, sources and queries, usage learning, policy and the deterministic planner; runs anywhere |
-| [`@plurid/aptuitive-react`](packages/react/README.md)     | The provider, hooks, the page renderer, generic blocks and the kit                                  |
-| [`@plurid/aptuitive-dom`](packages/dom/README.md)         | Adapting existing markup without React, and the meta-interface as custom elements                   |
-| [`@plurid/aptuitive-planner`](packages/planner/README.md) | The Claude planner: schemas, prompt and repair                                                      |
-| [`@plurid/aptuitive-server`](packages/server/README.md)   | The planner's handler, for any Fetch runtime, Express and Node                                      |
-| [`@plurid/aptuitive-adapter`](packages/adapter/README.md) | Accessibility trees and discovery, for pages Aptuitive doesn't own                                  |
-| [`@plurid/aptuitive-cli`](packages/cli/README.md)         | The agent kit: detect, init, survey, generate, discover and check                                   |
-| [`@plurid/aptuitive-mcp`](packages/mcp/README.md)         | The agent kit as Model Context Protocol tools                                                       |
+| Package                                                   | What it holds                                                                                                                 |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`@plurid/aptuitive-core`](packages/core/README.md)       | Contracts, sources and queries, usage learning, policy and the deterministic planner; runs anywhere                           |
+| [`@plurid/aptuitive-react`](packages/react/README.md)     | The provider, hooks, the page renderer, generic blocks and the kit                                                            |
+| [`@plurid/aptuitive-dom`](packages/dom/README.md)         | Adapting existing markup without React, and the meta-interface as custom elements                                             |
+| [`@plurid/aptuitive-planner`](packages/planner/README.md) | The model planner, for any provider: schemas, prompt, repair, and models from Anthropic, OpenAI-compatible servers and Gemini |
+| [`@plurid/aptuitive-server`](packages/server/README.md)   | The planner's handler, for any Fetch runtime, Express and Node                                                                |
+| [`@plurid/aptuitive-adapter`](packages/adapter/README.md) | Accessibility trees and discovery, for pages Aptuitive doesn't own                                                            |
+| [`@plurid/aptuitive-cli`](packages/cli/README.md)         | The agent kit: detect, init, survey, generate, discover and check                                                             |
+| [`@plurid/aptuitive-mcp`](packages/mcp/README.md)         | The agent kit as Model Context Protocol tools                                                                                 |
 
-They are ES modules with TypeScript declarations, which CommonJS can `require` on Node 22.12 or later. They need Node 22 or later for the tools, React 18.3 or 19 for the React bindings, and zod 4.2 or later, shared with the application. Aptuitive is a preview and not yet published. It is a rewrite of the 2019 library, archived in [legacy](legacy/README.md).
+They are ES modules with TypeScript declarations, which CommonJS can `require` on Node 22.12 or later. They need Node 22 or later for the tools, React 18.3 or 19 for the React bindings, and zod 4.2 or later, shared with the application. It is a rewrite of the 2019 library, archived in [legacy](legacy/README.md).
 
 ## Documentation
 
@@ -218,7 +221,7 @@ They are ES modules with TypeScript declarations, which CommonJS can `require` o
 - [Pages](docs/pages.md): whole pages people redesign, from regions, generic blocks and your own components
 - [React](docs/react.md): the provider, every hook, the page renderer and the kit
 - [Without React](docs/without-react.md): adapting existing markup, and the custom elements
-- [Planning](docs/planning.md): the deterministic planner, learning from use, and Claude on your server
+- [Planning](docs/planning.md): the deterministic planner, learning from use, and any model on your server
 - [Testing](docs/testing.md): deterministic clients, sessions on demand and simulated personas
 - [Coding agents](docs/coding-agents.md): the CLI, curation, discovery, MCP and the Claude Code plugin
 - [Privacy and security](docs/privacy-and-security.md): what leaves the device, who holds keys, and what policy guarantees

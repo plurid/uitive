@@ -194,7 +194,7 @@ A contract also exists as data: `toJson` writes it, and `fromJson` reads it back
 
 - **contract**: it loads, compiles and validates.
 - **json**: it reads back from JSON unchanged.
-- **schemas**: every request schema fits what Claude's structured outputs accept: no optional fields, one union, at most 60 KB, and enums of at most 400 values.
+- **schemas**: every request schema keeps to what providers' structured outputs accept: no optional fields, one union, at most 60 KB, and enums of at most 400 values. A provider with tighter limits gets the request again over a smaller part of the contract.
 - **bindings**: the bindings bind what the contract needs: `fetch` for sources, `perform` for actions with effects.
 
 It also warns about actions that share a label, sources their own label doesn't find, sources over 40 fields, contracts over 40 sources or 200 actions, and two copies of zod.

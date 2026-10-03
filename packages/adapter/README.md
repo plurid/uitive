@@ -6,7 +6,7 @@ Aptuitive for pages it doesn't own, and discovery for pages it does. An adapter 
 pnpm add @plurid/aptuitive-adapter zod
 ```
 
-Aptuitive is a preview and not yet published: until it is, install it from the repository's tarballs, as [Getting started](https://github.com/plurid/aptuitive/blob/master/docs/getting-started.md#install) shows. Discovery reads the accessibility tree Playwright writes, never the page's rows:
+Discovery reads the accessibility tree Playwright writes, never the page's rows:
 
 <!-- example: docs/examples/adapter/discover.ts#discover -->
 

@@ -6,7 +6,7 @@ React bindings for Aptuitive: a provider, hooks that re-render only when what th
 pnpm add @plurid/aptuitive-core @plurid/aptuitive-react zod
 ```
 
-Aptuitive is a preview and not yet published: until it is, install it from the repository's tarballs, as [Getting started](https://github.com/plurid/aptuitive/blob/master/docs/getting-started.md#install) shows. Draw a list from the person's interface with your own components:
+Draw a list from the person's interface with your own components:
 
 <!-- example: docs/examples/quick-start/toolbar.tsx -->
 

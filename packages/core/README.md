@@ -6,7 +6,7 @@ The engine of Aptuitive: an application declares a typed contract of what may ad
 pnpm add @plurid/aptuitive-core zod
 ```
 
-Aptuitive is a preview and not yet published: until it is, install it from the repository's tarballs, as [Getting started](https://github.com/plurid/aptuitive/blob/master/docs/getting-started.md#install) shows. Declare what may adapt, such as a notes editor's toolbar:
+Declare what may adapt, such as a notes editor's toolbar:
 
 <!-- example: docs/examples/quick-start/contract.ts -->
 
@@ -59,6 +59,6 @@ Draw `aptuitive.surface('toolbar')` with your own components, record each use wi
 - **Without a key**, the deterministic planner answers plain commands and learns from use, offline.
 - **Data**: sources declared with the `field` helpers, read through the bindings' `fetch` with the person's own permissions. Queries are data, and core pushes down what the binding can do; `restFetch` and `restPerform` take REST endpoints as data.
 - **Actions that run** declare an `effect`: writes wait for the person's yes, destructive ones for a typed phrase.
-- **Claude** plans on your server: `remotePlanner` calls [`@plurid/aptuitive-server`](https://github.com/plurid/aptuitive/blob/master/packages/server/README.md).
+- **A language model** from any provider plans on your server: `remotePlanner` calls [`@plurid/aptuitive-server`](https://github.com/plurid/aptuitive/blob/master/packages/server/README.md).
 
 It needs zod 4.2 or later, shared with the application. Read the [guides](https://github.com/plurid/aptuitive/blob/master/README.md#documentation), starting with [Contracts](https://github.com/plurid/aptuitive/blob/master/docs/contracts.md) and [Data and actions](https://github.com/plurid/aptuitive/blob/master/docs/data-and-actions.md), and the [API reference](https://github.com/plurid/aptuitive/blob/master/docs/api/core.md). MIT licensed.

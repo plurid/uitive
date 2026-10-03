@@ -1,6 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { PlanRequest } from '@plurid/aptuitive-core';
-import { anthropicPlanner } from '@plurid/aptuitive-planner';
+import {
+  anthropic,
+  DEFAULT_MODELS,
+  google,
+  modelPlanner,
+  openai,
+  type Model,
+} from '@plurid/aptuitive-planner';
 import { adapterById } from '../adapters.ts';
 import { planMessage } from '../messages.ts';
 import type { PlanReply } from '../messages.ts';
@@ -8,7 +15,7 @@ import { meter } from './limits.ts';
 import { getSecret } from './secrets.ts';
 
 /**
- * Plans with the person's own Claude key, in the worker: the key never reaches a page or a
+ * Plans with the person's own key for a model, in the worker: the key never reaches a page or a
  * content script. Progress keeps the port, and so the worker, alive while the plan streams.
  */
 export function servePlanner(port: chrome.runtime.Port): void {
@@ -30,15 +37,13 @@ export function servePlanner(port: chrome.runtime.Port): void {
         send({ kind: 'error', code: 'failed', problem: 'Not a request this extension takes' });
         return;
       }
-      const key = await getSecret('anthropic');
-      if (!key) {
-        send({ kind: 'error', code: 'no-key', problem: 'Add a Claude API key in the side panel' });
+      const model = await storedModel();
+      if (!model) {
+        send({ kind: 'error', code: 'no-key', problem: 'Add a key for a model in the side panel' });
         return;
       }
       try {
-        const planner = anthropicPlanner({
-          client: new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }),
-        });
+        const planner = modelPlanner({ model });
         const result = await planner.plan(
           parsed.data.request as unknown as PlanRequest,
           loaded.contract,
@@ -55,4 +60,17 @@ export function servePlanner(port: chrome.runtime.Port): void {
       }
     })();
   });
+}
+
+/** The model the person has a key for: Claude, else OpenAI, else Gemini, as in the side panel. */
+async function storedModel(): Promise<Model | undefined> {
+  const claude = await getSecret('anthropic');
+  if (claude) {
+    return anthropic({ client: new Anthropic({ apiKey: claude, dangerouslyAllowBrowser: true }) });
+  }
+  const gpt = await getSecret('openai');
+  if (gpt) return openai({ model: DEFAULT_MODELS.openai, apiKey: gpt });
+  const gemini = await getSecret('google');
+  if (gemini) return google({ model: DEFAULT_MODELS.google, apiKey: gemini });
+  return undefined;
 }

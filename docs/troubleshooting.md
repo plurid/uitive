@@ -34,9 +34,7 @@ Find the message or the symptom, then the fix. Messages are quoted as Aptuitive 
 
 **The CLI or MCP server won't start**: they need Node 22 or later.
 
-**`npm install @plurid/aptuitive-core` finds nothing**: the packages aren't published yet. Install from tarballs: [Getting started](getting-started.md#install).
-
-**`init --packages` says "install failed"**: the package manager couldn't resolve a package from the tarballs. `init` overrides every `@plurid/aptuitive-*` package with its tarball: in `pnpm-workspace.yaml` for pnpm 10 and later, which pnpm 11 requires, and in package.json otherwise. Pack all eight packages into the folder, and read the warnings `init` prints: an older `init` wrote pnpm's overrides into package.json, which pnpm 11 ignores (`The "pnpm" field in package.json is no longer read`).
+**`init --packages` says "install failed"**: installing from local tarballs, such as a build of this repository, the package manager couldn't resolve a package from them. `init` overrides every `@plurid/aptuitive-*` package with its tarball: in `pnpm-workspace.yaml` for pnpm 10 and later, which pnpm 11 requires, and in package.json otherwise. Pack all eight packages into the folder, and read the warnings `init` prints: an older `init` wrote pnpm's overrides into package.json, which pnpm 11 ignores (`The "pnpm" field in package.json is no longer read`).
 
 ## Commands and plans
 
@@ -50,7 +48,11 @@ Find the message or the symptom, then the fix. Messages are quoted as Aptuitive 
 
 **"server answered 429: Too many requests; try again in a minute"**: over `perMinute`. Behind no proxy, every request shares one budget, because clients are told apart by `X-Forwarded-For`.
 
-**"server answered 503: No Anthropic credentials: set ANTHROPIC_API_KEY or run `ant auth login`"**: the server has no key. Set it in the server's environment, never in client code.
+**"server answered 503: No Anthropic credentials", "No OpenAI credentials" or "No Gemini credentials"**: the server has no key for the model's provider. Set `ANTHROPIC_API_KEY` (or run `ant auth login`), `OPENAI_API_KEY` or `GEMINI_API_KEY` in the server's environment, never in client code.
+
+**"server answered 502: The model's answer didn't follow the plan's form, even when asked again"**: the model couldn't keep to the schema. Use a model with structured output, or a stronger one; with a local server, try `structured: 'json'`.
+
+**"Planning with Claude needs @anthropic-ai/sdk installed"**: `anthropic()` loads Anthropic's SDK when it first plans. Install it, or plan with another provider.
 
 **The banner says "Not changed"**: the request named an item already as asked, such as hiding what is hidden, so nothing changed and the status is `done`.
 

@@ -12,8 +12,6 @@ npx @plurid/aptuitive-cli discover --url http://localhost:5173/
 npx @plurid/aptuitive-cli check                          # the gate: contract, JSON, schemas, labels, bindings
 ```
 
-Aptuitive is a preview and not yet published: until it is, run the CLI from the repository and give `init` the packed tarballs with `--packages <folder>`, as [Getting started](https://github.com/plurid/aptuitive/blob/master/docs/getting-started.md#install) shows.
-
 The files go in `src/aptuitive/` when the project has a `src` folder, else in `aptuitive/`; `init --dir app/aptuitive` puts them elsewhere, for a build that compiles only `app`. The folder is recorded in package.json as `aptuitive.dir`, where every command finds it. The playbook for agents is the `integrate-aptuitive` skill that `init` installs.
 
 ## Curation

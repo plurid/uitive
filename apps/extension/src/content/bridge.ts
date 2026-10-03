@@ -13,12 +13,12 @@ export class PlannerError extends Error {
 /** Plans in the worker, which holds the person's key; the request is all that crosses. */
 export function workerPlanner(adapter: string, sent: (request: PlanRequest) => void): Planner {
   return {
-    name: 'claude',
+    name: 'model',
     plan(request, _contract, options) {
       // Plans nobody asked for stay with the deterministic planner: they cost nothing.
       if (request.kind !== 'command') {
         return Promise.reject(
-          new PlannerError('unprompted', 'Only requests people make go to Claude'),
+          new PlannerError('unprompted', 'Only requests people make go to the model'),
         );
       }
       sent(request);
@@ -44,7 +44,7 @@ export function workerPlanner(adapter: string, sent: (request: PlanRequest) => v
   };
 }
 
-/** Tries one planner, then another: Claude when there's a key, the deterministic one otherwise. */
+/** Tries one planner, then another: a model when there's a key, the deterministic one otherwise. */
 export function fallback(primary: Planner, secondary: Planner): Planner {
   return {
     name: primary.name,

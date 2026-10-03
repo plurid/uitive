@@ -76,7 +76,7 @@ import { contract } from './contract${extension}';
 export const aptuitive = createAptuitive({
   contract,
   store: localStore(${quote(`aptuitive:${id}`)}),
-  // Claude through the application's server; simple commands still work when it can't answer.
+  // A model through the application's server; simple commands still work when it can't answer.
   planner: remotePlanner({ url: '/api/aptuitive', fallback: heuristicPlanner() }),
   bindings,
 });
@@ -97,13 +97,20 @@ export const aptuitive = createAptuitive({
 `;
 
 export const serverTemplate = (extension: string) =>
-  `import { anthropicPlanner, createAptuitiveHandler } from '@plurid/aptuitive-server';
+  `import { heuristicPlanner } from '@plurid/aptuitive-core';
+import { createAptuitiveHandler, environmentModel, modelPlanner } from '@plurid/aptuitive-server';
 import { contract } from './contract${extension}';
 
-// Server only: the planner reads ANTHROPIC_API_KEY, which never reaches the browser. Serve the
-// handler at /api/aptuitive/plan and /api/aptuitive/command, as a route or middleware that takes
-// a Request and returns a Response.
-export const handler = createAptuitiveHandler({ contract, planner: anthropicPlanner() });
+// Server only. The model is whichever the server has a key for, ANTHROPIC_API_KEY, OPENAI_API_KEY
+// or GEMINI_API_KEY, and the key never reaches the browser; without one, the deterministic planner
+// answers plain commands. Serve the handler at /api/aptuitive/plan and /api/aptuitive/command, as a
+// route or middleware that takes a Request and returns a Response.
+const model = environmentModel();
+
+export const handler = createAptuitiveHandler({
+  contract,
+  planner: model ? modelPlanner({ model }) : heuristicPlanner(),
+});
 `;
 
 export const kitTemplate = (designSystem: string | undefined) =>
@@ -138,7 +145,7 @@ Work in this order. Each step ends with a check; don't move on while it fails. E
 ## 1. Set up
 
 - Run \`aptuitive detect\`. In a monorepo, run it at the root first: it lists the packages with an interface. Set Aptuitive up in that package, not at the root.
-- Run \`aptuitive init\` in that package (with \`--no-install\` to install yourself; before the packages are published, add \`--packages <folder of tarballs>\`). It writes the Aptuitive folder, \`src/aptuitive/\` when there is a \`src\` folder and \`aptuitive/\` otherwise (below, \`aptuitive/\` means that folder), puts the coding agents' configuration at the repository's root, and never overwrites a file. When the build compiles another folder, add \`--dir <that folder>/aptuitive\`: every command finds the files there.
+- Run \`aptuitive init\` in that package (with \`--no-install\` to install yourself). It writes the Aptuitive folder, \`src/aptuitive/\` when there is a \`src\` folder and \`aptuitive/\` otherwise (below, \`aptuitive/\` means that folder), puts the coding agents' configuration at the repository's root, and never overwrites a file. When the build compiles another folder, add \`--dir <that folder>/aptuitive\`: every command finds the files there.
 - Check: \`aptuitive check\` passes, with the home page as one region. A page that is one region renders the application itself, so its layout stays exactly as it was.
 
 ## 2. Data and actions

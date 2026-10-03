@@ -31,7 +31,7 @@ export interface InitOptions {
   agents?: boolean;
   /** How agents start the MCP server. @default 'npx -y @plurid/aptuitive-mcp' */
   mcp?: string;
-  /** A folder of package tarballs (`pnpm pack`) to install from, before the packages are published. */
+  /** A folder of package tarballs (`pnpm pack`) to install from, such as a local build. */
   packages?: string;
   /**
    * Where Aptuitive's files go, relative to the project, such as `app/aptuitive` for a build that
@@ -172,7 +172,7 @@ async function useTarballs(
   own.dependencies = sorted(dependencies);
   own.devDependencies = sorted(devDependencies);
   // Every tarball, not just what is installed: the packages depend on each other, and any one
-  // left to the registry fails before publication.
+  // left to the registry would install another build, or none.
   const top = await workspaceRoot(root, detection.repository);
   const overrides = Object.fromEntries(
     [...from(top)].map(([name, tarball]) => [`@plurid/aptuitive-${name}`, tarball]),
@@ -439,7 +439,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     const shown = (path: string) => relative(root, join(top, path)) || path;
     if (deferred) {
       next.push(
-        'The MCP server is configured once the packages are published; until then, run the CLI directly, or pass --mcp "node <repository>/packages/mcp/dist/bin.js".',
+        'With local packages, the MCP server is left unconfigured: pass --mcp "node <repository>/packages/mcp/dist/bin.js" to configure it.',
       );
     } else {
       const [command = 'npx', ...args] = (options.mcp ?? 'npx -y @plurid/aptuitive-mcp').split(' ');

@@ -12,7 +12,7 @@ export const aptuitive = createAptuitive({
   contract: shop,
   store: localStore('shop'),
   bindings,
-  // Claude through the application's server; simple commands still work when it can't answer.
+  // A model through the application's server; simple commands still work when it can't answer.
   planner: remotePlanner({ url: '/api/aptuitive', fallback: heuristicPlanner() }),
 });
 // #endregion

@@ -1,7 +1,13 @@
 export {
-  anthropicPlanner,
+  anthropic,
   contractText,
+  costOf,
+  DEFAULT_MODELS,
+  environmentModel,
+  google,
   limits,
+  modelPlanner,
+  openai,
   outputSchema,
   PlannerError,
   repairText,
@@ -11,6 +17,20 @@ export {
   toOperations,
   vocabulary,
 } from '@plurid/aptuitive-planner';
-export type { AnthropicPlannerOptions, SchemaOptions, Vocabulary } from '@plurid/aptuitive-planner';
+export type {
+  AnthropicOptions,
+  GoogleOptions,
+  Model,
+  ModelCall,
+  ModelMessage,
+  ModelPlannerOptions,
+  ModelPrices,
+  ModelReply,
+  ModelUsage,
+  OpenAIOptions,
+  PlannerOutput,
+  SchemaOptions,
+  Vocabulary,
+} from '@plurid/aptuitive-planner';
 export { createAptuitiveHandler } from './handler.js';
 export type { HandlerOptions } from './handler.js';

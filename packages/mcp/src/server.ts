@@ -118,9 +118,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
         packages: z
           .string()
           .optional()
-          .describe(
-            'A folder of package tarballs to install from, before the packages are published.',
-          ),
+          .describe('A folder of package tarballs to install from, such as a local build.'),
         agents: z
           .boolean()
           .default(true)

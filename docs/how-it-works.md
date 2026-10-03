@@ -9,7 +9,7 @@ flowchart LR
   use[The person uses the app] --> record[Usage, recorded]
   ask[The person asks] --> planner
   record --> summary[Usage summary]
-  summary --> planner[Planner: deterministic or Claude]
+  summary --> planner[Planner: deterministic or a model]
   planner --> proposal[Proposed operations]
   proposal --> policy{Policy}
   policy -- refused, with a reason --> banner[Banner]
@@ -21,7 +21,7 @@ flowchart LR
 
 1. **The application declares a contract**: its actions, the surfaces that may adapt (lists, choices, collections and pages), and the data pages may show. It is the only vocabulary a planner may use.
 2. **Use is recorded**: which action, how it was reached (directly, from overflow, the palette, a suggestion, a shortcut or a command) and in which session. Never params, never text typed into the application.
-3. **A planner proposes operations**: promote this, hide that, set this choice, redesign that page. The deterministic planner answers plain commands and learns from use; Claude, on your server, answers requests in plain words and redesigns pages.
+3. **A planner proposes operations**: promote this, hide that, set this choice, redesign that page. The deterministic planner answers plain commands and learns from use; a language model on your server, from any provider, answers requests in plain words and redesigns pages.
 4. **Policy checks every operation**: against the contract's IDs, required items, capacities, the person's own changes, cooldowns, validators and the evidence it claims. What fails is refused with a reason the person reads.
 5. **The stabiliser decides when**: commands apply at once; planned changes wait for a safe moment.
 6. **The definition records what applied**, with who proposed it and why, and every surface is computed from it. The application draws surfaces as it always has, with its own components.
@@ -65,3 +65,4 @@ The same engine runs in two places. An application integrates it, with a contrac
 - [ADR 0005](adr/0005-planning-at-scale.md): planning at scale: areas, repair and streaming.
 - [ADR 0006](adr/0006-two-front-doors.md): one engine, two front doors.
 - [ADR 0007](adr/0007-the-agent-kit.md): the agent kit: generated, curated, checked.
+- [ADR 0008](adr/0008-any-model-plans.md): any model plans, from any provider, with the schema still the boundary.

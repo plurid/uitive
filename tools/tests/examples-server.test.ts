@@ -5,11 +5,13 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { discovery } from '../../docs/examples/adapter/discover.ts';
 import { shop } from '../../docs/examples/shop/contract.ts';
 
-// The examples read the key from the environment; a developer's own must never be used here.
+// The examples read keys from the environment; a developer's own must never be used here.
 let handler: (request: Request) => Promise<Response>;
 let client: (typeof import('../../docs/examples/shop/client.ts'))['aptuitive'];
 beforeAll(async () => {
-  vi.stubEnv('ANTHROPIC_API_KEY', '');
+  for (const key of ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_API_KEY']) {
+    vi.stubEnv(key, '');
+  }
   ({ handler } = await import('../../docs/examples/server/handler.ts'));
   ({ aptuitive: client } = await import('../../docs/examples/shop/client.ts'));
 });

@@ -6,7 +6,13 @@ Lists, choices, commands and the meta-interface work without React. Pages, gener
 
 ## Install
 
-Install `@plurid/aptuitive-core`, `@plurid/aptuitive-dom` and zod 4.2 or later. Until the packages are published, use the tarballs, as in [Getting started](getting-started.md#install); `aptuitive init` installs the DOM package when it finds no React. It also writes `contract.ts`, `bindings.ts` and `client.ts` into the Aptuitive folder: replace the contract with yours, as below, and keep the other two. Its contract starts with the home page as a region, which only React draws.
+Install `@plurid/aptuitive-core`, `@plurid/aptuitive-dom` and zod 4.2 or later:
+
+```sh
+pnpm add @plurid/aptuitive-core @plurid/aptuitive-dom zod
+```
+
+Or run `npx @plurid/aptuitive-cli init`, which installs the DOM package when it finds no React. It also writes `contract.ts`, `bindings.ts` and `client.ts` into the Aptuitive folder: replace the contract with yours, as below, and keep the other two. Its contract starts with the home page as a region, which only React draws.
 
 ## Declare the list
 
@@ -64,7 +70,7 @@ Add the attributes wherever the application builds the elements: in its template
 
 ## Start
 
-The client is the same as with React; the `client.ts` that `init` wrote creates one:
+The client is the same as with React, as the `client.ts` that `init` writes creates it:
 
 <!-- example: docs/examples/without-react/client.ts -->
 

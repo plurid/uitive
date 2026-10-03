@@ -32,7 +32,7 @@ Aptuitive lets an application's interface adapt to each person who uses it (lear
 - **Operation**: one change to one surface (promote, demote, move, set, add, place, …) with an origin (`heuristic`, `model` or `user`), evidence and a reason.
 - **Proposal**: operations from a planner that have not been applied.
 - **Pending**: a checked proposal waiting for the next safe moment.
-- **Planner**: produces proposals: the deterministic **heuristic** in the core, or the **model** planner on a server.
+- **Planner**: produces proposals: the deterministic **heuristic** in the core, or the **model** planner on a server, with a **model** from any provider: Anthropic, OpenAI or a server that speaks its API, Gemini, or one the application implements. Models that can't keep to the schema answer in JSON, checked against it and repaired once.
 - **Area**: one source with the actions that act on it and the routes that show it. A large contract's requests are planned over a **subset** of areas: those on screen and the most relevant few.
 - **Repair**: one more round with the model when the part of policy that needs no user state rejects part of its plan.
 - **Policy**: the rules every operation must pass: contract IDs, required items, reachability, precedence, budgets, cooldowns and application validators.
@@ -62,7 +62,7 @@ Aptuitive lets an application's interface adapt to each person who uses it (lear
 - **Core** (`@plurid/aptuitive-core`) owns contracts and kinds, sources and queries, the query executor and data cache, the recorder, the usage summary, the heuristic planner, policy, the stabiliser, the client store, storage and the simulator. It runs anywhere: no DOM or Node APIs. zod is a peer dependency of core and of every package built on it, so an application and Aptuitive share one copy.
 - **React** (`@plurid/aptuitive-react`) exposes the client through a provider and hooks (surfaces, queries, actions, confirmations, location, user pages, any router), renders pages with the application's blocks, regions and the generic blocks, and draws generic blocks with a **kit**: presentational parts an application maps to its design system. The provider also connects the page's lifecycle: usage is saved when the page is hidden, a session starts when the person comes back, and each session is planned from use once.
 - **DOM** (`@plurid/aptuitive-dom`) adapts an application's own markup, marked with `data-apt-list` and `data-apt-item`, through one stylesheet and CSS `order`, without moving any node, and provides the meta-interface elements: the ask box, banner, More menu, confirmation dialog, "Your interface" and the debug panel. `startAptuitive` does a page's setup in one call, the lifecycle included.
-- **Planner** (`@plurid/aptuitive-planner`) owns the schema compiler, the prompt and the model planner, free of Node and DOM APIs, so it runs on servers and in extensions alike.
+- **Planner** (`@plurid/aptuitive-planner`) owns the schema compiler, the prompt, the model planner and the built-in models, free of Node and DOM APIs, so it runs on servers and in extensions alike. Anthropic's SDK loads only when Claude plans; the other models call `fetch`.
 - **Server** (`@plurid/aptuitive-server`) owns the Fetch-standard handler, its limits and streaming; it re-exports the planner. `@plurid/aptuitive-server/node` serves the handler from Express or `node:http`.
 - **Adapter** (`@plurid/aptuitive-adapter`) owns what pages Aptuitive doesn't own need: accessibility trees from snapshots, page facts and discovery. It runs anywhere, for the CLI and the extension alike.
 - **CLI** (`@plurid/aptuitive-cli`) is the agent kit: detection, scaffolding, the OpenAPI mapper and curation, block props from TypeScript, discovery and the integration check. A project keeps its files in one folder, `src/aptuitive` or `aptuitive` by default, recorded in its package.json as `aptuitive.dir`.
@@ -72,4 +72,4 @@ Aptuitive lets an application's interface adapt to each person who uses it (lear
 
 ## Scope
 
-This is a prototype with demonstrations; nothing is published yet. Decisions are recorded in `docs/adr/`.
+Decisions are recorded in `docs/adr/`.

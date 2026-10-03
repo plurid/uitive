@@ -6,7 +6,7 @@ It is a private prototype. The first adapter targets a payments dashboard whose 
 
 ## What leaves your browser
 
-- To Claude, only when you ask for something: the adapter's contract, your words, your interface's definition, usage counts and the page's structure (which parts were found). Never page text, rows or ids.
+- To the model you have a key for (Claude, OpenAI or Gemini), only when you ask for something: the adapter's contract, your words, your interface's definition, usage counts and the page's structure (which parts were found). Never page text, rows or ids.
 - To the payments API: read requests, with a restricted key you create, scoped to read permissions.
 - Keys stay in the extension's own storage, used only by its service worker; pages and content scripts can't read them.
 
@@ -21,7 +21,7 @@ node apps/extension/build.ts --out dist/fixture --fixture http://127.0.0.1:4180 
 1. In Chrome, open `chrome://extensions`, turn on Developer mode, choose "Load unpacked" and pick `apps/extension/dist/fixture`.
 2. Open http://127.0.0.1:4180/test/dashboard, then the Aptuitive side panel from the toolbar, and choose "Enable on this site".
 3. Ask: "hide Connect", "hide Billing". Hidden links wait in a More list at the end of the sidebar.
-4. In the panel's Keys, paste any key starting `rk_test_` for the API; with a Claude API key, free-form requests such as "make my home a morning check of failed payments, disputes and payouts" are planned by Claude.
+4. In the panel's Keys, paste any key starting `rk_test_` for the API; with a key for Claude, OpenAI or Gemini, free-form requests such as "make my home a morning check of failed payments, disputes and payouts" are planned by Claude.
 
 ## Check it on the real site
 

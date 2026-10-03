@@ -21,11 +21,13 @@ export function aptuitive(options: AptuitiveDevOptions = {}): Plugin {
     config(config, environment) {
       // Planner credentials stay server-side: copied into the dev server's environment only,
       // never exposed to client code (that would need a VITE_ prefix).
-      const variables = loadEnv(
-        environment.mode,
-        config.envDir ?? config.root ?? process.cwd(),
+      const variables = loadEnv(environment.mode, config.envDir ?? config.root ?? process.cwd(), [
         'ANTHROPIC_',
-      );
+        'OPENAI_',
+        'GEMINI_',
+        'GOOGLE_',
+        'APTUITIVE_',
+      ]);
       for (const [key, value] of Object.entries(variables)) process.env[key] ??= value;
       return {
         resolve: {
