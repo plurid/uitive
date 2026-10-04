@@ -26,6 +26,8 @@ export function App() {
   const [catalogue, setCatalogue] = useState(false);
   const [palette, setPalette] = useState(false);
   const [panel, setPanel] = useState<Panel>('none');
+  // The services menu, which is a drawer on narrow screens; wider ones always show the sidebar.
+  const [nav, setNav] = useState(false);
   const { toasts, push } = useToasts();
   const current = route.page === 'service' ? route.id : undefined;
 
@@ -114,6 +116,7 @@ export function App() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setNav(false);
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         setPalette((shown) => !shown);
@@ -141,20 +144,44 @@ export function App() {
             onSearch={() => setPalette(true)}
             onPanel={(next) => setPanel((shown) => (shown === next ? 'none' : next))}
             onHome={home}
+            nav={nav}
+            onMenu={() => setNav((shown) => !shown)}
           />
           <div className="console-body">
             <Sidebar
               view={view}
               current={current}
-              onOpen={(id, via) => open(id, via)}
-              onHome={home}
-              onCatalogue={() => setCatalogue(true)}
+              open={nav}
+              onOpen={(id, via) => {
+                setNav(false);
+                open(id, via);
+              }}
+              onHome={() => {
+                setNav(false);
+                home();
+              }}
+              onCatalogue={() => {
+                setNav(false);
+                setCatalogue(true);
+              }}
             />
+            {nav && (
+              <button
+                type="button"
+                className="nav-backdrop"
+                aria-label="Close the services menu"
+                onClick={() => setNav(false)}
+              />
+            )}
             <main className="console-main">
               {route.page === 'home' ? <Home /> : <ServicePage id={route.id} onHome={home} />}
             </main>
             {panel === 'interface' && (
               <aside className="side-panel" aria-label="Your interface">
+                {/* A sheet over the console on narrow screens, so it needs its own way out. */}
+                <button type="button" className="panel-close" onClick={() => setPanel('none')}>
+                  Close
+                </button>
                 <uitive-your-interface client={uitive} />
               </aside>
             )}

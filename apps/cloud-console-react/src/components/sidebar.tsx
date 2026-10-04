@@ -7,15 +7,17 @@ import { MadeWith } from './made-with.tsx';
 interface SidebarProps {
   view: View;
   current: string | undefined;
+  /** Whether the drawer is open, on screens too narrow for the sidebar. */
+  open: boolean;
   onOpen(id: string, via: Via): void;
   onHome(): void;
   onCatalogue(): void;
 }
 
-export function Sidebar({ view, current, onOpen, onHome, onCatalogue }: SidebarProps) {
+export function Sidebar({ view, current, open, onOpen, onHome, onCatalogue }: SidebarProps) {
   const yours = useSurface(uitive, 'services');
   return (
-    <div className="sidebar">
+    <div className={open ? 'sidebar open' : 'sidebar'} id="services">
       <nav className="sidebar-nav" aria-label="Services">
         <button
           type="button"

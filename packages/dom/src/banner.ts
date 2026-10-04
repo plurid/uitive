@@ -82,6 +82,13 @@ export class UitiveBanner extends UitiveElement {
         padding: 12px 14px;
         display: grid;
         gap: 10px;
+        /* A long list of changes scrolls inside the card, never past the screen's edge. */
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+      }
+      /* On a phone the card keeps to half the screen, so the application stays reachable above it. */
+      @media (max-width: 720px) {
+        :host(:not([docked])) .card { max-height: 50vh; }
       }
       header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
       header h2::before {

@@ -372,6 +372,29 @@ kbd {
   background: var(--surface-2);
 }
 
+.goal-examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-s);
+}
+
+.goal-examples button {
+  padding: 4px var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.goal-examples button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .goal-said {
   margin: 0 0 var(--space-5);
   color: var(--muted);
@@ -1156,5 +1179,155 @@ button.link {
 @media (max-width: 1100px) {
   .uitive-blocks[data-layout='columns'] {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* Narrow screens: a two-row header, the sidebar as a drawer, panels over the console. */
+
+.menu-button,
+.search-icon,
+.nav-backdrop,
+.panel-close {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .console {
+    grid-template-rows: auto 1fr;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* Breaks the header after the brand and search: the view switch and panels go below. */
+  .header::after {
+    content: '';
+    flex-basis: 100%;
+    order: 2;
+  }
+
+  .menu-button {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .menu-button svg,
+  .search-icon {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+  }
+
+  .brand {
+    order: 1;
+  }
+
+  .brand-tag,
+  .view-count,
+  .search span,
+  .search kbd {
+    display: none;
+  }
+
+  .search {
+    flex: 0 0 auto;
+    order: 1;
+    margin-left: auto;
+    padding: 8px;
+  }
+
+  .search-icon {
+    display: block;
+  }
+
+  .view-switch {
+    order: 3;
+    margin-left: 0;
+  }
+
+  .header-actions {
+    order: 4;
+    margin-left: auto;
+  }
+
+  .header-button {
+    padding: 5px var(--space-2);
+  }
+
+  .console-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: fixed;
+    z-index: 45;
+    inset: 0 auto 0 0;
+    width: min(300px, 86vw);
+    box-shadow: var(--shadow-l);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 200ms ease,
+      visibility 0s linear 200ms;
+  }
+
+  .sidebar.open {
+    transform: none;
+    visibility: visible;
+    transition: transform 200ms ease;
+  }
+
+  .nav-backdrop {
+    position: fixed;
+    z-index: 44;
+    inset: 0;
+    display: block;
+    border: 0;
+    background: rgb(0 0 0 / 36%);
+  }
+
+  .side-panel {
+    position: fixed;
+    z-index: 45;
+    inset: 0 0 0 auto;
+    width: min(380px, 100vw);
+    box-shadow: var(--shadow-l);
+  }
+
+  .panel-close {
+    display: block;
+    margin: var(--space-3) var(--space-3) 0 auto;
+    padding: 6px var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .page {
+    padding: var(--space-4) var(--space-3) var(--space-5);
+  }
+
+  .goal-row {
+    flex-direction: column;
+  }
+
+  .debug-dock {
+    left: 0;
+  }
+
+  .toasts {
+    right: var(--space-4);
+    left: var(--space-4);
   }
 }

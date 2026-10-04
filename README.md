@@ -28,7 +28,9 @@
 
 ## The idea
 
-Applications show everything to everyone, but each person uses only a small part. Uitive builds each person's interface around the part they use: learned from their usage, changed when they ask in plain language, and always within the limits the application sets.
+Applications show everything to everyone, but each person uses only a small part.
+
+Uitive builds each person's interface around the part they use: learned from their usage, changed when they ask in plain language, and always within the limits the application sets.
 
 - **The application declares a contract** of what may adapt: toolbars and menus, settings, whole pages built from its own components and its data, and the actions people can run.
 - **Planners propose, within it.** A deterministic planner learns from use and answers plain commands, offline and without a key. A language model on the application's server, from any provider (Claude, GPT, Gemini or a local model), answers requests in plain words and redesigns pages; structured outputs make anything outside the contract unrepresentable.

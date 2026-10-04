@@ -58,6 +58,13 @@ const QuickActions: BlockComponents<typeof blocks>['quickActions'] = ({ props })
   );
 };
 
+// One click away, so a visitor sees the console adapt without inventing a cloud workflow first.
+const EXAMPLES = [
+  'I watch costs and budgets',
+  'I manage databases',
+  'I train machine learning models',
+];
+
 const Goal: BlockComponents<typeof blocks>['goal'] = () => {
   const goal = useSnapshot(uitive).definition.goal;
   const command = useCommand(uitive);
@@ -88,6 +95,22 @@ const Goal: BlockComponents<typeof blocks>['goal'] = () => {
         <button type="submit" className="primary" disabled={command.pending}>
           {command.pending ? 'Designing…' : 'Design my console'}
         </button>
+      </div>
+      <div className="goal-examples">
+        <span>Or try</span>
+        {EXAMPLES.map((example) => (
+          <button
+            key={example}
+            type="button"
+            disabled={command.pending}
+            onClick={() => {
+              setWords(example);
+              void command.ask(example, { goal: true });
+            }}
+          >
+            {example}
+          </button>
+        ))}
       </div>
     </form>
   );
