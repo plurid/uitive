@@ -3,7 +3,7 @@ import { fromJson, toJson } from '@plurid/uitive-core';
 import { cloud } from '../../apps/cloud-console-react/src/contract.ts';
 
 describe('the cloud console as data', () => {
-  it('round-trips with the same hash, and re-serialises byte for byte', () => {
+  it('round-trips with the same hash, and re-serializes byte for byte', () => {
     const json = toJson(cloud);
     const back = fromJson(JSON.parse(JSON.stringify(json)));
     expect(back.hash).toBe(cloud.hash);

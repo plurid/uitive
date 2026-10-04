@@ -109,7 +109,7 @@ describe('resolveList', () => {
     expect(ids(value.visible)).toContain('table');
   });
 
-  it('ignores reverted and dismissed operations, and honours kept ones as the user layer', () => {
+  it('ignores reverted and dismissed operations, and honors kept ones as the user layer', () => {
     const definition = with_(
       applied(
         { kind: 'list', surface: 'toolbar', op: 'promote', target: 'table' },

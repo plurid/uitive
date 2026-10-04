@@ -47,7 +47,7 @@ describe('uitive', () => {
     ]);
   });
 
-  it('generates sources into the project, honouring its curation', async () => {
+  it('generates sources into the project, honoring its curation', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
     await writeFile(
       join(cwd, 'curation.json'),

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { editor } from '../../packages/core/src/__fixtures__/editor.js';
 import {
   createUitive,
-  DEFAULT_STABILISER,
+  DEFAULT_STABILIZER,
   simulate,
   type Persona,
   type SessionReport,
@@ -62,7 +62,7 @@ describe('persona evaluation (heuristic planner)', () => {
   it('applies no more structural changes per session than the budget', async () => {
     for (const persona of [writer, analyst]) {
       for (const report of await run(persona)) {
-        expect(report.applied?.applied.length ?? 0).toBeLessThanOrEqual(DEFAULT_STABILISER.budget);
+        expect(report.applied?.applied.length ?? 0).toBeLessThanOrEqual(DEFAULT_STABILIZER.budget);
       }
     }
   });
@@ -83,13 +83,13 @@ describe('persona evaluation (heuristic planner)', () => {
             (later) => later.session > move.session && later.left.includes(item),
           );
           if (leaves)
-            expect(leaves.session - move.session).toBeGreaterThanOrEqual(DEFAULT_STABILISER.dwell);
+            expect(leaves.session - move.session).toBeGreaterThanOrEqual(DEFAULT_STABILIZER.dwell);
         }
       }
     }
   });
 
-  it('adapts after a change of behaviour', async () => {
+  it('adapts after a change of behavior', async () => {
     const reports = await run(analyst, 2, 14);
     expect(reports[5]?.visible.toolbar).toEqual(expect.arrayContaining(['table', 'code']));
     expect(reports[11]?.visible.toolbar).toEqual(

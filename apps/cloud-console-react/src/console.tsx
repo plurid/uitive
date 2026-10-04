@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { Adaptation, View, Via } from '@plurid/uitive-core';
-import type { Verb } from './catalogue.ts';
+import type { Verb } from './catalog.ts';
 import type { QuickAction } from './contract.ts';
 
 export interface Console {

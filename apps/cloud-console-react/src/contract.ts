@@ -14,7 +14,7 @@ import {
   source,
   ui,
 } from '@plurid/uitive-core';
-import { byId, categories, serviceIds, services, verbIds, verbs, type Verb } from './catalogue.ts';
+import { byId, categories, serviceIds, services, verbIds, verbs, type Verb } from './catalog.ts';
 import { metricNames, regions, sizes, states } from './data.ts';
 
 const onResource = (label: string, description: string, when?: string) =>

@@ -28,7 +28,7 @@ describe('workspace', () => {
     expect(manifest.homepage).toBe(
       `https://github.com/plurid/uitive/tree/master/packages/${name}#readme`,
     );
-    // npm packs only the package's own folder, so the licence and the README's links must work
+    // npm packs only the package's own folder, so the license and the README's links must work
     // from there: relative links would break on the package's page.
     expect(read(`packages/${name}/LICENSE`)).toBe(read('LICENSE'));
     expect(read(`packages/${name}/README.md`)).toContain(

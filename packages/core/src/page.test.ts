@@ -14,7 +14,7 @@ import type { Planner } from './planner.js';
 import { check } from './policy.js';
 import { source } from './source.js';
 import { memoryStore } from './storage.js';
-import { summarise } from './usage.js';
+import { summarize } from './usage.js';
 
 const metric = block({
   label: 'Metric',
@@ -214,7 +214,7 @@ describe('page policy', () => {
       {
         contract: ops,
         definition: emptyDefinition(ops),
-        summary: summarise(ops, emptyDefinition(ops), [], [], 0),
+        summary: summarize(ops, emptyDefinition(ops), [], [], 0),
         session: 0,
         ...(options.intent === undefined ? {} : { intent: options.intent }),
       },

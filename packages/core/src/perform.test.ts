@@ -120,7 +120,7 @@ describe('perform', () => {
     const pending = client.perform('refund', refund);
     await settle();
     client.cancel(client.getSnapshot().confirmation!.id);
-    expect(await pending).toEqual({ status: 'cancelled' });
+    expect(await pending).toEqual({ status: 'canceled' });
     expect(runs).toHaveLength(0);
     expect(client.events()).toHaveLength(0);
   });
@@ -159,7 +159,7 @@ describe('perform', () => {
     const pending = client.perform('refund', refund);
     await settle();
     remove();
-    expect(await pending).toEqual({ status: 'cancelled' });
+    expect(await pending).toEqual({ status: 'canceled' });
   });
 
   it('lets the application confirm its own controls', async () => {

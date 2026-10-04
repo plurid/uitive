@@ -11,7 +11,7 @@ A contract declares what may adapt in an application: its actions, the surfaces 
 ```ts
 export const shop = defineApp({
   id: 'shop-admin',
-  description: 'The admin of an online shop: orders, customers and fulfilment',
+  description: 'The admin of an online shop: orders, customers and fulfillment',
   sources,
   actions,
   regions: {
@@ -178,7 +178,7 @@ A region is part of the application as it already is, such as the original order
 | -------------------------- | ------------------------------------------------------------ | -------------------------------- |
 | Actions, routes, regions   | Lowercase letters and digits, with dots, colons or dashes    | `orders.cancel`, `orders.detail` |
 | Context and choice values  | The same                                                     | `pen`, `compact`                 |
-| Surfaces, contexts, blocks | camelCase identifiers                                        | `addNew`, `tool`, `fulfilment`   |
+| Surfaces, contexts, blocks | camelCase identifiers                                        | `addNew`, `tool`, `fulfillment`  |
 | Sources                    | Lowercase letters, digits and dashes, starting with a letter | `balance-transactions`           |
 | Fields                     | Letters, digits and underscores, starting with a letter      | `created_at`                     |
 

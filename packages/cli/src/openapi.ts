@@ -148,11 +148,11 @@ const text = (value: unknown) => (typeof value === 'string' ? value : '');
 
 /** Reads an OpenAPI 2.0, 3.0 or 3.1 document, JSON or YAML, as OpenAPI 3.1. */
 export function readSpec(source: string | Record<string, unknown>): Record<string, unknown> {
-  const normalised = normalize(source as string);
-  if (!isObject(normalised) || Array.isArray(normalised)) {
+  const normalized = normalize(source as string);
+  if (!isObject(normalized) || Array.isArray(normalized)) {
     throw new Error('Expected one OpenAPI document');
   }
-  const { specification } = upgrade(normalised);
+  const { specification } = upgrade(normalized);
   if (!isObject(specification) || !isObject(specification.paths)) {
     throw new Error('Not an OpenAPI 2.0, 3.0 or 3.1 document with paths');
   }

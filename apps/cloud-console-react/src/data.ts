@@ -1,5 +1,5 @@
 import { random } from '@plurid/uitive-core';
-import { byId, services } from './catalogue.ts';
+import { byId, services } from './catalog.ts';
 
 // Deterministic, invented data: every service always shows the same resources, metrics and logs,
 // so pages are stable across reloads and redesigns.

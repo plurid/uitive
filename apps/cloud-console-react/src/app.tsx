@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View, Via } from '@plurid/uitive-core';
 import { UitiveProvider, Confirmations, useSurface, useView } from '@plurid/uitive-react';
-import { byId, services, totalActions, verbs, type Verb } from './catalogue.ts';
+import { byId, services, totalActions, verbs, type Verb } from './catalog.ts';
 import { uitive, handlers } from './client.ts';
-import { Catalogue } from './components/catalogue.tsx';
+import { Catalog } from './components/catalog.tsx';
 import { Header } from './components/header.tsx';
 import { Home } from './components/home.tsx';
 import { ConsoleContext, type Console } from './console.tsx';
@@ -23,7 +23,7 @@ export function App() {
   const density = useSurface(uitive, 'density');
   const yours = useSurface(uitive, 'services');
   const [route, setRoute] = useState<Route>({ page: 'home' });
-  const [catalogue, setCatalogue] = useState(false);
+  const [catalog, setCatalog] = useState(false);
   const [palette, setPalette] = useState(false);
   const [panel, setPanel] = useState<Panel>('none');
   // The services menu, which is a drawer on narrow screens; wider ones always show the sidebar.
@@ -160,9 +160,9 @@ export function App() {
                 setNav(false);
                 home();
               }}
-              onCatalogue={() => {
+              onCatalog={() => {
                 setNav(false);
-                setCatalogue(true);
+                setCatalog(true);
               }}
             />
             {nav && (
@@ -191,13 +191,13 @@ export function App() {
               <uitive-debug client={uitive} personas={personas} />
             </div>
           )}
-          {catalogue && (
-            <Catalogue
+          {catalog && (
+            <Catalog
               onOpen={(id) => {
-                setCatalogue(false);
+                setCatalog(false);
                 open(id, view === 'standard' ? 'region' : 'overflow');
               }}
-              onClose={() => setCatalogue(false)}
+              onClose={() => setCatalog(false)}
             />
           )}
           {palette && (

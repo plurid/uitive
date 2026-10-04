@@ -10,13 +10,13 @@ import {
 } from './definition.js';
 import {
   applyOperation,
-  DEFAULT_STABILISER,
+  DEFAULT_STABILIZER,
   evictFor,
   revert,
   settle,
   stage,
   type Pending,
-} from './stabiliser.js';
+} from './stabilizer.js';
 
 const promote = (target: string): Change => ({
   kind: 'list',
@@ -62,13 +62,13 @@ function settled(
       session,
       adaptation: 'a1',
     },
-    DEFAULT_STABILISER,
+    DEFAULT_STABILIZER,
   );
 }
 
 describe('stage', () => {
   const model = (change: Change): Operation => operation(change);
-  const options = { ...DEFAULT_STABILISER, hysteresis: true };
+  const options = { ...DEFAULT_STABILIZER, hysteresis: true };
 
   it('holds a weak model change until a second plan proposes it', () => {
     const first = stage([model(promote('table'))], {}, [0.5], options);
@@ -120,7 +120,7 @@ describe('settle', () => {
         session: 5,
         adaptation: 'a1',
       },
-      DEFAULT_STABILISER,
+      DEFAULT_STABILIZER,
     );
     expect(result.applied).toHaveLength(1);
     expect(result.pending).toHaveLength(1);
@@ -168,10 +168,10 @@ describe('revert', () => {
         adaptation: 'a1',
       });
     let definition = apply(emptyEditor());
-    definition = revert(definition, definition.operations[0]?.id as string, 5, DEFAULT_STABILISER);
+    definition = revert(definition, definition.operations[0]?.id as string, 5, DEFAULT_STABILIZER);
     expect(definition.cooldowns).toEqual([{ key: 'toolbar||promote|table', until: 10 }]);
     definition = apply(definition);
-    definition = revert(definition, definition.operations[1]?.id as string, 11, DEFAULT_STABILISER);
+    definition = revert(definition, definition.operations[1]?.id as string, 11, DEFAULT_STABILIZER);
     expect(definition.blocked).toEqual(['toolbar||promote|table']);
   });
 
@@ -188,7 +188,7 @@ describe('revert', () => {
       definition,
       definition.operations[0]?.id as string,
       5,
-      DEFAULT_STABILISER,
+      DEFAULT_STABILIZER,
     );
     expect(reverted.cooldowns).toEqual([]);
     expect(reverted.operations[0]?.status).toBe('reverted');

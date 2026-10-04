@@ -45,7 +45,7 @@ export const PAGES: Readonly<Record<string, PageConfig>> = {
       { title: 'Planners', modules: ['heuristic.ts', 'planner.ts'] },
       {
         title: 'Definitions and policy',
-        modules: ['definition.ts', 'policy.ts', 'stabiliser.ts', 'explain.ts', 'limits.ts'],
+        modules: ['definition.ts', 'policy.ts', 'stabilizer.ts', 'explain.ts', 'limits.ts'],
       },
       { title: 'Usage and simulation', modules: ['usage.ts', 'simulate.ts'] },
       advanced(['retrieval.ts', 'hash.ts']),

@@ -65,19 +65,19 @@ import type {
 import { canonical, check, type Rejection } from './policy.js';
 import {
   applyOperation,
-  DEFAULT_STABILISER,
+  DEFAULT_STABILIZER,
   revert as revertOperation,
   setStatus,
   settle,
   stage,
   strength,
   type Pending,
-  type StabiliserOptions,
-} from './stabiliser.js';
+  type StabilizerOptions,
+} from './stabilizer.js';
 import { memoryStore, type Store } from './storage.js';
 import {
   rank,
-  summarise,
+  summarize,
   type SessionRecord,
   type UsageEvent,
   type UsageSummary,
@@ -232,7 +232,7 @@ export interface UitiveOptions<C extends AnyContract> {
    * How cautiously planned changes apply: how many per session, after how many sessions, and how
    * long a reverted one waits.
    */
-  stabiliser?: Partial<StabiliserOptions>;
+  stabilizer?: Partial<StabilizerOptions>;
   /** The application's code behind the contract: reading sources, running actions, routing. */
   bindings?: Bindings<C>;
   /** Called when storage or a planner fails; the interface keeps working. */
@@ -442,7 +442,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
   const local = heuristicPlanner();
   const now = options.now ?? Date.now;
   const idle = (options.idleMinutes ?? 30) * 60_000;
-  const tuning: StabiliserOptions = { ...DEFAULT_STABILISER, ...options.stabiliser };
+  const tuning: StabilizerOptions = { ...DEFAULT_STABILIZER, ...options.stabilizer };
   const report = (error: unknown) => options.onError?.(error);
 
   const fresh = (): State => ({
@@ -617,7 +617,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     if (summaryCache?.key !== key) {
       summaryCache = {
         key,
-        value: summarise(contract, state.definition, state.events, state.sessions, state.session),
+        value: summarize(contract, state.definition, state.events, state.sessions, state.session),
       };
     }
     return summaryCache.value;
@@ -1070,7 +1070,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
           fields,
           ...(spec.effect === 'destructive' ? { phrase: spec.confirm ?? spec.label } : {}),
         });
-        if (!yes) return { status: 'cancelled' };
+        if (!yes) return { status: 'canceled' };
       }
       const run = performerFor(id);
       if (run === undefined && spec.effect !== undefined) {

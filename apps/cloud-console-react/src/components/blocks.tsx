@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { BlockComponents } from '@plurid/uitive-react';
 import { useCommand, useSnapshot, useSurface } from '@plurid/uitive-react';
-import { verbs } from '../catalogue.ts';
+import { verbs } from '../catalog.ts';
 import { uitive } from '../client.ts';
 import { useConsole } from '../console.tsx';
 import type { blocks, QuickAction } from '../contract.ts';

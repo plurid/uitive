@@ -198,9 +198,9 @@ describe('inventory, Medusa-style', () => {
       label: 'Cancel order',
       effect: 'destructive',
     });
-    const fulfil = action(shop, 'orders.fulfillments.create');
-    expect(fulfil).toMatchObject({ effect: 'destructive' });
-    expect(fulfil?.skipped).toEqual([{ name: 'items', reason: 'a list (required)' }]);
+    const fulfill = action(shop, 'orders.fulfillments.create');
+    expect(fulfill).toMatchObject({ effect: 'destructive' });
+    expect(fulfill?.skipped).toEqual([{ name: 'items', reason: 'a list (required)' }]);
     expect(action(shop, 'products.create')?.params.map((param) => param.name)).toEqual([
       'title',
       'status',

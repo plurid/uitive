@@ -83,7 +83,7 @@ export function createUitiveHandler(
     const failure = (error: unknown) => {
       (options.onError ?? report)(error);
       if (error instanceof PlannerError) return { status: error.status, error: error.message };
-      if (request.signal.aborted) return { status: 499, error: 'Cancelled' };
+      if (request.signal.aborted) return { status: 499, error: 'Canceled' };
       return { status: 500, error: 'Planning failed' };
     };
 

@@ -107,7 +107,7 @@ export interface RestPerformConfig extends RestBase {
    * rest go in the body.
    */
   actions: Readonly<Record<string, RestAction>>;
-  /** The header that carries each run's idempotency key, for APIs that honour one. */
+  /** The header that carries each run's idempotency key, for APIs that honor one. */
   idempotency?: string;
 }
 

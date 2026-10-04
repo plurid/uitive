@@ -179,7 +179,7 @@ export {
   FIELD_META,
   FIELD_PATTERN,
   FIELD_TYPES,
-  humanise,
+  humanize,
 } from './field.js';
 export type { Field, FieldMeta, FieldOptions, FieldType, TimeUnit } from './field.js';
 export type { Explanation } from './explain.js';
@@ -330,13 +330,13 @@ export type {
 } from './source.js';
 export type { Persona, SessionReport } from './simulate.js';
 
-export { DEFAULT_STABILISER } from './stabiliser.js';
-export type { Pending, StabiliserOptions } from './stabiliser.js';
+export { DEFAULT_STABILIZER } from './stabilizer.js';
+export type { Pending, StabilizerOptions } from './stabilizer.js';
 
 export { localStore, memoryStore } from './storage.js';
 export type { Store } from './storage.js';
 
-export { DECAY, rank, summarise, VIAS, WINDOW } from './usage.js';
+export { DECAY, rank, summarize, VIAS, WINDOW } from './usage.js';
 
 export {
   formatValue,

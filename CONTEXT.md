@@ -36,7 +36,7 @@ Uitive lets an application's interface adapt to each person who uses it (learned
 - **Area**: one source with the actions that act on it and the routes that show it. A large contract's requests are planned over a **subset** of areas: those on screen and the most relevant few.
 - **Repair**: one more round with the model when the part of policy that needs no user state rejects part of its plan.
 - **Policy**: the rules every operation must pass: contract IDs, required items, reachability, precedence, budgets, cooldowns and application validators.
-- **Stabiliser**: decides when checked operations apply: safe moments, budgets, dwell time, hysteresis and expiry.
+- **Stabilizer**: decides when checked operations apply: safe moments, budgets, dwell time, hysteresis and expiry.
 - **Safe moment**: a time a structural change may apply without moving the interface under the user.
 - **User layer**: operations the user made: commands, pins, hides, reverts and accepted suggestions. It outranks the model layer.
 - **Command**: a request in the user's own words, answered with operations and a status.
@@ -59,7 +59,7 @@ Uitive lets an application's interface adapt to each person who uses it (learned
 
 ## Modules
 
-- **Core** (`@plurid/uitive-core`) owns contracts and kinds, sources and queries, the query executor and data cache, the recorder, the usage summary, the heuristic planner, policy, the stabiliser, the client store, storage and the simulator. It runs anywhere: no DOM or Node APIs. zod is a peer dependency of core and of every package built on it, so an application and Uitive share one copy.
+- **Core** (`@plurid/uitive-core`) owns contracts and kinds, sources and queries, the query executor and data cache, the recorder, the usage summary, the heuristic planner, policy, the stabilizer, the client store, storage and the simulator. It runs anywhere: no DOM or Node APIs. zod is a peer dependency of core and of every package built on it, so an application and Uitive share one copy.
 - **React** (`@plurid/uitive-react`) exposes the client through a provider and hooks (surfaces, queries, actions, confirmations, location, user pages, any router), renders pages with the application's blocks, regions and the generic blocks, and draws generic blocks with a **kit**: presentational parts an application maps to its design system. The provider also connects the page's lifecycle: usage is saved when the page is hidden, a session starts when the person comes back, and each session is planned from use once.
 - **DOM** (`@plurid/uitive-dom`) adapts an application's own markup, marked with `data-uitive-list` and `data-uitive-item`, through one stylesheet and CSS `order`, without moving any node, and provides the meta-interface elements: the ask box, banner, More menu, confirmation dialog, "Your interface" and the debug panel. `startUitive` does a page's setup in one call, the lifecycle included.
 - **Planner** (`@plurid/uitive-planner`) owns the schema compiler, the prompt, the model planner and the built-in models, free of Node and DOM APIs, so it runs on servers and in extensions alike. Anthropic's SDK loads only when Claude plans; the other models call `fetch`.

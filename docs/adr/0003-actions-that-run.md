@@ -13,7 +13,7 @@ An action may declare `params` (a flat zod object, like a source's row), an `eff
 
 A runtime `perform` binding runs actions. `client.perform` parses params against the schema, then, for runs from interfaces Aptuitive drew, waits for the user: a write needs one explicit step that shows its params (a submitted form counts), and a destructive run needs its phrase typed. The waiting run is client state that any mounted interface can answer; with none mounted, the run is refused rather than silently allowed. Writes are refused while a suggested redesign is being previewed. The application's own controls (`origin: 'native'`) confirm in their own way.
 
-Every confirmed run is recorded as usage, never with its params; cancelled and failed runs record nothing. A run's `invalidates` marks cached results stale, and its outcome may name where to go next.
+Every confirmed run is recorded as usage, never with its params; canceled and failed runs record nothing. A run's `invalidates` marks cached results stale, and its outcome may name where to go next.
 
 ## Consequences
 

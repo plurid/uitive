@@ -6,7 +6,7 @@ import {
   remotePlanner,
   type Fetch,
 } from '@plurid/uitive-core';
-import { byId, verbs } from './catalogue.ts';
+import { byId, verbs } from './catalog.ts';
 import { cloud } from './contract.ts';
 import {
   alertRows,

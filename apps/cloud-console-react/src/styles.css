@@ -629,7 +629,7 @@ button.link {
   box-shadow: var(--shadow-l);
 }
 
-.dialog.catalogue {
+.dialog.catalog {
   width: min(980px, calc(100vw - 32px));
 }
 
@@ -672,19 +672,19 @@ button.link {
   font-size: var(--text-l);
 }
 
-.catalogue-grid {
+.catalog-grid {
   overflow-y: auto;
   padding: 0 var(--space-4) var(--space-4);
   columns: 4 200px;
   column-gap: var(--space-5);
 }
 
-.catalogue-grid section {
+.catalog-grid section {
   break-inside: avoid;
   margin-bottom: var(--space-4);
 }
 
-.catalogue-grid h3 {
+.catalog-grid h3 {
   margin: 0 0 var(--space-2);
   color: var(--faint);
   font-size: var(--text-xs);
@@ -692,7 +692,7 @@ button.link {
   text-transform: uppercase;
 }
 
-.catalogue-grid .link {
+.catalog-grid .link {
   display: block;
   margin-bottom: var(--space-1);
   font-size: var(--text-s);

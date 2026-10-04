@@ -1,6 +1,6 @@
 'use client';
 import { useId, useState, type ComponentType, type ReactNode } from 'react';
-import { formatValue, humanise, type Field } from '@plurid/uitive-core';
+import { formatValue, humanize, type Field } from '@plurid/uitive-core';
 
 /** One column of a kit `Table`: the key its cells are under, its header, and how it aligns. */
 export interface TableColumn {
@@ -359,7 +359,7 @@ function FieldInput({
           </option>
           {field.values.map((option) => (
             <option key={option} value={option}>
-              {humanise(option)}
+              {humanize(option)}
             </option>
           ))}
         </select>

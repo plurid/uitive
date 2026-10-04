@@ -1,7 +1,7 @@
 import { rowParam } from './action.js';
 import type { AnyContract } from './contract.js';
 import type { PlanRequest } from './planner.js';
-import { humanise } from './field.js';
+import { humanize } from './field.js';
 
 /** One source with everything that belongs to it: what a planner is shown together. */
 export interface Area {
@@ -40,7 +40,7 @@ const STOP = new Set(
 
 /** Lowercase words, split at punctuation, snake_case and camelCase, stemmed lightly. */
 export function terms(text: string): string[] {
-  return humanise(text.replace(/[^\p{L}\p{N}]+/gu, ' '))
+  return humanize(text.replace(/[^\p{L}\p{N}]+/gu, ' '))
     .toLowerCase()
     .split(/\s+/)
     .filter((word) => word.length > 1 && !STOP.has(word))

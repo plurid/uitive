@@ -8,7 +8,7 @@ tags:
   - name: Orders
     description: |
       An order is a purchase a customer made in the store. These routes let staff find, update,
-      fulfil and cancel orders.
+      fulfill and cancel orders.
   - name: Customers
     description: People who bought from the store or registered an account.
   - name: Products
@@ -120,7 +120,7 @@ paths:
       operationId: PostOrdersIdCancel
       tags: [Orders]
       summary: Cancel Order
-      description: Cancel an order. Cancelling fails if the order has captured payments.
+      description: Cancel an order. Canceling fails if the order has captured payments.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:

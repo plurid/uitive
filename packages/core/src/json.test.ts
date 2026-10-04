@@ -7,7 +7,7 @@ import { emptyDefinition } from './definition.js';
 import { fromJson, toJson } from './json.js';
 import { ui, validatePage } from './page.js';
 import { check } from './policy.js';
-import { summarise } from './usage.js';
+import { summarize } from './usage.js';
 
 const roundTrip = (contract: Parameters<typeof toJson>[0]) => {
   const json = toJson(contract);
@@ -40,7 +40,7 @@ const ops = defineApp({
 });
 
 describe('JSON contracts', () => {
-  it('round-trip with the same hash, and re-serialise byte for byte', () => {
+  it('round-trip with the same hash, and re-serialize byte for byte', () => {
     for (const contract of [payments, editor, ops]) {
       const { json, back } = roundTrip(contract);
       expect(back.hash).toBe(contract.hash);
@@ -111,7 +111,7 @@ describe('JSON contracts', () => {
         {
           contract,
           definition: emptyDefinition(contract),
-          summary: summarise(contract, emptyDefinition(contract), [], [], 0),
+          summary: summarize(contract, emptyDefinition(contract), [], [], 0),
           session: 0,
         },
       );

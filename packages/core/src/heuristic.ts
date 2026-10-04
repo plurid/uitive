@@ -18,7 +18,7 @@ export const MIN_PROMOTE = 2;
  */
 export const MARGIN = 1;
 const swapMargin = (weakest: UsageRow) => MARGIN + 0.25 * weakest.activity;
-/** Promotions proposed per surface in one plan; the stabiliser applies fewer. */
+/** Promotions proposed per surface in one plan; the stabilizer applies fewer. */
 const PER_SURFACE = 3;
 
 /**

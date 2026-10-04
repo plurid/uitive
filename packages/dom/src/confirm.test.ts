@@ -109,7 +109,7 @@ describe('<uitive-confirm>', () => {
     expect(root.querySelector('input')).toBeNull();
     expect((root.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(false);
     element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    expect((await running).status).toBe('cancelled');
+    expect((await running).status).toBe('canceled');
     element.remove();
     expect((await client.perform('note.add', { text: 'Again' })).status).toBe('refused');
     expect(runs).toEqual([]);

@@ -15,7 +15,7 @@ import type { UsageSummary } from './usage.js';
  * How cautiously planned changes apply, so the interface never moves while someone works and
  * settles rather than churns.
  */
-export interface StabiliserOptions {
+export interface StabilizerOptions {
   /** Structural changes applied at one safe moment. @default 2 */
   budget: number;
   /** Sessions an item keeps its place after it moves. @default 3 */
@@ -29,10 +29,10 @@ export interface StabiliserOptions {
 }
 
 /**
- * The stabiliser's defaults: two changes per safe moment, three sessions of dwell, five of cooldown
+ * The stabilizer's defaults: two changes per safe moment, three sessions of dwell, five of cooldown
  * and expiry.
  */
-export const DEFAULT_STABILISER: StabiliserOptions = {
+export const DEFAULT_STABILIZER: StabilizerOptions = {
   budget: 2,
   dwell: 3,
   cooldown: 5,
@@ -61,7 +61,7 @@ export function strength(
   contract: AnyContract,
   definition: Definition,
   summary: UsageSummary,
-  options: StabiliserOptions,
+  options: StabilizerOptions,
 ): number {
   if (operation.evidence.some((entry) => 'intent' in entry)) return options.margin;
   const change = operation.change;
@@ -82,7 +82,7 @@ export function stage(
   accepted: readonly Operation[],
   seen: Readonly<Record<string, number>>,
   strengths: readonly number[],
-  options: StabiliserOptions & { hysteresis: boolean },
+  options: StabilizerOptions & { hysteresis: boolean },
 ): { pending: Pending[]; seen: Record<string, number> } {
   const next: Record<string, number> = {};
   const pending = accepted.map((operation, index) => {
@@ -152,8 +152,8 @@ export function applyOperation(
     summary: UsageSummary;
     session: number;
     adaptation: string;
-    /** @default DEFAULT_STABILISER */
-    options?: StabiliserOptions;
+    /** @default DEFAULT_STABILIZER */
+    options?: StabilizerOptions;
   },
   status: AppliedOperation['status'] = 'active',
 ): Definition {
@@ -173,7 +173,7 @@ export function applyOperation(
     if (undone.length > 0) {
       return undone.reduce(
         (next, entry) =>
-          revert(next, entry.id, context.session, context.options ?? DEFAULT_STABILISER),
+          revert(next, entry.id, context.session, context.options ?? DEFAULT_STABILIZER),
         definition,
       );
     }
@@ -243,7 +243,7 @@ export function settle(
     session: number;
     adaptation: string;
   },
-  options: StabiliserOptions,
+  options: StabilizerOptions,
 ): Settled {
   const { contract, summary, session, adaptation } = input;
   let definition = input.definition;
@@ -327,7 +327,7 @@ export function revert(
   definition: Definition,
   id: string,
   session: number,
-  options: StabiliserOptions,
+  options: StabilizerOptions,
 ): Definition {
   const target = definition.operations.find((operation) => operation.id === id);
   if (!target || !(isApplied(target) || target.status === 'suggested')) return definition;

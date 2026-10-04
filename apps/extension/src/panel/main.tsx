@@ -199,7 +199,7 @@ function Panel() {
       const result = await page<{ report: PageReport }>(tabId, { kind: 'pick', anchor });
       setReport(result.report);
     } catch (error) {
-      if ((error as Error).message !== 'Cancelled') setProblem((error as Error).message);
+      if ((error as Error).message !== 'Canceled') setProblem((error as Error).message);
     } finally {
       setPicking('');
     }

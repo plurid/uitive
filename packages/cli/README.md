@@ -29,7 +29,7 @@ Choices about an API description live in `curation.json`, in that folder, keyed 
     "orders": {
       "include": true,
       "label": "Orders",
-      "description": "Orders placed by customers, with their payment and fulfilment status",
+      "description": "Orders placed by customers, with their payment and fulfillment status",
       "keywords": ["purchase", "sale"],
       "fields": ["display_id", "email", "total", "currency_code", "payment_status", "created_at"],
       "labels": { "display_id": "Order", "created_at": "Placed" },

@@ -2,7 +2,7 @@
 
 ## Domain docs
 
-This is a single-context repository: `CONTEXT.md` holds the vocabulary, invariants and module map, and `docs/adr/` records durable decisions. ADRs are immutable: supersede one with a new record rather than rewriting it. When behaviour changes, update code, tests and the affected domain documentation in the same change.
+This is a single-context repository: `CONTEXT.md` holds the vocabulary, invariants and module map, and `docs/adr/` records durable decisions. ADRs are immutable: supersede one with a new record rather than rewriting it. When behavior changes, update code, tests and the affected domain documentation in the same change.
 
 ## Working here
 

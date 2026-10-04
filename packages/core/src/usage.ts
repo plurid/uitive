@@ -173,7 +173,7 @@ function visibleSince(
 /**
  * Summarizes usage per action and surface over recent sessions, with older sessions weighing less.
  */
-export function summarise(
+export function summarize(
   contract: AnyContract,
   definition: Definition,
   events: readonly UsageEvent[],

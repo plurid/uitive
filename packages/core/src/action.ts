@@ -117,12 +117,12 @@ export interface PerformOptions {
 }
 
 /**
- * How a run ended: `done`, `cancelled` by the person, `failed` in the binding, or `refused` before
+ * How a run ended: `done`, `canceled` by the person, `failed` in the binding, or `refused` before
  * it started, such as when nothing could ask for confirmation.
  */
 export interface PerformResult {
   /** `refused` runs never started; `failed` ones started and threw. */
-  status: 'done' | 'cancelled' | 'failed' | 'refused';
+  status: 'done' | 'canceled' | 'failed' | 'refused';
   /** The binding's message, or why the run was refused or failed. */
   message?: string;
 }

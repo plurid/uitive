@@ -6,7 +6,7 @@ import {
   type Evidence,
   type Operation,
 } from '../definition.js';
-import { summarise, type UsageEvent, type UsageSummary, type Via } from '../usage.js';
+import { summarize, type UsageEvent, type UsageSummary, type Via } from '../usage.js';
 import { editor } from './editor.js';
 
 export type Use = [action: string, via: Via, session: number, contexts?: Record<string, string>];
@@ -33,7 +33,7 @@ export function summaryOf(
     }
     return { index, startedAt: 0, contexts };
   });
-  return summarise(
+  return summarize(
     contract,
     options.definition ?? emptyDefinition(contract),
     events,

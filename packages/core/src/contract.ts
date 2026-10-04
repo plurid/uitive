@@ -501,7 +501,7 @@ export function defineApp<
     regions,
     routes,
     surfaces: spec.surfaces,
-    hash: hash(serialise(spec, contexts, resolvedSources, params)),
+    hash: hash(serialize(spec, contexts, resolvedSources, params)),
     actionIds,
     sourceIds,
     routeIds,
@@ -642,7 +642,7 @@ function validateSurface(
 }
 
 /** Everything a planner sees, as plain data: functions are evaluated or left out. */
-function serialise(
+function serialize(
   spec: ContractSpec<
     Record<string, ActionSpec>,
     Record<string, SurfaceSpec>,

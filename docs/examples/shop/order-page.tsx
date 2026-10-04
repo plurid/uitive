@@ -10,7 +10,7 @@ function OrderDetail() {
 // #region blocks
 /** The application's components behind the order page's blocks, typed by their props. */
 const blocks: BlockComponents<typeof orderBlocks> = {
-  fulfilment: ({ props }) => (
+  fulfillment: ({ props }) => (
     <p>{props.detailed ? 'Picked and packed, not yet shipped' : 'Not yet shipped'}</p>
   ),
 };

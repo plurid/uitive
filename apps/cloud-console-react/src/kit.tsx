@@ -1,4 +1,4 @@
-import { humanise } from '@plurid/uitive-core';
+import { humanize } from '@plurid/uitive-core';
 import { createKit, defaultKit } from '@plurid/uitive-react';
 
 const STATES = new Set(['running', 'stopped', 'updating', 'critical', 'warning', 'error', 'info']);
@@ -16,7 +16,7 @@ export const consoleKit = createKit({
       );
     }
     if (field.type === 'enum' && typeof value === 'string' && STATES.has(value)) {
-      return <span className={`state ${value}`}>{humanise(value)}</span>;
+      return <span className={`state ${value}`}>{humanize(value)}</span>;
     }
     if (field.name === 'id' && typeof value === 'string')
       return <span className="mono">{value}</span>;

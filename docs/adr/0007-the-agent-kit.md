@@ -21,4 +21,4 @@ Integration is a sequence of steps, each with a check: `detect`, `init`, `survey
 
 ## Consequences
 
-An agent can integrate an application by running steps until `check` passes, and the same contract serves the planner, the JSON format and the extension. Heuristics guess (a sort order, a reference, an effect); guesses are labelled in the survey's notes and corrected in the curation, and a wrong guess about effects asks for more confirmation, not less. APIs without a description need sources declared by hand, and the timed integrations will show how far the heuristics carry.
+An agent can integrate an application by running steps until `check` passes, and the same contract serves the planner, the JSON format and the extension. Heuristics guess (a sort order, a reference, an effect); guesses are labeled in the survey's notes and corrected in the curation, and a wrong guess about effects asks for more confirmation, not less. APIs without a description need sources declared by hand, and the timed integrations will show how far the heuristics carry.

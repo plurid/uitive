@@ -12,14 +12,14 @@ A source is a typed read model: a flat row schema, the field that identifies a r
 export const sources = {
   orders: source({
     label: 'Orders',
-    description: 'Orders customers placed, with their total and where they are in fulfilment',
+    description: 'Orders customers placed, with their total and where they are in fulfillment',
     keywords: ['sales', 'purchases'],
     row: z.object({
       id: z.string(),
       number: z.number(),
       total: field.money({ currency: 'currency' }),
       currency: z.string(),
-      status: field.enum(['pending', 'paid', 'shipped', 'cancelled']),
+      status: field.enum(['pending', 'paid', 'shipped', 'canceled']),
       placed: field.time(),
       customer: field.ref('customers'),
     }),
@@ -182,7 +182,7 @@ An action with an `effect` runs through `perform`.
 | `write`       | From a generated page, it waits for one yes, shown with its params.               |
 | `destructive` | It waits for a typed phrase: the action's label, unless `confirm` says otherwise. |
 
-A run ends `done`, `cancelled` by the person, `failed` in the binding or for want of one, or `refused` before it starts: when its params don't fit the action's schema, when no interface can ask for confirmation, when another run is already waiting, or while a redesign is being previewed. A run that succeeds is recorded as use, without its params, and `invalidates` refreshes results that read the sources it changed. Each run carries an idempotency key the binding may use to refuse doing it twice; `restPerform` sends it in the header its `idempotency` option names.
+A run ends `done`, `canceled` by the person, `failed` in the binding or for want of one, or `refused` before it starts: when its params don't fit the action's schema, when no interface can ask for confirmation, when another run is already waiting, or while a redesign is being previewed. A run that succeeds is recorded as use, without its params, and `invalidates` refreshes results that read the sources it changed. Each run carries an idempotency key the binding may use to refuse doing it twice; `restPerform` sends it in the header its `idempotency` option names.
 
 Generated pages ask through the confirmation interface you mount once: `<Confirmations />` in React, `<uitive-confirm>` elsewhere. The application's own controls ask in their own way; send them through `useAction`, so their runs count as use:
 

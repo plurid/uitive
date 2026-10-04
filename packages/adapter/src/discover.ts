@@ -1,4 +1,4 @@
-import { humanise, terms } from '@plurid/uitive-core';
+import { humanize, terms } from '@plurid/uitive-core';
 import type { AnyContract } from '@plurid/uitive-core';
 import type { RoleNode } from './aria.js';
 import { textOf, walk } from './aria.js';
@@ -403,8 +403,8 @@ export function discoverApp(
     const first = visits[0];
     const keyed = parts.some((part) => part.startsWith(':'));
     const title = keyed
-      ? humanise(singular(names.at(-1) ?? id))
-      : first?.title || humanise(names.at(-1) ?? id);
+      ? humanize(singular(names.at(-1) ?? id))
+      : first?.title || humanize(names.at(-1) ?? id);
     discovery.routes.push({
       id,
       path: template,

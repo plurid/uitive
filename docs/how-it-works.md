@@ -23,7 +23,7 @@ flowchart LR
 2. **Use is recorded**: which action, how it was reached (directly, from overflow, the palette, a suggestion, a shortcut or a command) and in which session. Never params, never text typed into the application.
 3. **A planner proposes operations**: promote this, hide that, set this choice, redesign that page. The deterministic planner answers plain commands and learns from use; a language model on your server, from any provider, answers requests in plain words and redesigns pages.
 4. **Policy checks every operation**: against the contract's IDs, required items, capacities, the person's own changes, cooldowns, validators and the evidence it claims. What fails is refused with a reason the person reads.
-5. **The stabiliser decides when**: commands apply at once; planned changes wait for a safe moment.
+5. **The stabilizer decides when**: commands apply at once; planned changes wait for a safe moment.
 6. **The definition records what applied**, with who proposed it and why, and every surface is computed from it. The application draws surfaces as it always has, with its own components.
 
 ## Commands and plans

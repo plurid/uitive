@@ -1,6 +1,6 @@
 import type { View, Via } from '@plurid/uitive-core';
 import { useSurface } from '@plurid/uitive-react';
-import { categories, services } from '../catalogue.ts';
+import { categories, services } from '../catalog.ts';
 import { uitive } from '../client.ts';
 import { MadeWith } from './made-with.tsx';
 
@@ -11,10 +11,10 @@ interface SidebarProps {
   open: boolean;
   onOpen(id: string, via: Via): void;
   onHome(): void;
-  onCatalogue(): void;
+  onCatalog(): void;
 }
 
-export function Sidebar({ view, current, open, onOpen, onHome, onCatalogue }: SidebarProps) {
+export function Sidebar({ view, current, open, onOpen, onHome, onCatalog }: SidebarProps) {
   const yours = useSurface(uitive, 'services');
   return (
     <div className={open ? 'sidebar open' : 'sidebar'} id="services">
@@ -58,7 +58,7 @@ export function Sidebar({ view, current, open, onOpen, onHome, onCatalogue }: Si
                 {service.moved && !service.pinned && <span className="marker new">new</span>}
               </button>
             ))}
-            <button type="button" className="nav-item all" onClick={onCatalogue}>
+            <button type="button" className="nav-item all" onClick={onCatalog}>
               All services <span className="count">{services.length}</span>
             </button>
           </section>

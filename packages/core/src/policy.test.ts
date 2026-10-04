@@ -4,7 +4,7 @@ import { emptyEditor, operation, summaryOf, type Use } from './__fixtures__/usag
 import { resolveList, type Change, type Definition, type Operation } from './definition.js';
 import { check } from './policy.js';
 import { random } from './simulate.js';
-import { applyOperation } from './stabiliser.js';
+import { applyOperation } from './stabilizer.js';
 
 const tableUse: Use[] = [
   ['table', 'overflow', 3],

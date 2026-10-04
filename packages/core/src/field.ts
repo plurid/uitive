@@ -18,7 +18,7 @@ export const FIELD_META = 'x-uitive';
 export interface FieldMeta {
   /** What the value means, which decides how it shows and filters. */
   type: FieldType;
-  /** Shown to people. @default the field's name, humanised */
+  /** Shown to people. @default the field's name, humanized */
   label?: string;
   /** For money: the field holding each row's ISO 4217 currency code. */
   currency?: string;
@@ -60,7 +60,7 @@ export interface Field {
 
 /** What every field helper takes. */
 export interface FieldOptions {
-  /** Shown to people, such as a column's header. @default the field's name, humanised */
+  /** Shown to people, such as a column's header. @default the field's name, humanized */
   label?: string;
   /** What the field holds, for planners and for people. */
   description?: string;
@@ -204,7 +204,7 @@ function describeField(name: string, schema: z.ZodType, owner: string): Field {
   return {
     name,
     type,
-    label: typeof tagged?.label === 'string' ? tagged.label : humanise(name),
+    label: typeof tagged?.label === 'string' ? tagged.label : humanize(name),
     description,
     nullable,
     values,
@@ -221,7 +221,7 @@ function metaOf(schema: z.ZodType): Record<string, unknown> {
 }
 
 /** `amount_refunded` and `amountRefunded` both read "Amount refunded". */
-export function humanise(name: string): string {
+export function humanize(name: string): string {
   const words = name
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/_+/g, ' ')

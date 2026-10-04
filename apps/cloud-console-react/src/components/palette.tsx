@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useRanked } from '@plurid/uitive-react';
-import { byId } from '../catalogue.ts';
+import { byId } from '../catalog.ts';
 import { uitive } from '../client.ts';
 
 interface PaletteProps {

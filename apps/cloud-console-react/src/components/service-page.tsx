@@ -1,5 +1,5 @@
 import { Page, useStandard, useSurface } from '@plurid/uitive-react';
-import { byId } from '../catalogue.ts';
+import { byId } from '../catalog.ts';
 import { uitive } from '../client.ts';
 import { useConsole } from '../console.tsx';
 

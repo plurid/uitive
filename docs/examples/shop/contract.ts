@@ -15,14 +15,14 @@ import { z } from 'zod';
 export const sources = {
   orders: source({
     label: 'Orders',
-    description: 'Orders customers placed, with their total and where they are in fulfilment',
+    description: 'Orders customers placed, with their total and where they are in fulfillment',
     keywords: ['sales', 'purchases'],
     row: z.object({
       id: z.string(),
       number: z.number(),
       total: field.money({ currency: 'currency' }),
       currency: z.string(),
-      status: field.enum(['pending', 'paid', 'shipped', 'cancelled']),
+      status: field.enum(['pending', 'paid', 'shipped', 'canceled']),
       placed: field.time(),
       customer: field.ref('customers'),
     }),
@@ -72,9 +72,9 @@ const actions = {
 // #region block
 // One of the application's own components, offered to redesigns with typed props.
 export const orderBlocks = {
-  fulfilment: block({
-    label: 'Fulfilment',
-    description: "Where an order is in fulfilment, and what's next",
+  fulfillment: block({
+    label: 'Fulfillment',
+    description: "Where an order is in fulfillment, and what's next",
     props: z.object({ detailed: z.boolean() }),
   }),
 };
@@ -83,7 +83,7 @@ export const orderBlocks = {
 // #region contract
 export const shop = defineApp({
   id: 'shop-admin',
-  description: 'The admin of an online shop: orders, customers and fulfilment',
+  description: 'The admin of an online shop: orders, customers and fulfillment',
   sources,
   actions,
   regions: {

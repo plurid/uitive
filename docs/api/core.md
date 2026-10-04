@@ -7,15 +7,15 @@ The contract, the client, data and policy: everything that adapts an interface, 
 Install: `pnpm add @plurid/uitive-core`, with `zod` ^4.2.0 as a peer. Guides: [Getting started](../getting-started.md), [Contracts](../contracts.md), [Data and actions](../data-and-actions.md), [Pages](../pages.md).
 
 - [Contracts](#contracts): [`action`](#action), [`assertIds`](#assertids), [`block`](#block), [`canonicaliser`](#canonicaliser), [`choice`](#choice), [`collection`](#collection), [`CONTRACT_FORMAT`](#contract_format), [`defineApp`](#defineapp), [`fieldsFromJson`](#fieldsfromjson), [`fieldsToJson`](#fieldstojson), [`FORMAT_VERSION`](#format_version), [`fromJson`](#fromjson), [`ID_PATTERN`](#id_pattern), [`itemSchema`](#itemschema), [`list`](#list), [`page`](#page), [`SURFACE_PATTERN`](#surface_pattern), [`toJson`](#tojson), [`ActionIdOf`](#actionidof), [`ActionJson`](#actionjson), [`ActionSpec`](#actionspec), [`ActionView`](#actionview), [`AnyContract`](#anycontract), [`AnyPageSpec`](#anypagespec), [`BlockOf`](#blockof), [`BlockSpec`](#blockspec), [`ChoiceSpec`](#choicespec), [`CollectionEntry`](#collectionentry), [`CollectionSpec`](#collectionspec), [`CollectionValue`](#collectionvalue), [`ContextOf`](#contextof), [`Contract`](#contract), [`ContractJson`](#contractjson), [`ContractSpec`](#contractspec), [`FieldJson`](#fieldjson), [`FieldsJson`](#fieldsjson), [`ListSpec`](#listspec), [`ListValue`](#listvalue), [`PageSection`](#pagesection), [`PageSpec`](#pagespec), [`PropsOf`](#propsof), [`RegionSpec`](#regionspec), [`RowOf`](#rowof), [`Runtime`](#runtime), [`SectionPage`](#sectionpage), [`SourceIdOf`](#sourceidof), [`SourceJson`](#sourcejson), [`SurfaceIdOf`](#surfaceidof), [`SurfaceJson`](#surfacejson), [`SurfaceSpec`](#surfacespec), [`SurfaceValue`](#surfacevalue), [`SurfaceValueOf`](#surfacevalueof)
-- [Sources and fields](#sources-and-fields): [`ARITY`](#arity), [`currencyDigits`](#currencydigits), [`describeFields`](#describefields), [`field`](#field), [`FIELD_META`](#field_meta), [`FIELD_PATTERN`](#field_pattern), [`FIELD_TYPES`](#field_types), [`humanise`](#humanise), [`MAX_LIMIT`](#max_limit), [`OPS`](#ops), [`OPS_BY_TYPE`](#ops_by_type), [`qualifiedFields`](#qualifiedfields), [`resolvePath`](#resolvepath), [`resolveSources`](#resolvesources), [`SCAN`](#scan), [`source`](#source), [`SOURCE_PATTERN`](#source_pattern), [`TTL`](#ttl), [`AnySourceSpec`](#anysourcespec), [`Capabilities`](#capabilities), [`Field`](#field-type), [`FieldMeta`](#fieldmeta), [`FieldNameOf`](#fieldnameof), [`FieldOptions`](#fieldoptions), [`FieldPath`](#fieldpath), [`FieldType`](#fieldtype), [`Op`](#op), [`ResolvedSource`](#resolvedsource), [`SourceSpec`](#sourcespec), [`TimeUnit`](#timeunit)
+- [Sources and fields](#sources-and-fields): [`ARITY`](#arity), [`currencyDigits`](#currencydigits), [`describeFields`](#describefields), [`field`](#field), [`FIELD_META`](#field_meta), [`FIELD_PATTERN`](#field_pattern), [`FIELD_TYPES`](#field_types), [`humanize`](#humanize), [`MAX_LIMIT`](#max_limit), [`OPS`](#ops), [`OPS_BY_TYPE`](#ops_by_type), [`qualifiedFields`](#qualifiedfields), [`resolvePath`](#resolvepath), [`resolveSources`](#resolvesources), [`SCAN`](#scan), [`source`](#source), [`SOURCE_PATTERN`](#source_pattern), [`TTL`](#ttl), [`AnySourceSpec`](#anysourcespec), [`Capabilities`](#capabilities), [`Field`](#field-type), [`FieldMeta`](#fieldmeta), [`FieldNameOf`](#fieldnameof), [`FieldOptions`](#fieldoptions), [`FieldPath`](#fieldpath), [`FieldType`](#fieldtype), [`Op`](#op), [`ResolvedSource`](#resolvedsource), [`SourceSpec`](#sourcespec), [`TimeUnit`](#timeunit)
 - [Queries and data](#queries-and-data): [`BUCKETS`](#buckets), [`bucketStart`](#bucketstart), [`checkQuery`](#checkquery), [`createData`](#createdata), [`DEFAULT_LIMIT`](#default_limit), [`DIRECTIONS`](#directions), [`formatValue`](#formatvalue), [`fromRows`](#fromrows), [`isToken`](#istoken), [`MAX_FIELDS`](#max_fields), [`MAX_FILTERS`](#max_filters), [`MAX_SORTS`](#max_sorts), [`MEASURES`](#measures), [`NO_AGGREGATE`](#no_aggregate), [`NONE`](#none), [`parseTime`](#parsetime), [`parseValue`](#parsevalue), [`partsIn`](#partsin), [`PERIODS`](#periods), [`query`](#query), [`runQuery`](#runquery), [`SEARCH_LENGTH`](#search_length), [`startOf`](#startof), [`timeOf`](#timeof), [`TOKENS`](#tokens), [`VALUE_LENGTH`](#value_length), [`Aggregate`](#aggregate), [`BindingContext`](#bindingcontext), [`Bucket`](#bucket), [`Clock`](#clock), [`DataClient`](#dataclient), [`DataEntry`](#dataentry), [`DataOptions`](#dataoptions), [`DataScope`](#datascope), [`Direction`](#direction), [`Fetch`](#fetch), [`Fetchers`](#fetchers), [`FetchFilter`](#fetchfilter), [`FetchRequest`](#fetchrequest), [`FetchResult`](#fetchresult), [`Filter`](#filter), [`Group`](#group), [`LocalParts`](#localparts), [`Measure`](#measure), [`Parsed`](#parsed), [`Period`](#period), [`Query`](#query-type), [`QueryCheck`](#querycheck), [`QueryResult`](#queryresult), [`QueryScope`](#queryscope), [`Row`](#row), [`RunOptions`](#runoptions), [`Sort`](#sort), [`Stored`](#stored), [`Token`](#token)
 - [Actions and bindings](#actions-and-bindings): [`EFFECTS`](#effects), [`pointer`](#pointer), [`restFetch`](#restfetch), [`restPerform`](#restperform), [`rowParam`](#rowparam), [`Bindings`](#bindings), [`Confirmation`](#confirmation), [`DeclaredParams`](#declaredparams), [`Effect`](#effect), [`HttpFetch`](#httpfetch), [`HttpResponse`](#httpresponse), [`ParamsOf`](#paramsof), [`Perform`](#perform), [`PerformContext`](#performcontext), [`Performers`](#performers), [`PerformOptions`](#performoptions), [`PerformOutcome`](#performoutcome), [`PerformResult`](#performresult), [`RestAction`](#restaction), [`RestFetchConfig`](#restfetchconfig), [`RestPerformConfig`](#restperformconfig), [`RestSource`](#restsource), [`Target`](#target)
 - [Pages and blocks](#pages-and-blocks): [`BUILT_IN`](#built_in), [`builtInBlocks`](#builtinblocks), [`checkGeneric`](#checkgeneric), [`DATA_BLOCKS`](#data_blocks), [`DATA_PATTERN`](#data_pattern), [`ELEMENT_PATTERN`](#element_pattern), [`fromSections`](#fromsections), [`GENERIC`](#generic), [`genericBlocks`](#genericblocks), [`genericFor`](#genericfor), [`GenericProblem`](#genericproblem), [`LAYOUTS`](#layouts), [`MAX_DEPTH`](#max_depth), [`MAX_ELEMENTS`](#max_elements), [`MAX_QUERIES`](#max_queries), [`PageProblem`](#pageproblem), [`periodOf`](#periodof), [`regionsFor`](#regionsfor), [`toPage`](#topage), [`ui`](#ui), [`USER_PAGE_PATH`](#user_page_path), [`userPagePath`](#userpagepath), [`userPageSpec`](#userpagespec), [`validatePage`](#validatepage), [`walk`](#walk), [`ActionsProps`](#actionsprops), [`AnyPage`](#anypage), [`BoardProps`](#boardprops), [`BuiltIn`](#builtin), [`BuiltInElement`](#builtinelement), [`ChartProps`](#chartprops), [`DetailProps`](#detailprops), [`Element`](#element), [`ElementOf`](#elementof), [`FormProps`](#formprops), [`GenericName`](#genericname), [`GenericProps`](#genericprops), [`GenericScope`](#genericscope), [`Layout`](#layout), [`LinksProps`](#linksprops), [`ListProps`](#listprops), [`MetricProps`](#metricprops), [`NamedQuery`](#namedquery), [`Node`](#node), [`NoteProps`](#noteprops), [`PageValue`](#pagevalue), [`RegionProps`](#regionprops), [`RowAction`](#rowaction), [`SectionProps`](#sectionprops), [`SectionsPage`](#sectionspage), [`TableProps`](#tableprops), [`TabsProps`](#tabsprops), [`TimelineProps`](#timelineprops), [`ValidateOptions`](#validateoptions)
 - [Routes](#routes): [`buildPath`](#buildpath), [`entityRoute`](#entityroute), [`matchRoute`](#matchroute), [`route`](#route), [`segments`](#segments), [`validateRoutes`](#validateroutes), [`RouteSegment`](#routesegment), [`RouteSpec`](#routespec)
 - [The client](#the-client): [`createUitive`](#createuitive), [`localStore`](#localstore), [`memoryStore`](#memorystore), [`Adaptation`](#adaptation), [`Autonomy`](#autonomy), [`DefinitionDocument`](#definitiondocument), [`Location`](#location), [`PageInput`](#pageinput), [`RecordOptions`](#recordoptions), [`Snapshot`](#snapshot), [`Store`](#store), [`Uitive`](#uitive), [`UitiveOptions`](#uitiveoptions), [`View`](#view)
 - [Planners](#planners): [`command`](#command), [`heuristicPlanner`](#heuristicplanner), [`keywordCommand`](#keywordcommand), [`MARGIN`](#margin), [`MIN_PROMOTE`](#min_promote), [`planResultSchema`](#planresultschema), [`remotePlanner`](#remoteplanner), [`ClaimedEvidence`](#claimedevidence), [`CommandResult`](#commandresult), [`CommandStatus`](#commandstatus), [`Environment`](#environment), [`FetchLike`](#fetchlike), [`PlanMeta`](#planmeta), [`Planner`](#planner), [`PlannerResponse`](#plannerresponse), [`PlannerStream`](#plannerstream), [`PlanOptions`](#planoptions), [`PlanProgress`](#planprogress), [`PlanRequest`](#planrequest), [`PlanResult`](#planresult), [`ProposedOperation`](#proposedoperation), [`RemotePlannerOptions`](#remoteplanneroptions), [`StateView`](#stateview)
-- [Definitions and policy](#definitions-and-policy): [`canonical`](#canonical), [`check`](#check), [`checkPageValue`](#checkpagevalue), [`DEFAULT_STABILISER`](#default_stabiliser), [`describe`](#describe), [`emptyDefinition`](#emptydefinition), [`EVERY`](#every), [`isApplied`](#isapplied), [`MAX_USER_PAGES`](#max_user_pages), [`METRICS`](#metrics), [`migrateDefinition`](#migratedefinition), [`MIN_IDLE`](#min_idle), [`NOTE_LENGTH`](#note_length), [`operationKey`](#operationkey), [`redesigned`](#redesigned), [`resolveChoice`](#resolvechoice), [`resolveCollection`](#resolvecollection), [`resolveList`](#resolvelist), [`resolvePage`](#resolvepage), [`resolveUserPages`](#resolveuserpages), [`SLUG_PATTERN`](#slug_pattern), [`TEXT_LENGTH`](#text_length), [`TITLE_LENGTH`](#title_length), [`USER_PAGES`](#user_pages), [`validateOutput`](#validateoutput), [`AppliedOperation`](#appliedoperation), [`Change`](#change), [`CheckResult`](#checkresult), [`ChoiceChange`](#choicechange), [`CollectionChange`](#collectionchange), [`Definition`](#definition), [`Evidence`](#evidence), [`Explanation`](#explanation), [`ListChange`](#listchange), [`ListState`](#liststate), [`Metric`](#metric), [`Operation`](#operation), [`Origin`](#origin), [`OutputRejection`](#outputrejection), [`PageChange`](#pagechange), [`Pending`](#pending), [`PolicyContext`](#policycontext), [`Rejection`](#rejection), [`Rule`](#rule), [`StabiliserOptions`](#stabiliseroptions), [`Status`](#status), [`UserPage`](#userpage), [`UserPageChange`](#userpagechange)
-- [Usage and simulation](#usage-and-simulation): [`DECAY`](#decay), [`random`](#random), [`rank`](#rank), [`simulate`](#simulate), [`summarise`](#summarise), [`VIAS`](#vias), [`visibleLists`](#visiblelists), [`WINDOW`](#window), [`Persona`](#persona), [`SessionRecord`](#sessionrecord), [`SessionReport`](#sessionreport), [`UsageEvent`](#usageevent), [`UsageRow`](#usagerow), [`UsageSummary`](#usagesummary), [`Via`](#via)
+- [Definitions and policy](#definitions-and-policy): [`canonical`](#canonical), [`check`](#check), [`checkPageValue`](#checkpagevalue), [`DEFAULT_STABILIZER`](#default_stabilizer), [`describe`](#describe), [`emptyDefinition`](#emptydefinition), [`EVERY`](#every), [`isApplied`](#isapplied), [`MAX_USER_PAGES`](#max_user_pages), [`METRICS`](#metrics), [`migrateDefinition`](#migratedefinition), [`MIN_IDLE`](#min_idle), [`NOTE_LENGTH`](#note_length), [`operationKey`](#operationkey), [`redesigned`](#redesigned), [`resolveChoice`](#resolvechoice), [`resolveCollection`](#resolvecollection), [`resolveList`](#resolvelist), [`resolvePage`](#resolvepage), [`resolveUserPages`](#resolveuserpages), [`SLUG_PATTERN`](#slug_pattern), [`TEXT_LENGTH`](#text_length), [`TITLE_LENGTH`](#title_length), [`USER_PAGES`](#user_pages), [`validateOutput`](#validateoutput), [`AppliedOperation`](#appliedoperation), [`Change`](#change), [`CheckResult`](#checkresult), [`ChoiceChange`](#choicechange), [`CollectionChange`](#collectionchange), [`Definition`](#definition), [`Evidence`](#evidence), [`Explanation`](#explanation), [`ListChange`](#listchange), [`ListState`](#liststate), [`Metric`](#metric), [`Operation`](#operation), [`Origin`](#origin), [`OutputRejection`](#outputrejection), [`PageChange`](#pagechange), [`Pending`](#pending), [`PolicyContext`](#policycontext), [`Rejection`](#rejection), [`Rule`](#rule), [`StabilizerOptions`](#stabilizeroptions), [`Status`](#status), [`UserPage`](#userpage), [`UserPageChange`](#userpagechange)
+- [Usage and simulation](#usage-and-simulation): [`DECAY`](#decay), [`random`](#random), [`rank`](#rank), [`simulate`](#simulate), [`summarize`](#summarize), [`VIAS`](#vias), [`visibleLists`](#visiblelists), [`WINDOW`](#window), [`Persona`](#persona), [`SessionRecord`](#sessionrecord), [`SessionReport`](#sessionreport), [`UsageEvent`](#usageevent), [`UsageRow`](#usagerow), [`UsageSummary`](#usagesummary), [`Via`](#via)
 - [Advanced](#advanced): [`actionsInScope`](#actionsinscope), [`areasOf`](#areasof), [`EXTRA_AREAS`](#extra_areas), [`hash`](#hash), [`MAX_ACTIONS`](#max_actions), [`MAX_SOURCES`](#max_sources), [`rankAreas`](#rankareas), [`selectSubset`](#selectsubset), [`sourcesInView`](#sourcesinview), [`stableStringify`](#stablestringify), [`terms`](#terms), [`Area`](#area), [`Subset`](#subset), [`SubsetOptions`](#subsetoptions)
 
 ## Contracts
@@ -898,12 +898,12 @@ Every type a field may have.
 const FIELD_TYPES: readonly ['text', 'number', 'money', 'time', 'enum', 'ref', 'bool'];
 ```
 
-### humanise
+### humanize
 
 `amount_refunded` and `amountRefunded` both read "Amount refunded".
 
 ```ts
-function humanise(name: string): string;
+function humanize(name: string): string;
 ```
 
 ### MAX_LIMIT
@@ -1084,7 +1084,7 @@ Uses: [`FieldType`](#fieldtype), [`TimeUnit`](#timeunit).
 | Property    | Type        | Default                     | Description                                                          |
 | ----------- | ----------- | --------------------------- | -------------------------------------------------------------------- |
 | `type`      | `FieldType` |                             | What the value means, which decides how it shows and filters.        |
-| `label?`    | `string`    | the field's name, humanised | Shown to people.                                                     |
+| `label?`    | `string`    | the field's name, humanized | Shown to people.                                                     |
 | `currency?` | `string`    |                             | For money: the field holding each row's ISO 4217 currency code.      |
 | `code?`     | `string`    |                             | For money: one ISO 4217 currency for every row.                      |
 | `minor?`    | `boolean`   | `false`                     | For money: whether amounts are stored in minor units, such as cents. |
@@ -1105,7 +1105,7 @@ What every field helper takes.
 
 | Property       | Type     | Default                     | Description                                        |
 | -------------- | -------- | --------------------------- | -------------------------------------------------- |
-| `label?`       | `string` | the field's name, humanised | Shown to people, such as a column's header.        |
+| `label?`       | `string` | the field's name, humanized | Shown to people, such as a column's header.        |
 | `description?` | `string` |                             | What the field holds, for planners and for people. |
 
 ### FieldPath
@@ -2052,13 +2052,13 @@ Uses: [`Target`](#target).
 
 ### PerformResult
 
-How a run ended: `done`, `cancelled` by the person, `failed` in the binding, or `refused` before
+How a run ended: `done`, `canceled` by the person, `failed` in the binding, or `refused` before
 it started, such as when nothing could ask for confirmation.
 
-| Property   | Type                                             | Description                                                    |
-| ---------- | ------------------------------------------------ | -------------------------------------------------------------- |
-| `status`   | `'done' \| 'cancelled' \| 'failed' \| 'refused'` | `refused` runs never started; `failed` ones started and threw. |
-| `message?` | `string`                                         | The binding's message, or why the run was refused or failed.   |
+| Property   | Type                                            | Description                                                    |
+| ---------- | ----------------------------------------------- | -------------------------------------------------------------- |
+| `status`   | `'done' \| 'canceled' \| 'failed' \| 'refused'` | `refused` runs never started; `failed` ones started and threw. |
+| `message?` | `string`                                        | The binding's message, or why the run was refused or failed.   |
 
 ### RestAction
 
@@ -2095,7 +2095,7 @@ Uses: [`RestAction`](#restaction).
 | Property       | Type                                                                                     | Default            | Description                                                                                                         |
 | -------------- | ---------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | `actions`      | `Readonly<Record<string, RestAction>>`                                                   |                    | Each action's method and path, by action ID; params fill `{placeholders}` in the path, and the rest go in the body. |
-| `idempotency?` | `string`                                                                                 |                    | The header that carries each run's idempotency key, for APIs that honour one.                                       |
+| `idempotency?` | `string`                                                                                 |                    | The header that carries each run's idempotency key, for APIs that honor one.                                        |
 | `base`         | `string`                                                                                 |                    | The API's base URL, such as `https://api.example.com`; empty for the page's own origin.                             |
 | `headers?`     | `(context: BindingContext) => Record<string, string> \| Promise<Record<string, string>>` |                    | Headers for every request, such as authorization.                                                                   |
 | `credentials?` | `'omit' \| 'same-origin' \| 'include'`                                                   | `'same-origin'`    | Sends cookies, for an application's own API.                                                                        |
@@ -3209,7 +3209,7 @@ Uses: [`ActionIdOf`](#actionidof), [`ActionView`](#actionview), [`Adaptation`](#
 What `createUitive` takes: the contract, and where state lives, who plans and the
 application's code behind the contract.
 
-Uses: [`AnyContract`](#anycontract), [`Autonomy`](#autonomy), [`Bindings`](#bindings), [`Environment`](#environment), [`Planner`](#planner), [`StabiliserOptions`](#stabiliseroptions), [`Store`](#store).
+Uses: [`AnyContract`](#anycontract), [`Autonomy`](#autonomy), [`Bindings`](#bindings), [`Environment`](#environment), [`Planner`](#planner), [`StabilizerOptions`](#stabilizeroptions), [`Store`](#store).
 
 Type parameters: `C extends AnyContract`.
 
@@ -3222,7 +3222,7 @@ Type parameters: `C extends AnyContract`.
 | `idleMinutes?` | `number`                         | `30`                 | Minutes without activity that end a session.                                                                                                                   |
 | `autonomy?`    | `Autonomy`                       | `'mixed'`            | Used until the user chooses otherwise.                                                                                                                         |
 | `learn?`       | `boolean`                        | `true`               | Whether the client plans from use by itself, once a session (see `learn`). With a model planner, each plan is one request to the application's server.         |
-| `stabiliser?`  | `Partial<StabiliserOptions>`     |                      | How cautiously planned changes apply: how many per session, after how many sessions, and how long a reverted one waits.                                        |
+| `stabilizer?`  | `Partial<StabilizerOptions>`     |                      | How cautiously planned changes apply: how many per session, after how many sessions, and how long a reverted one waits.                                        |
 | `bindings?`    | `Bindings<C>`                    |                      | The application's code behind the contract: reading sources, running actions, routing.                                                                         |
 | `onError?`     | `(error: unknown) => void`       |                      | Called when storage or a planner fails; the interface keeps working.                                                                                           |
 | `environment?` | `() => Environment \| undefined` |                      | For pages Uitive adapts from outside, such as in a browser extension: what the page offers now, sent with each request. Structure only, never the page's text. |
@@ -3571,7 +3571,7 @@ Uses: [`AnyPage`](#anypage).
 
 ## Definitions and policy
 
-Source: [`definition.ts`](../../packages/core/src/definition.ts), [`explain.ts`](../../packages/core/src/explain.ts), [`limits.ts`](../../packages/core/src/limits.ts), [`policy.ts`](../../packages/core/src/policy.ts), [`stabiliser.ts`](../../packages/core/src/stabiliser.ts)
+Source: [`definition.ts`](../../packages/core/src/definition.ts), [`explain.ts`](../../packages/core/src/explain.ts), [`limits.ts`](../../packages/core/src/limits.ts), [`policy.ts`](../../packages/core/src/policy.ts), [`stabilizer.ts`](../../packages/core/src/stabilizer.ts)
 
 ### canonical
 
@@ -3609,16 +3609,16 @@ function checkPageValue(
 
 Uses: [`AnyContract`](#anycontract), [`AnyPage`](#anypage), [`AnyPageSpec`](#anypagespec).
 
-### DEFAULT_STABILISER
+### DEFAULT_STABILIZER
 
-The stabiliser's defaults: two changes per safe moment, three sessions of dwell, five of cooldown
+The stabilizer's defaults: two changes per safe moment, three sessions of dwell, five of cooldown
 and expiry.
 
 ```ts
-const DEFAULT_STABILISER: StabiliserOptions;
+const DEFAULT_STABILIZER: StabilizerOptions;
 ```
 
-Uses: [`StabiliserOptions`](#stabiliseroptions).
+Uses: [`StabilizerOptions`](#stabilizeroptions).
 
 ### describe
 
@@ -4113,7 +4113,7 @@ type Rule =
   | 'capacity';
 ```
 
-### StabiliserOptions
+### StabilizerOptions
 
 How cautiously planned changes apply, so the interface never moves while someone works and
 settles rather than churns.
@@ -4212,12 +4212,12 @@ function simulate<C extends AnyContract>(
 
 Uses: [`AnyContract`](#anycontract), [`Persona`](#persona), [`SessionReport`](#sessionreport), [`Uitive`](#uitive).
 
-### summarise
+### summarize
 
 Summarizes usage per action and surface over recent sessions, with older sessions weighing less.
 
 ```ts
-function summarise(
+function summarize(
   contract: AnyContract,
   definition: Definition,
   events: readonly UsageEvent[],

@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { categories, services } from '../catalogue.ts';
+import { categories, services } from '../catalog.ts';
 
-interface CatalogueProps {
+interface CatalogProps {
   onOpen(id: string): void;
   onClose(): void;
 }
 
 /** Every service, one search away: overflow for the sidebar. */
-export function Catalogue({ onOpen, onClose }: CatalogueProps) {
+export function Catalog({ onOpen, onClose }: CatalogProps) {
   const [query, setQuery] = useState('');
   const wanted = query.trim().toLowerCase();
   const matches = (label: string, description: string) =>
@@ -15,7 +15,7 @@ export function Catalogue({ onOpen, onClose }: CatalogueProps) {
   return (
     <div className="overlay" role="presentation" onClick={onClose}>
       <div
-        className="dialog catalogue"
+        className="dialog catalog"
         role="dialog"
         aria-modal="true"
         aria-label="All services"
@@ -38,7 +38,7 @@ export function Catalogue({ onOpen, onClose }: CatalogueProps) {
           autoFocus
           onChange={(event) => setQuery(event.target.value)}
         />
-        <div className="catalogue-grid">
+        <div className="catalog-grid">
           {categories.map((category) => {
             const shown = category.services.filter(([, label, description]) =>
               matches(label, description),

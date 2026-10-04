@@ -17,4 +17,4 @@ No planner ever receives a third-party page's text. The extension sends what any
 
 ## Consequences
 
-The extension stays within store rules on remote code, and text on a third-party page has no path into the model, so prompt injection through page content has nothing to work with. Vendors and users get the same guarantees from the same policy, stabiliser and definitions. Adapters break when sites change, so they need anchors with fallbacks, failure reports and repair. Terms of service vary by site; the extension's first target stays a private prototype until legal advice says otherwise.
+The extension stays within store rules on remote code, and text on a third-party page has no path into the model, so prompt injection through page content has nothing to work with. Vendors and users get the same guarantees from the same policy, stabilizer and definitions. Adapters break when sites change, so they need anchors with fallbacks, failure reports and repair. Terms of service vary by site; the extension's first target stays a private prototype until legal advice says otherwise.

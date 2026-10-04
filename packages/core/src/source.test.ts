@@ -2,7 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 import { payments, sources } from './__fixtures__/payments.js';
 import { action, defineApp, type RowOf, type SourceIdOf } from './contract.js';
-import { currencyDigits, describeFields, field, humanise } from './field.js';
+import { currencyDigits, describeFields, field, humanize } from './field.js';
 import { qualifiedFields, source } from './source.js';
 
 const base = {
@@ -87,9 +87,9 @@ describe('fields', () => {
     expect(() => describeFields(z.object({ bad }))).toThrow(/can't be money/);
   });
 
-  it('humanises names and knows currency digits', () => {
-    expect(humanise('amount_refunded')).toBe('Amount refunded');
-    expect(humanise('createdAt')).toBe('Created at');
+  it('humanizes names and knows currency digits', () => {
+    expect(humanize('amount_refunded')).toBe('Amount refunded');
+    expect(humanize('createdAt')).toBe('Created at');
     expect(currencyDigits('USD')).toBe(2);
     expect(currencyDigits('jpy')).toBe(0);
     expect(currencyDigits('KWD')).toBe(3);

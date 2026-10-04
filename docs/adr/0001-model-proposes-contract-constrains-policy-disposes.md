@@ -11,7 +11,7 @@ Language models add what was missing: they can reason about what actions mean, s
 
 ## Decision
 
-A model never writes interface code. Each application declares a typed contract of adaptable surfaces. A planner (the model on a server, or a deterministic heuristic in the core) proposes operations over contract IDs; for the model, the contract compiles to structured-output schemas, so out-of-contract output cannot be expressed. Policy checks every operation, a stabiliser decides when checked operations apply, and every applied operation can be reverted by the user. The heuristic planner is always available, so applications work offline and without a key.
+A model never writes interface code. Each application declares a typed contract of adaptable surfaces. A planner (the model on a server, or a deterministic heuristic in the core) proposes operations over contract IDs; for the model, the contract compiles to structured-output schemas, so out-of-contract output cannot be expressed. Policy checks every operation, a stabilizer decides when checked operations apply, and every applied operation can be reverted by the user. The heuristic planner is always available, so applications work offline and without a key.
 
 ## Consequences
 

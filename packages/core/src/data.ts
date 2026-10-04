@@ -265,7 +265,7 @@ export async function runQuery(
   if (aggregate) {
     return {
       rows: [],
-      groups: summarise(query, rows, source, contract, valueOf, hops, clock),
+      groups: summarize(query, rows, source, contract, valueOf, hops, clock),
       partial,
       at: clock.now,
       reads: [...reads],
@@ -545,7 +545,7 @@ async function related(
   return found;
 }
 
-function summarise(
+function summarize(
   query: Query,
   rows: readonly Record<string, unknown>[],
   source: ResolvedSource,

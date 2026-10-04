@@ -3,7 +3,7 @@ import { useCallback, useState, useSyncExternalStore, type FormEvent, type React
 import {
   buildPath,
   entityRoute,
-  humanise,
+  humanize,
   NONE,
   parseTime,
   parseValue,
@@ -231,7 +231,7 @@ const labelOf = (client: Uitive, action: string) =>
 
 /** What a run says when it is over: its own message, else that it was done or not. */
 function outcomeOf(label: string, result: PerformResult): Outcome | undefined {
-  if (result.status === 'cancelled') return undefined;
+  if (result.status === 'canceled') return undefined;
   const done = result.status === 'done';
   runs += 1;
   return {
@@ -647,7 +647,7 @@ function ChartBlock({ scope, props }: { scope: Scope; props: ChartProps }) {
     by?.type === 'time' && typeof group.by === 'number'
       ? bucketLabel(group.by, query.aggregate.bucket)
       : by?.type === 'enum'
-        ? humanise(group.label)
+        ? humanize(group.label)
         : group.label;
   const named = new Map<string, ChartSeries['points'][number][]>();
   for (const group of groups) {
@@ -712,7 +712,7 @@ function BoardBlock({ scope, props }: { scope: Scope; props: BoardProps }) {
       {column.values.map((value) => {
         const members = rows.filter((row) => row[props.column] === value);
         return (
-          <kit.Card key={value} title={`${humanise(value)} (${members.length})`}>
+          <kit.Card key={value} title={`${humanize(value)} (${members.length})`}>
             <kit.List
               items={members.map((row) => ({
                 key: String(row[`${source.id}.${source.key}`]),

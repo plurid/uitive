@@ -1,5 +1,5 @@
 import { Page, useSurface } from '@plurid/uitive-react';
-import { categories, services } from '../catalogue.ts';
+import { categories, services } from '../catalog.ts';
 import { uitive } from '../client.ts';
 import { useConsole } from '../console.tsx';
 import { components } from './blocks.tsx';
@@ -8,7 +8,7 @@ import { components } from './blocks.tsx';
 function Everything() {
   const { open } = useConsole();
   return (
-    <div className="catalogue-block">
+    <div className="catalog-block">
       {categories.map((entry) => (
         <section key={entry.id} className="tile-section">
           <h2>{entry.label}</h2>

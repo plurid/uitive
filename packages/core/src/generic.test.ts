@@ -7,7 +7,7 @@ import { GENERIC, genericFor } from './generic.js';
 import { PageProblem, ui, validatePage, type AnyPage, type Element } from './page.js';
 import { check } from './policy.js';
 import { query, type Query } from './query.js';
-import { summarise } from './usage.js';
+import { summarize } from './usage.js';
 
 const home = payments.surfaces.home as AnyPageSpec;
 const paymentPage = payments.surfaces.payment as AnyPageSpec;
@@ -449,7 +449,7 @@ describe('generic blocks', () => {
       {
         contract: payments,
         definition: emptyDefinition(payments),
-        summary: summarise(payments, emptyDefinition(payments), [], [], 0),
+        summary: summarize(payments, emptyDefinition(payments), [], [], 0),
         session: 0,
         intent: 'show failed payments',
       },

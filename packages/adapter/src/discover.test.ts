@@ -82,9 +82,9 @@ describe('templateOf', () => {
 
 describe('matchAction', () => {
   it('matches a button only when the action explains every word of it', () => {
-    const fulfil = { id: 'orders.fulfillments.create', label: 'Create an order fulfillment' };
-    expect(matchAction('Create fulfillment', fulfil, ['orders'])).toBeGreaterThan(0);
-    expect(matchAction('Create draft order', fulfil, ['orders'])).toBe(0);
+    const fulfill = { id: 'orders.fulfillments.create', label: 'Create an order fulfillment' };
+    expect(matchAction('Create fulfillment', fulfill, ['orders'])).toBeGreaterThan(0);
+    expect(matchAction('Create draft order', fulfill, ['orders'])).toBe(0);
     expect(
       matchAction('Add customer', { id: 'customers.create', label: 'Create a customer' }),
     ).toBe(1);

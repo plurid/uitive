@@ -363,7 +363,7 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
       const label = action ? `"${contract.actions[action]?.label ?? action}"` : message.anchor;
       void pickElement(document, label).then(async (element) => {
         if (!element) {
-          reply({ ok: false, problem: 'Cancelled' });
+          reply({ ok: false, problem: 'Canceled' });
           return;
         }
         const scope = anchor.within ? (anchors.get(anchor.within)?.element ?? document) : document;

@@ -78,7 +78,7 @@ describe('uitive-mcp', () => {
       text: expect.stringContaining('All checks pass.'),
     });
     const preview = JSON.parse(
-      (await call('uitive_preview_plan', { text: 'cancelled orders this week' })).text,
+      (await call('uitive_preview_plan', { text: 'canceled orders this week' })).text,
     );
     expect(preview).toMatchObject({ scoped: false, schema: { optional: 0, unions: 1 } });
     expect(preview.sources).toContain('orders');

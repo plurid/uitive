@@ -62,7 +62,7 @@ An API description describes everything; an interface shows a part. Past 40 sour
     "orders": {
       "include": true,
       "label": "Orders",
-      "description": "Orders placed by customers, with their payment and fulfilment status",
+      "description": "Orders placed by customers, with their payment and fulfillment status",
       "keywords": ["purchase", "sale"],
       "fields": ["display_id", "email", "total", "currency_code", "payment_status", "created_at"],
       "labels": { "display_id": "Order", "created_at": "Placed" },

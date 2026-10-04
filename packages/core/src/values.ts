@@ -1,4 +1,4 @@
-import { currencyDigits, humanise, type Field } from './field.js';
+import { currencyDigits, humanize, type Field } from './field.js';
 
 /** When a query runs, and where: "today" and "this month" depend on the user's time zone. */
 export interface Clock {
@@ -284,7 +284,7 @@ export function formatValue(
         ? new Intl.NumberFormat(locale).format(value)
         : String(value);
     case 'enum':
-      return humanise(String(value));
+      return humanize(String(value));
     case 'bool':
       return value ? 'Yes' : 'No';
     default:

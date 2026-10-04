@@ -95,16 +95,16 @@ The API reference has every prop: [table](api/core.md#tableprops), [list](api/co
 
 ## Your own blocks
 
-A block can also be one of your components, with typed props, such as a fulfilment tracker. Declare it on the contract and give the page its blocks:
+A block can also be one of your components, with typed props, such as a fulfillment tracker. Declare it on the contract and give the page its blocks:
 
 <!-- example: docs/examples/shop/contract.ts#block -->
 
 ```ts
 // One of the application's own components, offered to redesigns with typed props.
 export const orderBlocks = {
-  fulfilment: block({
-    label: 'Fulfilment',
-    description: "Where an order is in fulfilment, and what's next",
+  fulfillment: block({
+    label: 'Fulfillment',
+    description: "Where an order is in fulfillment, and what's next",
     props: z.object({ detailed: z.boolean() }),
   }),
 };
@@ -117,7 +117,7 @@ Then pass the components to `Page`, typed by the blocks' props:
 ```tsx
 /** The application's components behind the order page's blocks, typed by their props. */
 const blocks: BlockComponents<typeof orderBlocks> = {
-  fulfilment: ({ props }) => (
+  fulfillment: ({ props }) => (
     <p>{props.detailed ? 'Picked and packed, not yet shipped' : 'Not yet shipped'}</p>
   ),
 };
@@ -128,7 +128,7 @@ export function OrderPage() {
 }
 ```
 
-`uitive generate blocks src/fulfilment.tsx#Fulfilment` writes block specs from components' TypeScript props: literal unions become enums, optional props become required with their defaults described, and props that can't be data, such as callbacks, are reported.
+`uitive generate blocks src/fulfillment.tsx#Fulfillment` writes block specs from components' TypeScript props: literal unions become enums, optional props become required with their defaults described, and props that can't be data, such as callbacks, are reported.
 
 ## Redesigns
 

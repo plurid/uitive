@@ -1,5 +1,5 @@
 import type { Persona } from '@plurid/uitive-core';
-import { byId } from './catalogue.ts';
+import { byId } from './catalog.ts';
 
 function persona(
   name: string,
@@ -68,14 +68,14 @@ export const personas: Persona[] = [
   ),
   persona(
     'billing admin',
-    'Watches spending across the organisation',
+    'Watches spending across the organization',
     {
       billing: 6,
       'cost-explorer': 6,
       budgets: 4,
       'cost-alerts': 3,
       'usage-reports': 3,
-      organisations: 2,
+      organizations: 2,
     },
     { export: 5, costs: 4, settings: 2, permissions: 2 },
   ),
