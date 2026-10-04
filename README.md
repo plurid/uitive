@@ -8,7 +8,7 @@
 <h1 align="center">Uitive</h1>
 
 <p align="center">
-  Adapt the User Interface through Learning from Usage
+  Adaptive User Interface through Language and Usage
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 
 ## The idea
 
-Large applications show everything to everyone; each person uses a small, personal part of it. Uitive lets an interface converge on that part, learned from usage and redesigned by asking in plain language, within the boundaries the application declares.
+Applications show everything to everyone, but each person uses only a small part. Uitive builds each person's interface around the part they use: learned from their usage, changed when they ask in plain language, and always within the limits the application sets.
 
 - **The application declares a contract** of what may adapt: toolbars and menus, settings, whole pages built from its own components and its data, and the actions people can run.
 - **Planners propose, within it.** A deterministic planner learns from use and answers plain commands, offline and without a key. A language model on the application's server, from any provider (Claude, GPT, Gemini or a local model), answers requests in plain words and redesigns pages; structured outputs make anything outside the contract unrepresentable.
@@ -90,7 +90,8 @@ The folder's `client.ts` creates the client, which learns from use, answers comm
 import { createUitive, localStore } from '@plurid/uitive-core';
 import { contract } from './contract.js';
 
-// Learns from use and changes when asked; the person's interface is kept in this browser.
+// Learns from use and changes when asked;
+// the person's interface is kept in this browser.
 export const uitive = createUitive({
   contract,
   store: localStore('notes'),
@@ -191,7 +192,7 @@ The same engine also runs in a private browser extension prototype, which applie
 
 ## Demos
 
-**Acme Cloud**, the picture above: a fictional cloud console of 168 services and their actions, where each person's console converges on what they use.
+**Acme Cloud**, the picture above: a fictional cloud console of 168 services and their actions, where each person's console adapts to what they use.
 
 ```sh
 pnpm install
