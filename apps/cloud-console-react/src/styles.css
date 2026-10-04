@@ -133,10 +133,55 @@ kbd {
 }
 
 .sidebar {
-  overflow-y: auto;
-  padding: var(--space-3) var(--space-2);
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   background: var(--surface);
   border-right: 1px solid var(--border);
+}
+
+.sidebar-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-2);
+}
+
+.made-with {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--text-s);
+  text-decoration: none;
+}
+
+.made-with:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.made-with strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.made-with-mark {
+  flex: none;
+  fill: var(--text);
+}
+
+/* Uitive's own blue, not Acme Cloud's accent. */
+.made-with-dot {
+  fill: #1380c3;
+}
+
+@media (prefers-color-scheme: dark) {
+  .made-with-dot {
+    fill: #4fa8ea;
+  }
 }
 
 .nav-group {

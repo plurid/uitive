@@ -1,4 +1,4 @@
-// Refreshes the examples embedded in the docs and regenerates the API reference: `pnpm docs`.
+// Refreshes the examples embedded in the docs and regenerates the API reference: `pnpm run docs`.
 // With `--check`, reports what is stale instead, and exits 1.
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -41,7 +41,7 @@ export async function snippet(path: string, name?: string): Promise<string> {
   return formatAs(region(await readFile(join(root, path), 'utf8'), name), path);
 }
 
-/** Every file `pnpm docs` writes, with its text: guides with their examples, and the API pages. */
+/** Every file `pnpm run docs` writes, with its text: guides with their examples, and the API pages. */
 export async function render(): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   for (const path of await documents()) {
@@ -52,13 +52,13 @@ export async function render(): Promise<Map<string, string>> {
   return out;
 }
 
-/** Files in docs/api that `pnpm docs` no longer writes. */
+/** Files in docs/api that `pnpm run docs` no longer writes. */
 export async function leftovers(files: ReadonlyMap<string, string>): Promise<string[]> {
   const present = await readdir(join(root, 'docs/api')).catch(() => [] as string[]);
   return present.map((name) => `docs/api/${name}`).filter((path) => !files.has(path));
 }
 
-/** The files whose text on disk differs from what `pnpm docs` writes. */
+/** The files whose text on disk differs from what `pnpm run docs` writes. */
 export async function stale(files: ReadonlyMap<string, string>): Promise<string[]> {
   const differing = await Promise.all(
     [...files].map(async ([path, text]) => {
@@ -75,7 +75,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const extra = await leftovers(files);
   if (process.argv.includes('--check')) {
     if (changed.length + extra.length > 0) {
-      console.error(`Stale, run \`pnpm docs\`: ${[...changed, ...extra].join(', ')}`);
+      console.error(`Stale, run \`pnpm run docs\`: ${[...changed, ...extra].join(', ')}`);
       process.exit(1);
     }
     console.log('The docs are up to date.');

@@ -1,0 +1,30 @@
+{
+  "name": "uitive",
+  "version": "0.1.0",
+  "description": "Uitive's command line under its short name: npx uitive init sets Uitive up in an application",
+  "keywords": [
+    "uitive",
+    "adaptive-ui",
+    "llm"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "homepage": "https://github.com/plurid/uitive/tree/master/packages/cli/uitive#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plurid/uitive.git",
+    "directory": "packages/cli/uitive"
+  },
+  "bin": {
+    "uitive": "./bin.js"
+  },
+  "files": [
+    "bin.js"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@plurid/uitive-cli": "workspace:^"
+  }
+}

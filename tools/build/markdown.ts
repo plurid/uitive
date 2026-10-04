@@ -1,4 +1,4 @@
-/** Markdown helpers shared by `pnpm docs` and the documentation tests. Pure: no files, no network. */
+/** Markdown helpers shared by `pnpm run docs` and the documentation tests. Pure: no files, no network. */
 
 const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 const MARKER = /^<!--\s*example:\s*(\S+?)\s*-->\s*$/;

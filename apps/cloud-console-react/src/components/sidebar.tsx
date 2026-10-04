@@ -2,6 +2,7 @@ import type { View, Via } from '@plurid/uitive-core';
 import { useSurface } from '@plurid/uitive-react';
 import { categories, services } from '../catalogue.ts';
 import { uitive } from '../client.ts';
+import { MadeWith } from './made-with.tsx';
 
 interface SidebarProps {
   view: View;
@@ -14,51 +15,54 @@ interface SidebarProps {
 export function Sidebar({ view, current, onOpen, onHome, onCatalogue }: SidebarProps) {
   const yours = useSurface(uitive, 'services');
   return (
-    <nav className="sidebar" aria-label="Services">
-      <button
-        type="button"
-        className={current === undefined ? 'nav-item active' : 'nav-item'}
-        onClick={onHome}
-      >
-        {view === 'standard' ? 'Console home' : 'Your console'}
-      </button>
+    <div className="sidebar">
+      <nav className="sidebar-nav" aria-label="Services">
+        <button
+          type="button"
+          className={current === undefined ? 'nav-item active' : 'nav-item'}
+          onClick={onHome}
+        >
+          {view === 'standard' ? 'Console home' : 'Your console'}
+        </button>
 
-      {view === 'standard' ? (
-        categories.map((category) => (
-          <section key={category.id} className="nav-group">
-            <h2 className="nav-heading">{category.label}</h2>
-            {category.services.map(([id, label]) => (
+        {view === 'standard' ? (
+          categories.map((category) => (
+            <section key={category.id} className="nav-group">
+              <h2 className="nav-heading">{category.label}</h2>
+              {category.services.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={current === id ? 'nav-item active' : 'nav-item'}
+                  onClick={() => onOpen(id, 'region')}
+                >
+                  {label}
+                </button>
+              ))}
+            </section>
+          ))
+        ) : (
+          <section className="nav-group">
+            <h2 className="nav-heading">Your services</h2>
+            {yours.visible.map((service) => (
               <button
-                key={id}
+                key={service.id}
                 type="button"
-                className={current === id ? 'nav-item active' : 'nav-item'}
-                onClick={() => onOpen(id, 'region')}
+                className={current === service.id ? 'nav-item active' : 'nav-item'}
+                onClick={() => onOpen(service.id, 'region')}
               >
-                {label}
+                <span>{service.label}</span>
+                {service.pinned && <span className="marker">pinned</span>}
+                {service.moved && !service.pinned && <span className="marker new">new</span>}
               </button>
             ))}
-          </section>
-        ))
-      ) : (
-        <section className="nav-group">
-          <h2 className="nav-heading">Your services</h2>
-          {yours.visible.map((service) => (
-            <button
-              key={service.id}
-              type="button"
-              className={current === service.id ? 'nav-item active' : 'nav-item'}
-              onClick={() => onOpen(service.id, 'region')}
-            >
-              <span>{service.label}</span>
-              {service.pinned && <span className="marker">pinned</span>}
-              {service.moved && !service.pinned && <span className="marker new">new</span>}
+            <button type="button" className="nav-item all" onClick={onCatalogue}>
+              All services <span className="count">{services.length}</span>
             </button>
-          ))}
-          <button type="button" className="nav-item all" onClick={onCatalogue}>
-            All services <span className="count">{services.length}</span>
-          </button>
-        </section>
-      )}
-    </nav>
+          </section>
+        )}
+      </nav>
+      <MadeWith />
+    </div>
   );
 }

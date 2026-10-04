@@ -1,4 +1,5 @@
-// Captures the README's picture of the Acme Cloud demo after a change, with its banner showing:
+// Captures the Acme Cloud demo after a change, with its banner showing (the README's picture), and
+// the same console in its Standard view, from the same session so the two line up for comparison:
 // `node tools/build/screenshots.ts [url]`, with the demo running
 // (`pnpm --filter @uitive/cloud-console-react dev`). Uses the installed Chrome.
 import { createRequire } from 'node:module';
@@ -47,6 +48,14 @@ try {
   const path = join(root, 'docs/assets/acme-cloud.png');
   await page.screenshot({ path });
   console.log(`Wrote ${path}`);
+
+  // The console as everyone sees it: the banner closed, the view switched to Standard.
+  await page.click('uitive-banner button[data-act="close"]');
+  await page.click('[role="radio"]:has-text("Standard")');
+  await page.waitForTimeout(500);
+  const standard = join(root, 'docs/assets/acme-cloud-standard.png');
+  await page.screenshot({ path: standard });
+  console.log(`Wrote ${standard}`);
 } finally {
   await browser.close();
 }

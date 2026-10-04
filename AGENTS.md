@@ -7,7 +7,7 @@ This is a single-context repository: `CONTEXT.md` holds the vocabulary, invarian
 ## Working here
 
 - `pnpm check` must pass: lint, format, typecheck (which builds the packages) and tests.
-- Documentation: guides in `docs/`, linked from the README. The API reference in `docs/api/` is generated from JSDoc, so every public export has JSDoc, and TypeScript in Markdown is embedded from `docs/examples/`, where it is typechecked and tested. After changing public types, JSDoc or examples, run `pnpm docs`: `pnpm check` fails while the docs are stale.
+- Documentation: guides in `docs/`, linked from the README. The API reference in `docs/api/` is generated from JSDoc, so every public export has JSDoc, and TypeScript in Markdown is embedded from `docs/examples/`, where it is typechecked and tested. After changing public types, JSDoc or examples, run `pnpm run docs`: `pnpm check` fails while the docs are stale.
 - Packages live in `packages/`, demonstrations in `apps/`, shared tooling in `tools/`. `legacy/` is the archived 2019 code: never edit or build it.
 - Writing: no em dashes, in code, copy or docs.
 - Conventions: kebab-case files, named exports through `index.ts`, `.js` extensions on relative imports, `import type`, JSDoc with `@default` on public options, British spelling, few comments, and those explain why.

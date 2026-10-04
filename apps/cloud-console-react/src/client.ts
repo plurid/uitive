@@ -51,8 +51,12 @@ const logs = generated(logRows);
 export const uitive = createUitive({
   contract: cloud,
   store: localStore('uitive:cloud-console'),
-  // A model on the server; the deterministic planner whenever it can't answer.
-  planner: remotePlanner({ url: '/api/uitive', fallback: heuristicPlanner() }),
+  // A model on the server; the deterministic planner whenever it can't answer. Built as a static
+  // site with VITE_UITIVE_PLANNER=none, as at uitive.dev/demo, it has no server to ask.
+  planner:
+    import.meta.env.VITE_UITIVE_PLANNER === 'none'
+      ? heuristicPlanner()
+      : remotePlanner({ url: '/api/uitive', fallback: heuristicPlanner() }),
   bindings: {
     fetch: (request, context) =>
       request.source === 'metrics'

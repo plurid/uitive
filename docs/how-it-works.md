@@ -67,3 +67,4 @@ The same engine runs in two places. An application integrates it, with a contrac
 - [ADR 0007](adr/0007-the-agent-kit.md): the agent kit: generated, curated, checked.
 - [ADR 0008](adr/0008-any-model-plans.md): any model plans, from any provider, with the schema still the boundary.
 - [ADR 0009](adr/0009-renamed-to-uitive.md): the product's name, Uitive, everywhere, before publishing.
+- [ADR 0010](adr/0010-npx-uitive.md): the CLI under its short name too, so `npx uitive init` sets Uitive up.

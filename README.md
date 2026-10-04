@@ -1,11 +1,14 @@
 <p align="center">
-  <img src="about/identity/uitive-logo.png" alt="" height="160" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="about/identity/uitive-mark-dark.svg" />
+    <img src="about/identity/uitive-mark.svg" alt="" height="120" />
+  </picture>
 </p>
 
 <h1 align="center">Uitive</h1>
 
 <p align="center">
-  Adapt the User Interface through Learning from Usage.
+  Adapt the User Interface through Learning from Usage
 </p>
 
 <p align="center">
@@ -34,11 +37,19 @@ Large applications show everything to everyone; each person uses a small, person
 
 ## Quick start
 
+In your application's package (at a monorepo's root, `npx uitive detect` says which):
+
+```sh
+npx uitive init
+```
+
+`init` installs the packages with your package manager and writes a Uitive folder with every page as the page it already is; it never replaces a file. It also configures the coding agents it finds, or Claude Code when it finds none, adding its MCP server to their configuration; `--no-agents` leaves them alone. To install by hand instead:
+
 ```sh
 pnpm add @plurid/uitive-core @plurid/uitive-react zod
 ```
 
-Declare what may adapt, such as a notes editor's toolbar:
+Declare what may adapt, such as a notes editor's toolbar, in the folder's `contract.ts`:
 
 <!-- example: docs/examples/quick-start/contract.ts -->
 
@@ -71,7 +82,7 @@ export const contract = defineApp({
 });
 ```
 
-Create a client. It learns from use, answers commands, and keeps each person's interface in their browser:
+The folder's `client.ts` creates the client, which learns from use, answers commands, and keeps each person's interface in their browser. For this contract, it amounts to:
 
 <!-- example: docs/examples/quick-start/client.ts -->
 
@@ -145,11 +156,7 @@ Wrap the editor in `UitiveProvider`, and add `<UitiveBanner>` and an ask box bui
 
 ### With a coding agent
 
-```sh
-npx @plurid/uitive-cli init
-```
-
-`init` installs the packages, writes a Uitive folder with every page as the page it already is, and configures your coding agents with a playbook they follow step by step; `uitive check` is the gate. Then ask the agent to integrate Uitive. In Claude Code, the plugin brings the same to every project: `/plugin marketplace add plurid/uitive`, then `/plugin install uitive@plurid-uitive`. See [Coding agents](docs/coding-agents.md).
+`init` gave Claude Code the playbook, the `integrate-uitive` skill, which takes it from the contract to a checked integration one step at a time, and Cursor and VS Code the same steps as MCP tools; `npx uitive check` is the gate. Ask the agent to integrate Uitive. In Claude Code, the plugin brings the same to every project: `/plugin marketplace add plurid/uitive`, then `/plugin install uitive@plurid-uitive`. See [Coding agents](docs/coding-agents.md).
 
 ## What people can ask for
 
@@ -191,7 +198,7 @@ pnpm install
 pnpm --filter @uitive/cloud-console-react dev   # at localhost:5171
 ```
 
-Say what you use the cloud for on the home page, ask for changes with ⌘K, compare Standard and Yours, and open Debug to simulate a week of use as a persona. With a key in `apps/cloud-console-react/.env.local` (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GEMINI_API_KEY`), requests in plain words are planned by that provider's model on the dev server; without one, the deterministic planner answers.
+Say what you use the cloud for on the home page, ask for changes with ⌘K, compare Standard and Yours, and open Debug to simulate a week of use as a persona. With a key in `apps/cloud-console-react/.env.local` (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GEMINI_API_KEY`), requests in plain words are planned by that provider's model on the dev server; without one, the deterministic planner answers. Built with `VITE_UITIVE_PLANNER=none pnpm --filter @uitive/cloud-console-react build`, it needs no server and plans in the browser. [uitive.dev/demo](https://uitive.dev/demo) is that build with `--base /demo/`, and `VITE_UITIVE_SITE=/` for a link back to the site.
 
 **The extension** reshapes a fictional payments dashboard: build it and load it unpacked, as [its README](apps/extension/README.md#try-it-on-the-fictional-dashboard) shows.
 
@@ -207,7 +214,7 @@ Say what you use the cloud for on the home page, ask for changes with ⌘K, comp
 | [`@plurid/uitive-planner`](packages/planner/README.md) | The model planner, for any provider: schemas, prompt, repair, and models from Anthropic, OpenAI-compatible servers and Gemini |
 | [`@plurid/uitive-server`](packages/server/README.md)   | The planner's handler, for any Fetch runtime, Express and Node                                                                |
 | [`@plurid/uitive-adapter`](packages/adapter/README.md) | Accessibility trees and discovery, for pages Uitive doesn't own                                                               |
-| [`@plurid/uitive-cli`](packages/cli/README.md)         | The agent kit: detect, init, survey, generate, discover and check                                                             |
+| [`@plurid/uitive-cli`](packages/cli/README.md)         | The agent kit: detect, init, survey, generate, discover and check; also published as `uitive`, for `npx uitive`               |
 | [`@plurid/uitive-mcp`](packages/mcp/README.md)         | The agent kit as Model Context Protocol tools                                                                                 |
 
 They are ES modules with TypeScript declarations, which CommonJS can `require` on Node 22.12 or later. They need Node 22 or later for the tools, React 18.3 or 19 for the React bindings, and zod 4.2 or later, shared with the application. It is a rewrite of the 2019 library, archived in [legacy](legacy/README.md).
@@ -236,7 +243,7 @@ They are ES modules with TypeScript declarations, which CommonJS can `require` o
 ```sh
 pnpm install
 pnpm check   # lint, format, typecheck (which builds the packages) and every test
-pnpm docs    # refreshes the examples in the docs and the generated API reference
+pnpm run docs    # refreshes the examples in the docs and the generated API reference
 ```
 
 Development needs Node 24 or later and pnpm 11.

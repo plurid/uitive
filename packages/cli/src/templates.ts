@@ -144,21 +144,21 @@ Work in this order. Each step ends with a check; don't move on while it fails. E
 
 ## 1. Set up
 
-- Run \`uitive detect\`. In a monorepo, run it at the root first: it lists the packages with an interface. Set Uitive up in that package, not at the root.
-- Run \`uitive init\` in that package (with \`--no-install\` to install yourself). It writes the Uitive folder, \`src/uitive/\` when there is a \`src\` folder and \`uitive/\` otherwise (below, \`uitive/\` means that folder), puts the coding agents' configuration at the repository's root, and never overwrites a file. When the build compiles another folder, add \`--dir <that folder>/uitive\`: every command finds the files there.
-- Check: \`uitive check\` passes, with the home page as one region. A page that is one region renders the application itself, so its layout stays exactly as it was.
+- Run \`npx uitive detect\`. In a monorepo, run it at the root first: it lists the packages with an interface. Set Uitive up in that package, not at the root.
+- Run \`npx uitive init\` in that package (with \`--no-install\` to install yourself). It writes the Uitive folder, \`src/uitive/\` when there is a \`src\` folder and \`uitive/\` otherwise (below, \`uitive/\` means that folder), puts the coding agents' configuration at the repository's root, and never replaces a file. When the build compiles another folder, add \`--dir <that folder>/uitive\`: every command finds the files there.
+- Check: \`npx uitive check\` passes, with the home page as one region. A page that is one region renders the application itself, so its layout stays exactly as it was.
 
 ## 2. Data and actions
 
-- With an OpenAPI description, run \`uitive survey --openapi <spec>\`. Keep what the frontend shows: in \`uitive/curation.json\`, set \`"default": "exclude"\` and include those sources. The CLI's README has every key of the curation file. Actions follow their source; exclude the ones the interface doesn't offer. \`"readOnly": true\` keeps no actions at all.
+- With an OpenAPI description, run \`npx uitive survey --openapi <spec>\`. Keep what the frontend shows: in \`uitive/curation.json\`, set \`"default": "exclude"\` and include those sources. The CLI's README has every key of the curation file. Actions follow their source; exclude the ones the interface doesn't offer. \`"readOnly": true\` keeps no actions at all.
 - Name things the way people do: sources take \`label\`, \`description\` and \`keywords\`; actions take \`label\` and \`description\`. Each label should find what it names.
 - Lift nested values people look at with \`pick\` (\`{ "card_brand": "/payment_method_details/card/brand" }\`), with \`query\` for any parameter the API needs to include them.
 - Lower an action's effect only with a stated \`reason\`: destructive stays destructive unless the backend makes it safe.
-- Run \`uitive generate sources --openapi <spec>\` after every curation change. Never edit \`uitive/api.generated.ts\`.
+- Run \`npx uitive generate sources --openapi <spec>\` after every curation change. Never edit \`uitive/api.generated.ts\`.
 - Without a description, declare actions (and any sources) in \`contract.ts\` with \`action()\`, \`source()\` and the \`field\` helpers. Interface actions, such as a drawing tool, need no effect.
 - Action IDs are lowercase, with dots, colons or dashes (\`orders.cancel\`, \`table.add-empty\`); surface and context names are camelCase (\`addNew\`).
-- \`uitive check\` loads \`uitive/\` in Node: imports through tsconfig \`paths\` work, aliases only the bundler knows don't, so keep the contract importable on its own.
-- Check: \`uitive check\` passes, without warnings about shared labels.
+- \`npx uitive check\` loads \`uitive/\` in Node: imports through tsconfig \`paths\` work, aliases only the bundler knows don't, so keep the contract importable on its own.
+- Check: \`npx uitive check\` passes, without warnings about shared labels.
 
 ## 3. Bindings
 
@@ -170,7 +170,7 @@ Work in this order. Each step ends with a check; don't move on while it fails. E
 
 - Wrap the application near its root: \`<UitiveProvider client={uitive} kit={kit}>\`, with \`<Confirmations />\` once inside it.
 - Tell Uitive where the person is: \`useUitiveRouter(uitive, { path, navigate })\`, from the router's location.
-- If the application runs, \`uitive discover --url <dev server>\` proposes routes, regions, toolbars as lists, and which buttons are which actions.
+- If the application runs, \`npx uitive discover --url <dev server>\` proposes routes, regions, toolbars as lists, and which buttons are which actions.
 - For each route: add \`route({ path, page, entity, key })\` to the contract, and a page whose standard is the page as it is, as a region: \`standard: () => ui.page(ui.region('orders'))\`, with \`regions: { orders: { label, description, entity } }\`.
 - Render it: \`const value = useSurface(uitive, 'orders')\`, then \`<Page value={value} blocks={{}} regions={{ orders: OrdersPage }} />\`, where \`OrdersPage\` is the existing page component.
 - Toolbars and menus become lists (\`list({ items, capacity })\`; what doesn't fit goes to overflow, such as a More menu): render them from \`useSurface\`. Settings people choose between become choices.
@@ -185,9 +185,9 @@ Work in this order. Each step ends with a check; don't move on while it fails. E
 
 ## 6. Verify
 
-- \`uitive check\` passes.
+- \`npx uitive check\` passes.
 - Start the application and ask for a change: with the model planner, in plain words, such as "show failed payments first"; without one, with a command from step 3. It must render with the design system, run actions only after confirmation, survive a reload, and revert in one step.
-- Report the time taken, what you changed, the coverage \`uitive check\` prints, and anything you couldn't map.
+- Report the time taken, what you changed, the coverage \`npx uitive check\` prints, and anything you couldn't map.
 
 ## Rules
 

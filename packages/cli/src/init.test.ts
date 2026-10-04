@@ -198,6 +198,41 @@ export const contract = defineApp({
     expect(again.kept).toContain('uitive/contract.ts');
   });
 
+  it("leaves an agent's configuration it can't parse as it was, and says what to add", async () => {
+    const commented = [
+      '{',
+      "  // The team's own servers",
+      '  "servers": { "docs": { "type": "stdio", "command": "docs-mcp" } }',
+      '}',
+      '',
+    ].join('\n');
+    const cwd = await project(
+      { name: 'admin', dependencies: { react: '^19.0.0', zod: '^4.6.5' } },
+      { 'src/main.tsx': '', '.vscode/mcp.json': commented },
+    );
+    const result = await init({ cwd, install: false });
+    expect(await readFile(join(cwd, '.vscode/mcp.json'), 'utf8')).toBe(commented);
+    expect(result.written).not.toContain('.vscode/mcp.json');
+    expect(result.kept).toContain('.vscode/mcp.json');
+    expect(result.next).toContain(
+      "Add the uitive MCP server to .vscode/mcp.json by hand: it isn't plain JSON, so init left it as it was.",
+    );
+  });
+
+  it('configures Claude Code when Codex, which it cannot configure, is the only agent', async () => {
+    const cwd = await project(
+      { name: 'admin', dependencies: { react: '^19.0.0', zod: '^4.6.5' } },
+      { 'src/main.tsx': '', 'AGENTS.md': '# Guidance\n' },
+    );
+    const result = await init({ cwd, install: false });
+    expect(result.detection.agents).toEqual(['codex']);
+    expect(result.written).toContain('.mcp.json');
+    expect(result.written).toContain('.claude/skills/integrate-uitive/SKILL.md');
+    expect(result.next).toContain(
+      "Only Codex found, which init can't configure, so Claude Code is configured: .mcp.json and the integrate-uitive skill.",
+    );
+  });
+
   it('asks for a curation first when the API is large', async () => {
     const paths = Object.fromEntries(
       Array.from({ length: 45 }, (_, index) => [

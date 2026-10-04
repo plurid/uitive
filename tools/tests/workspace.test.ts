@@ -46,4 +46,22 @@ describe('workspace', () => {
   it('keeps the legacy code out of the workspace', () => {
     expect(listed.some((path) => path.startsWith('legacy'))).toBe(false);
   });
+
+  // ADR 0010: `npx uitive` runs the CLI, published under its short name too.
+  it('publishes the CLI as uitive, at the same version', () => {
+    const cli = JSON.parse(read('packages/cli/package.json'));
+    const alias = JSON.parse(read('packages/cli/uitive/package.json'));
+    expect(listed).toContain('packages/cli/uitive');
+    expect(alias.name).toBe('uitive');
+    expect(alias.version).toBe(cli.version);
+    expect(alias.dependencies).toEqual({ '@plurid/uitive-cli': 'workspace:^' });
+    expect(alias.bin).toEqual({ uitive: './bin.js' });
+    expect(alias.files).toEqual(['bin.js']);
+    expect(cli.bin).toEqual({ uitive: './dist/bin.js' });
+    expect(cli.exports['./bin']).toBe('./dist/bin.js');
+    expect(read('packages/cli/uitive/bin.js')).toMatch(
+      /^#!\/usr\/bin\/env node\n(?:\/\/.*\n)*import '@plurid\/uitive-cli\/bin';\n$/,
+    );
+    expect(read('packages/cli/uitive/LICENSE')).toBe(read('LICENSE'));
+  });
 });

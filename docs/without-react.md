@@ -12,7 +12,7 @@ Install `@plurid/uitive-core`, `@plurid/uitive-dom` and zod 4.2 or later:
 pnpm add @plurid/uitive-core @plurid/uitive-dom zod
 ```
 
-Or run `npx @plurid/uitive-cli init`, which installs the DOM package when it finds no React. It also writes `contract.ts`, `bindings.ts` and `client.ts` into the Uitive folder: replace the contract with yours, as below, and keep the other two. Its contract starts with the home page as a region, which only React draws.
+Or run `npx uitive init`, which installs the DOM package when it finds no React. It also writes `contract.ts`, `bindings.ts` and `client.ts` into the Uitive folder: replace the contract with yours, as below, and keep the other two. Its contract starts with the home page as a region, which only React draws.
 
 ## Declare the list
 

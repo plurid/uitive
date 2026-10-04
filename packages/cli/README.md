@@ -3,14 +3,16 @@
 The agent kit: every step of integrating Uitive is a command a coding agent can run and check, and every page starts as the page it already is, so the application works unchanged from the first minute. Every command takes `--json`.
 
 ```sh
-npx @plurid/uitive-cli detect                         # what the project uses; at a monorepo root, where to set up
-npx @plurid/uitive-cli init                           # its folder, with every page as a region; never overwrites
-npx @plurid/uitive-cli survey --openapi openapi.yaml  # one line per source, to curate from
-npx @plurid/uitive-cli generate sources --openapi openapi.yaml
-npx @plurid/uitive-cli generate blocks src/order-summary.tsx#OrderSummary
-npx @plurid/uitive-cli discover --url http://localhost:5173/
-npx @plurid/uitive-cli check                          # the gate: contract, JSON, schemas, labels, bindings
+npx uitive detect                         # what the project uses; at a monorepo root, where to set up
+npx uitive init                           # its folder, with every page as a region; never replaces a file
+npx uitive survey --openapi openapi.yaml  # one line per source, to curate from
+npx uitive generate sources --openapi openapi.yaml
+npx uitive generate blocks src/order-summary.tsx#OrderSummary
+npx uitive discover --url http://localhost:5173/
+npx uitive check                          # the gate: contract, JSON, schemas, labels, bindings
 ```
+
+[`uitive`](https://www.npmjs.com/package/uitive) on npm is this package under its short name, so `npx uitive` runs it.
 
 The files go in `src/uitive/` when the project has a `src` folder, else in `uitive/`; `init --dir app/uitive` puts them elsewhere, for a build that compiles only `app`. The folder is recorded in package.json as `uitive.dir`, where every command finds it. The playbook for agents is the `integrate-uitive` skill that `init` installs.
 

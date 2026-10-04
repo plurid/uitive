@@ -1,7 +1,7 @@
 {
   "name": "@plurid/uitive-server",
   "version": "0.1.0",
-  "description": "Fetch-standard handler and Claude planner for Uitive",
+  "description": "Uitive's planner on your server: a Fetch-standard handler, with adapters for Express and Node",
   "keywords": [
     "uitive",
     "adaptive-ui",

@@ -7,15 +7,15 @@ Uitive is built to be integrated by a coding agent: every step is a command the 
 In the application's package:
 
 ```sh
-npx @plurid/uitive-cli detect   # what the project uses; at a monorepo root, where to set up
-npx @plurid/uitive-cli init     # packages, the Uitive folder and the agents' configuration
+npx uitive detect   # what the project uses; at a monorepo root, where to set up
+npx uitive init     # packages, the Uitive folder and the agents' configuration
 ```
 
 Then ask the agent to integrate Uitive. `init` installs the playbook, a skill named `integrate-uitive`, which takes the agent from the contract to bindings, pages, the kit and checks, one checked step at a time.
 
 ## What `init` writes
 
-`init` never overwrites a file. In the **Uitive folder**, `src/uitive/` when there is a `src` folder and `uitive/` otherwise:
+`init` never replaces a file. In the **Uitive folder**, `src/uitive/` when there is a `src` folder and `uitive/` otherwise:
 
 | File               | What it holds                                                                   |
 | ------------------ | ------------------------------------------------------------------------------- |
@@ -27,9 +27,9 @@ Then ask the agent to integrate Uitive. `init` installs the playbook, a skill na
 | `api.generated.ts` | Sources, actions and endpoints from a small API description                     |
 | `curation.json`    | What to keep from a large API description, for you or the agent to fill in      |
 
-`init --dir app/uitive` puts the folder elsewhere, such as inside the only folder the build compiles; package.json records it as `uitive.dir`, where every command finds it. With Next.js, `init` also writes `app/api/uitive/[kind]/route.ts`.
+`init --dir app/uitive` puts the folder elsewhere, such as inside the only folder the build compiles; package.json records it as `uitive.dir`, where every command finds it. With Next.js, `init` also writes `api/uitive/[kind]/route.ts` in `app`, or in `src/app` when there is one.
 
-At the repository's root, it configures the coding agents it finds: Claude Code (`.mcp.json` and the skill), Cursor (`.cursor/mcp.json`) and VS Code (`.vscode/mcp.json`). With none found, it configures Claude Code and says so; `--no-agents` leaves them alone.
+At the repository's root, it configures the coding agents it finds: Claude Code (`.mcp.json` and the skill), Cursor (`.cursor/mcp.json`) and VS Code (`.vscode/mcp.json`). It adds its MCP server to a configuration that exists, keeping everything else in it; one it can't parse, such as JSON with comments, it leaves as it is and says what to add by hand. With none of these found, it configures Claude Code and says so: Codex, which it recognises by an `AGENTS.md`, has nothing it can configure. `--no-agents` leaves them all alone.
 
 ## The commands
 

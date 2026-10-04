@@ -4,19 +4,19 @@ Uitive needs three things: a contract that says what may adapt, a client that ho
 
 ## Install
 
-Uitive needs React 18.3 or 19 for its React bindings, zod 4.2 or later, and Node 22 or later for its tools.
+Uitive needs React 18.3 or 19 for its React bindings, zod 4.2 or later, and Node 22 or later for its tools. In your application's package (at a monorepo's root, `npx uitive detect` says which):
+
+```sh
+npx uitive init
+```
+
+`init` installs the packages with your package manager, and writes `contract.ts`, `bindings.ts` and `client.ts` into `src/uitive/` (or `uitive/` when there is no `src`), `kit.tsx` with React, and `server.ts` when the application has a server (with Next.js, also the route `api/uitive/[kind]/route.ts` in its `app` folder). It never replaces a file. It also configures the coding agents it finds, or Claude Code when it finds none, adding its MCP server to their configuration; `--no-agents` leaves them alone. To install by hand instead:
 
 ```sh
 pnpm add @plurid/uitive-core @plurid/uitive-react zod
 ```
 
-Or let `init` install them, and write a starting folder too:
-
-```sh
-npx @plurid/uitive-cli init
-```
-
-It writes `contract.ts`, `bindings.ts` and `client.ts` into `src/uitive/` (or `uitive/` when there is no `src`), and `kit.tsx` with React. The steps below fill them in for a notes editor: replace `contract.ts` with the contract below, keep `bindings.ts` and `client.ts`, and put the components with your application's own. The examples keep every file in one folder and import with `.js` extensions, which TypeScript resolves to `.ts` files under `"moduleResolution": "bundler"` or `"nodenext"`.
+The steps below fill the folder in for a notes editor: replace `contract.ts` with the contract below, keep `bindings.ts` and `client.ts`, and put the components with your application's own. The examples keep every file in one folder and import with `.js` extensions, which TypeScript resolves to `.ts` files under `"moduleResolution": "bundler"` or `"nodenext"`.
 
 ## Declare a contract
 

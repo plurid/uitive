@@ -38,7 +38,7 @@ button, input, select {
   border: 1px solid var(--_border);
   border-radius: 6px;
 }
-button { padding: 2px 9px; cursor: pointer; white-space: nowrap; }
+button { padding: 2px 9px; cursor: pointer; white-space: nowrap; -webkit-user-select: none; user-select: none; }
 button:hover { border-color: var(--_muted); }
 button:disabled { opacity: 0.55; cursor: default; }
 button.primary { background: var(--_accent); border-color: var(--_accent); color: var(--_surface); }

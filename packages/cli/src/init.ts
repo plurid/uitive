@@ -275,13 +275,26 @@ function importExtension(root: string): '.js' | '' {
     : '';
 }
 
-/** Merges an MCP server into a JSON config, keeping everything else in it. */
-async function mergeJson(path: string, update: (value: Record<string, unknown>) => void) {
+/**
+ * Merges an MCP server into a JSON config, keeping everything else in it, and says whether it did.
+ * A file that isn't a plain JSON object, such as one with comments, which VS Code allows, is left
+ * as it is: writing it back would drop whatever the parser couldn't read.
+ */
+async function mergeJson(
+  path: string,
+  update: (value: Record<string, unknown>) => void,
+): Promise<boolean> {
   let value: Record<string, unknown> = {};
-  try {
-    value = JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown>;
-  } catch {
-    // A missing or unreadable file starts empty.
+  const text = await readFile(path, 'utf8').catch(() => undefined);
+  if (text !== undefined) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return false;
+    }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return false;
+    value = parsed as Record<string, unknown>;
   }
   update(value);
   await mkdir(dirname(path), { recursive: true });
@@ -289,6 +302,7 @@ async function mergeJson(path: string, update: (value: Record<string, unknown>) 
     path,
     await formatLikeProject(`${JSON.stringify(value, null, 2)}\n`, path, dirname(path)),
   );
+  return true;
 }
 
 /** Records where Uitive's files go in the project's package.json, and returns it. */
@@ -424,16 +438,22 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
   }
 
   if (options.agents ?? true) {
-    // Agents run at the repository's root, so their configuration goes there. With none found,
-    // Claude Code is set up, as the default.
+    // Agents run at the repository's root, so their configuration goes there. Codex, found by its
+    // AGENTS.md, has nothing init can write; with none of the agents it can configure, Claude Code
+    // is set up, as the default.
     const top = detection.repository;
-    const claude = detection.agents.includes('claude-code') || detection.agents.length === 0;
+    const configurable = detection.agents.filter((agent) => agent !== 'codex');
+    const claude = configurable.includes('claude-code') || configurable.length === 0;
     const deferred = options.packages !== undefined && !options.mcp;
-    if (detection.agents.length === 0) {
+    if (configurable.length === 0) {
+      const found =
+        detection.agents.length === 0
+          ? 'No coding agents found'
+          : "Only Codex found, which init can't configure";
       next.push(
         deferred
-          ? 'No coding agents found, so Claude Code is configured: the integrate-uitive skill.'
-          : 'No coding agents found, so Claude Code is configured: .mcp.json and the integrate-uitive skill.',
+          ? `${found}, so Claude Code is configured: the integrate-uitive skill.`
+          : `${found}, so Claude Code is configured: .mcp.json and the integrate-uitive skill.`,
       );
     }
     const shown = (path: string) => relative(root, join(top, path)) || path;
@@ -444,26 +464,33 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     } else {
       const [command = 'npx', ...args] = (options.mcp ?? 'npx -y @plurid/uitive-mcp').split(' ');
       const stdio = { command, args };
+      const merge = async (path: string, update: (value: Record<string, unknown>) => void) => {
+        if (await mergeJson(join(top, path), update)) {
+          written.push(shown(path));
+        } else {
+          kept.push(shown(path));
+          next.push(
+            `Add the uitive MCP server to ${shown(path)} by hand: it isn't plain JSON, so init left it as it was.`,
+          );
+        }
+      };
       if (claude) {
-        await mergeJson(join(top, '.mcp.json'), (value) => {
+        await merge('.mcp.json', (value) => {
           value.mcpServers = { ...(value.mcpServers as object | undefined), uitive: stdio };
         });
-        written.push(shown('.mcp.json'));
       }
       if (detection.agents.includes('cursor')) {
-        await mergeJson(join(top, '.cursor', 'mcp.json'), (value) => {
+        await merge('.cursor/mcp.json', (value) => {
           value.mcpServers = { ...(value.mcpServers as object | undefined), uitive: stdio };
         });
-        written.push(shown('.cursor/mcp.json'));
       }
       if (detection.agents.includes('vscode')) {
-        await mergeJson(join(top, '.vscode', 'mcp.json'), (value) => {
+        await merge('.vscode/mcp.json', (value) => {
           value.servers = {
             ...(value.servers as object | undefined),
             uitive: { type: 'stdio', ...stdio },
           };
         });
-        written.push(shown('.vscode/mcp.json'));
       }
     }
     if (claude)

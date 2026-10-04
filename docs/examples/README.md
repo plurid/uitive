@@ -1,6 +1,6 @@
 # Examples
 
-The code the documentation shows. Every file here is typechecked against the packages' sources, and the tests run most of them (`tools/tests/examples.test.tsx`, `tools/tests/examples-server.test.ts` and `testing/toolbar.test.ts`), so the code in the guides works as written. Guides embed these files with `<!-- example: path -->` markers; `pnpm docs` refreshes them.
+The code the documentation shows. Every file here is typechecked against the packages' sources, and the tests run most of them (`tools/tests/examples.test.tsx`, `tools/tests/examples-server.test.ts` and `testing/toolbar.test.ts`), so the code in the guides works as written. Guides embed these files with `<!-- example: path -->` markers; `pnpm run docs` refreshes them.
 
 | Example                                                                                                     | What it shows                                                                              | Shown in                                                                                                           |
 | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |

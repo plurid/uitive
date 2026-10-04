@@ -34,7 +34,7 @@ const documents = files.filter(
     !path.startsWith('legacy/') &&
     (/^(README|CONTEXT|AGENTS)\.md$/.test(path) ||
       path.startsWith('docs/') ||
-      /^packages\/[^/]+\/README\.md$/.test(path) ||
+      /^packages\/(?:[^/]+\/)+README\.md$/.test(path) ||
       path === 'apps/extension/README.md' ||
       path.startsWith('plugins/')),
 );
