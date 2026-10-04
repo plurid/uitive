@@ -38,9 +38,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",
-    "@plurid/uitive-cli": "workspace:^",
     "@plurid/uitive-core": "workspace:^",
     "@plurid/uitive-planner": "workspace:^",
+    "uitive": "workspace:^",
     "zod": "^4.6.5"
   }
 }

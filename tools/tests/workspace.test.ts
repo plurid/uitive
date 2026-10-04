@@ -15,7 +15,8 @@ describe('workspace', () => {
 
   it.each(packages)('packages/%s follows the package conventions', (name) => {
     const manifest = JSON.parse(read(`packages/${name}/package.json`));
-    expect(manifest.name).toBe(`@plurid/uitive-${name}`);
+    // The CLI is the one unscoped package: `npx uitive` runs the package named `uitive`.
+    expect(manifest.name).toBe(name === 'cli' ? 'uitive' : `@plurid/uitive-${name}`);
     expect(manifest.type).toBe('module');
     // `default` lets CommonJS servers require the package, which Node 22 and later can.
     expect(manifest.exports['.']).toEqual({
@@ -47,21 +48,8 @@ describe('workspace', () => {
     expect(listed.some((path) => path.startsWith('legacy'))).toBe(false);
   });
 
-  // ADR 0010: `npx uitive` runs the CLI, published under its short name too.
-  it('publishes the CLI as uitive, at the same version', () => {
+  it('gives the CLI the command its package is named after', () => {
     const cli = JSON.parse(read('packages/cli/package.json'));
-    const alias = JSON.parse(read('packages/cli/uitive/package.json'));
-    expect(listed).toContain('packages/cli/uitive');
-    expect(alias.name).toBe('uitive');
-    expect(alias.version).toBe(cli.version);
-    expect(alias.dependencies).toEqual({ '@plurid/uitive-cli': 'workspace:^' });
-    expect(alias.bin).toEqual({ uitive: './bin.js' });
-    expect(alias.files).toEqual(['bin.js']);
     expect(cli.bin).toEqual({ uitive: './dist/bin.js' });
-    expect(cli.exports['./bin']).toBe('./dist/bin.js');
-    expect(read('packages/cli/uitive/bin.js')).toMatch(
-      /^#!\/usr\/bin\/env node\n(?:\/\/.*\n)*import '@plurid\/uitive-cli\/bin';\n$/,
-    );
-    expect(read('packages/cli/uitive/LICENSE')).toBe(read('LICENSE'));
   });
 });

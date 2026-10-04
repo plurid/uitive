@@ -1,4 +1,4 @@
-# @plurid/uitive-cli
+# uitive
 
 The agent kit: every step of integrating Uitive is a command a coding agent can run and check, and every page starts as the page it already is, so the application works unchanged from the first minute. Every command takes `--json`.
 

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { loadEnv, type Plugin } from 'vite';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const packages = ['core', 'react', 'dom', 'planner', 'adapter', 'server', 'cli', 'mcp'];
+const packages = ['core', 'react', 'dom', 'planner', 'adapter', 'server', 'mcp'];
 
 export interface UitiveDevOptions {
   /**
@@ -31,16 +31,20 @@ export function uitive(options: UitiveDevOptions = {}): Plugin {
       for (const [key, value] of Object.entries(variables)) process.env[key] ??= value;
       return {
         resolve: {
-          alias: packages.flatMap((name) => [
-            {
-              find: new RegExp(`^@plurid/uitive-${name}$`),
-              replacement: `${root}packages/${name}/src/index.ts`,
-            },
-            {
-              find: new RegExp(`^@plurid/uitive-${name}/(.+)$`),
-              replacement: `${root}packages/${name}/src/$1.ts`,
-            },
-          ]),
+          alias: [
+            ...packages.flatMap((name) => [
+              {
+                find: new RegExp(`^@plurid/uitive-${name}$`),
+                replacement: `${root}packages/${name}/src/index.ts`,
+              },
+              {
+                find: new RegExp(`^@plurid/uitive-${name}/(.+)$`),
+                replacement: `${root}packages/${name}/src/$1.ts`,
+              },
+            ]),
+            // The CLI's package is `uitive`, the name `npx uitive` runs.
+            { find: /^uitive$/, replacement: `${root}packages/cli/src/index.ts` },
+          ],
         },
       };
     },

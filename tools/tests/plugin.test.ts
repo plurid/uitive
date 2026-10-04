@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { SKILL } from '@plurid/uitive-cli';
+import { SKILL } from 'uitive';
 import { describe, expect, it } from 'vitest';
 
 const root = new URL('../../', import.meta.url);

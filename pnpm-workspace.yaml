@@ -6,7 +6,6 @@ packages:
   - packages/adapter
   - packages/server
   - packages/cli
-  - packages/cli/uitive
   - packages/mcp
   - apps/cloud-console-react
   - apps/extension

@@ -17,7 +17,7 @@
       "@plurid/uitive-adapter": ["../../packages/adapter/src/index.ts"],
       "@plurid/uitive-server": ["../../packages/server/src/index.ts"],
       "@plurid/uitive-server/*": ["../../packages/server/src/*"],
-      "@plurid/uitive-cli": ["../../packages/cli/src/index.ts"],
+      "uitive": ["../../packages/cli/src/index.ts"],
       "@plurid/uitive-mcp": ["../../packages/mcp/src/index.ts"]
     }
   },

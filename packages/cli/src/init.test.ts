@@ -65,7 +65,7 @@ describe('init', () => {
       );
       const result = await init({ cwd, install: false, agents: false });
       expect(result.next[0]).toBe(
-        'Install the packages: npm install @plurid/uitive-core @plurid/uitive-react && npm install --save-dev @plurid/uitive-cli',
+        'Install the packages: npm install @plurid/uitive-core @plurid/uitive-react && npm install --save-dev uitive',
       );
       expect(
         result.next.some((step) => step.includes('needs 4.2 or later')),
@@ -139,7 +139,7 @@ export const contract = defineApp({
     });
     // Without React, the DOM package, and how to use it.
     expect(result.next[0]).toBe(
-      'Install the packages: yarn add @plurid/uitive-core zod @plurid/uitive-dom && yarn add -D @plurid/uitive-cli',
+      'Install the packages: yarn add @plurid/uitive-core zod @plurid/uitive-dom && yarn add -D uitive',
     );
     expect(result.next.at(-2)).toMatch(/^Without React, use @plurid\/uitive-dom: call startUitive/);
     const checked = await check({ cwd });
@@ -180,7 +180,7 @@ export const contract = defineApp({
       '.claude/skills/integrate-uitive/SKILL.md',
     ]);
     expect(result.next[0]).toBe(
-      'Install the packages: pnpm add @plurid/uitive-core zod @plurid/uitive-react && pnpm add -D @plurid/uitive-cli',
+      'Install the packages: pnpm add @plurid/uitive-core zod @plurid/uitive-react && pnpm add -D uitive',
     );
     expect(JSON.parse(await readFile(join(cwd, '.mcp.json'), 'utf8'))).toEqual({
       mcpServers: { uitive: { command: 'npx', args: ['-y', '@plurid/uitive-mcp'] } },
@@ -293,9 +293,10 @@ describe('init with local packages', () => {
     );
     const folder = join(root, 'tarballs');
     await mkdir(folder);
-    for (const name of ['core', 'react', 'server', 'planner', 'cli']) {
+    for (const name of ['core', 'react', 'server', 'planner']) {
       await writeFile(join(folder, `plurid-uitive-${name}-0.1.0.tgz`), '');
     }
+    await writeFile(join(folder, 'uitive-0.1.0.tgz'), '');
     const result = await init({
       cwd: join(root, 'app'),
       packages: folder,
@@ -312,13 +313,14 @@ describe('init with local packages', () => {
       '@plurid/uitive-core': tarball('core'),
       '@plurid/uitive-react': tarball('react'),
     });
-    expect(app.devDependencies).toEqual({ '@plurid/uitive-cli': tarball('cli') });
+    expect(app.devDependencies).toEqual({ uitive: 'file:../tarballs/uitive-0.1.0.tgz' });
     // Yarn reads resolutions from the workspace root, for the packages' own dependencies too:
     // every tarball, since any package left to the registry would install another build.
     const top = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
-    expect(Object.keys(top.resolutions).sort()).toEqual(
-      ['cli', 'core', 'planner', 'react', 'server'].map((name) => `@plurid/uitive-${name}`),
-    );
+    expect(Object.keys(top.resolutions).sort()).toEqual([
+      ...['core', 'planner', 'react', 'server'].map((name) => `@plurid/uitive-${name}`),
+      'uitive',
+    ]);
     const found = await detect(root);
     expect(found.workspaces).toEqual([
       { path: 'app', name: 'app', ui: { name: 'react', version: '19.0.0' }, framework: null },
@@ -337,9 +339,10 @@ describe('init with local packages', () => {
     );
     await writeFile(join(root, 'app', 'pnpm-lock.yaml'), '');
     await mkdir(join(root, 'tarballs'));
-    for (const name of ['core', 'react', 'dom', 'cli']) {
+    for (const name of ['core', 'react', 'dom']) {
       await writeFile(join(root, 'tarballs', `plurid-uitive-${name}-0.1.0.tgz`), '');
     }
+    await writeFile(join(root, 'tarballs', 'uitive-0.1.0.tgz'), '');
     const result = await init({
       cwd: join(root, 'app'),
       packages: join(root, 'tarballs'),
@@ -358,10 +361,10 @@ describe('init with local packages', () => {
     expect(await readFile(join(root, 'app', 'pnpm-workspace.yaml'), 'utf8')).toBe(
       [
         'overrides:',
-        "  '@plurid/uitive-cli': file:../tarballs/plurid-uitive-cli-0.1.0.tgz",
         "  '@plurid/uitive-core': file:../tarballs/plurid-uitive-core-0.1.0.tgz",
         "  '@plurid/uitive-dom': file:../tarballs/plurid-uitive-dom-0.1.0.tgz",
         "  '@plurid/uitive-react': file:../tarballs/plurid-uitive-react-0.1.0.tgz",
+        "  'uitive': file:../tarballs/uitive-0.1.0.tgz",
         '',
       ].join('\n'),
     );
@@ -369,9 +372,10 @@ describe('init with local packages', () => {
 
   it('gives pnpm 9 its overrides in package.json', async () => {
     const { app } = await pnpmApp('pnpm@9.15.0');
-    expect(Object.keys(app.pnpm.overrides).sort()).toEqual(
-      ['cli', 'core', 'dom', 'react'].map((name) => `@plurid/uitive-${name}`),
-    );
+    expect(Object.keys(app.pnpm.overrides).sort()).toEqual([
+      ...['core', 'dom', 'react'].map((name) => `@plurid/uitive-${name}`),
+      'uitive',
+    ]);
   });
 
   it('merges overrides into a workspace file, keeping everything else', () => {

@@ -63,7 +63,15 @@ const exists = (path: string) =>
     () => false,
   );
 
-const short = (name: string) => name.replace('@plurid/uitive-', '');
+/**
+ * The package a tarball holds, from pnpm's file name: `plurid-uitive-core-0.1.0.tgz`, or the
+ * CLI's `uitive-0.1.0.tgz`.
+ */
+const packed = (file: string): string | undefined => {
+  const scoped = /^plurid-uitive-([a-z]+)-\d.*\.tgz$/.exec(file)?.[1];
+  if (scoped) return `@plurid/uitive-${scoped}`;
+  return /^uitive-\d.*\.tgz$/.test(file) ? 'uitive' : undefined;
+};
 
 /**
  * Sets entries under `overrides` in a pnpm-workspace.yaml, keeping everything else as written:
@@ -100,7 +108,7 @@ function wanted(detection: Detection, existing: ReadonlySet<string>) {
       detection.ui?.name === 'react' ? '@plurid/uitive-react' : '@plurid/uitive-dom',
       ...(detection.server ? ['@plurid/uitive-server'] : []),
     ],
-    dev: ['@plurid/uitive-cli'],
+    dev: ['uitive'],
   };
 }
 
@@ -142,19 +150,14 @@ async function useTarballs(
   folder: string,
   packages: ReturnType<typeof wanted>,
 ): Promise<string[]> {
-  const files = (await readdir(folder)).filter((name) =>
-    /^plurid-uitive-[a-z]+-.+\.tgz$/.test(name),
-  );
-  if (files.length === 0) throw new Error(`No @plurid/uitive tarballs in ${folder}`);
+  const files = (await readdir(folder)).filter((name) => packed(name)).sort();
+  if (files.length === 0) throw new Error(`No Uitive tarballs in ${folder}`);
   // Paths relative to each package.json, so the project stays movable.
   const from = (base: string) =>
     new Map(
       files.map((name) => {
         const path = relative(base, resolve(folder, name));
-        return [
-          /^plurid-uitive-([a-z]+)-/.exec(name)?.[1] ?? '',
-          `file:${path.startsWith('.') ? path : `./${path}`}`,
-        ];
+        return [packed(name) ?? '', `file:${path.startsWith('.') ? path : `./${path}`}`];
       }),
     );
   const tarballs = from(root);
@@ -163,10 +166,10 @@ async function useTarballs(
   const dependencies = { ...own.dependencies };
   const devDependencies = { ...own.devDependencies };
   for (const name of packages.runtime) {
-    dependencies[name] = name === 'zod' ? '^4.6.5' : (tarballs.get(short(name)) ?? '*');
+    dependencies[name] = name === 'zod' ? '^4.6.5' : (tarballs.get(name) ?? '*');
   }
   for (const name of packages.dev) {
-    const tarball = tarballs.get(short(name));
+    const tarball = tarballs.get(name);
     if (tarball) devDependencies[name] = tarball;
   }
   own.dependencies = sorted(dependencies);
@@ -174,9 +177,7 @@ async function useTarballs(
   // Every tarball, not just what is installed: the packages depend on each other, and any one
   // left to the registry would install another build, or none.
   const top = await workspaceRoot(root, detection.repository);
-  const overrides = Object.fromEntries(
-    [...from(top)].map(([name, tarball]) => [`@plurid/uitive-${name}`, tarball]),
-  );
+  const overrides = Object.fromEntries(from(top));
   const written = ['package.json'];
   const shared = top === root ? own : await read(join(top, 'package.json'));
   if (detection.packageManager === 'yarn') {

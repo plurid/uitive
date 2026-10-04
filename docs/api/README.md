@@ -7,7 +7,7 @@ Every package's public API, generated from its type declarations and JSDoc. The 
 | Package                                | What it holds                                                                                                                    |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | [`@plurid/uitive-adapter`](adapter.md) | Uitive for pages it doesn't own: role trees, discovery, and adapters as data, wherever JavaScript runs                           |
-| [`@plurid/uitive-cli`](cli.md)         | Uitive for coding agents: detect, scaffold, generate sources and blocks, discover, and check an integration                      |
+| [`uitive`](cli.md)                     | Uitive for coding agents: detect, scaffold, generate sources and blocks, discover, and check an integration                      |
 | [`@plurid/uitive-core`](core.md)       | Typed contracts, usage learning and policy for interfaces that adapt to each user                                                |
 | [`@plurid/uitive-dom`](dom.md)         | Plain-HTML bindings and framework-agnostic web components for Uitive                                                             |
 | [`@plurid/uitive-mcp`](mcp.md)         | Uitive over the Model Context Protocol: the agent kit's steps as tools any coding agent can call                                 |

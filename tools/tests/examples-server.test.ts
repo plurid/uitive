@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createUitive, query, remotePlanner, type FetchLike } from '@plurid/uitive-core';
-import { parseCuration } from '@plurid/uitive-cli';
+import { parseCuration } from 'uitive';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { discovery } from '../../docs/examples/adapter/discover.ts';
 import { shop } from '../../docs/examples/shop/contract.ts';

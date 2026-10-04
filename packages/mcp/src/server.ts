@@ -15,7 +15,7 @@ import {
   loadModule,
   surveySpec,
   surveyText,
-} from '@plurid/uitive-cli';
+} from 'uitive';
 import { contractText } from '@plurid/uitive-planner/prompt';
 import { limits, outputSchema, size } from '@plurid/uitive-planner/schema';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';

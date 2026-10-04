@@ -217,7 +217,7 @@ Say what you use the cloud for on the home page, ask for changes with ⌘K, comp
 | [`@plurid/uitive-planner`](packages/planner/README.md) | The model planner, for any provider: schemas, prompt, repair, and models from Anthropic, OpenAI-compatible servers and Gemini |
 | [`@plurid/uitive-server`](packages/server/README.md)   | The planner's handler, for any Fetch runtime, Express and Node                                                                |
 | [`@plurid/uitive-adapter`](packages/adapter/README.md) | Accessibility trees and discovery, for pages Uitive doesn't own                                                               |
-| [`@plurid/uitive-cli`](packages/cli/README.md)         | The agent kit: detect, init, survey, generate, discover and check; also published as `uitive`, for `npx uitive`               |
+| [`uitive`](packages/cli/README.md)                     | The agent kit: detect, init, survey, generate, discover and check; run it with `npx uitive`                                   |
 | [`@plurid/uitive-mcp`](packages/mcp/README.md)         | The agent kit as Model Context Protocol tools                                                                                 |
 
 They are ES modules with TypeScript declarations, which CommonJS can `require` on Node 22.12 or later. They need Node 22 or later for the tools, React 18.3 or 19 for the React bindings, and zod 4.2 or later, shared with the application. It is a rewrite of the 2019 library, archived in [legacy](legacy/README.md).
