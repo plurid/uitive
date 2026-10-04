@@ -1,6 +1,6 @@
 {
   "name": "@plurid/uitive-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Uitive over the Model Context Protocol: the agent kit's steps as tools any coding agent can call",
   "keywords": [
     "uitive",

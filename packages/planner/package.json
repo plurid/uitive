@@ -1,6 +1,6 @@
 {
   "name": "@plurid/uitive-planner",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Uitive's model planner, for any provider: contracts compiled to structured outputs, prompts and repair, wherever JavaScript runs",
   "keywords": [
     "uitive",

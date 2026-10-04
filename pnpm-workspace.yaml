@@ -12,5 +12,8 @@ packages:
 
 minimumReleaseAge: 1440
 
+# npm's package pages show the README sent with the publish, which pnpm sends only when asked.
+embedReadme: true
+
 allowBuilds:
   esbuild: true

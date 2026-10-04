@@ -163,13 +163,13 @@ Wrap the editor in `UitiveProvider`, and add `<UitiveBanner>` and an ask box bui
 
 ## What people can ask for
 
-| They say or do                                                    | What happens                                                        | Planner                              |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------ |
-| "hide Bold", "move Table to the top", "compact"                   | The toolbar or setting changes at once                              | Deterministic                        |
-| Open Table from More, session after session                       | Table joins the toolbar at the start of a later session             | Deterministic                        |
-| "I watch costs and budgets"                                       | What serves that goal comes forward, as in the picture above        | A model, or shared words without one |
-| "make my home a morning check of what needs attention"            | A redesigned page, from the application's own blocks and data       | A model                              |
-| "put each customer's lifetime value beside their failed payments" | A table joining two sources, read with the person's own permissions | A model                              |
+| They say or do                                                    | What happens                                                      | Planner                              |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------ |
+| "hide Bold", "move Table to the top", "compact"                   | The toolbar or setting changes at once                            | Deterministic                        |
+| Open Table from More, session after session                       | Table joins the toolbar at the start of a later session           | Deterministic                        |
+| "I watch costs and budgets"                                       | What serves that goal comes forward, as in the picture above      | A model, or shared words without one |
+| "make my home a morning check of what needs attention"            | A redesigned page, from the application's own blocks and data     | A model                              |
+| "put each customer's lifetime value beside their failed payments" | A table joining 2 sources, read with the person's own permissions | A model                              |
 
 ## How it works
 
@@ -205,7 +205,7 @@ Say what you use the cloud for on the home page, ask for changes with ⌘K, comp
 
 **The extension** reshapes a fictional payments dashboard: build it and load it unpacked, as [its README](apps/extension/README.md#try-it-on-the-fictional-dashboard) shows.
 
-**The proof**: three coding agents, each with only the agent kit, integrated Excalidraw in 40 minutes, Medusa Admin in 37 and Grist in 54, meeting every point of their definitions of done. [Findings](docs/findings.md) has each run, and every gap found with what changed since.
+**The proof**: 3 coding agents, each with only the agent kit, integrated Excalidraw in 40 minutes, Medusa Admin in 37 and Grist in 54. [Findings](docs/findings.md) has each run, and every gap found with what changed since.
 
 ## Packages
 
@@ -220,7 +220,7 @@ Say what you use the cloud for on the home page, ask for changes with ⌘K, comp
 | [`uitive`](packages/cli/README.md)                     | The agent kit: detect, init, survey, generate, discover and check; run it with `npx uitive`                                   |
 | [`@plurid/uitive-mcp`](packages/mcp/README.md)         | The agent kit as Model Context Protocol tools                                                                                 |
 
-They are ES modules with TypeScript declarations, which CommonJS can `require` on Node 22.12 or later. They need Node 22 or later for the tools, React 18.3 or 19 for the React bindings, and zod 4.2 or later, shared with the application. It is a rewrite of the 2019 library, archived in [legacy](legacy/README.md).
+They are ES modules with TypeScript declarations, which CommonJS can `require` on Node 22.12 or later. They need Node 22 or later for the tools, React 18.3 or 19 for the React bindings, and zod 4.2 or later, shared with the application. Uitive is a rewrite of the 2019 library, archived in [legacy](legacy/README.md).
 
 ## Documentation
 
@@ -236,7 +236,7 @@ They are ES modules with TypeScript declarations, which CommonJS can `require` o
 - [Coding agents](docs/coding-agents.md): the CLI, curation, discovery, MCP and the Claude Code plugin
 - [Privacy and security](docs/privacy-and-security.md): what leaves the device, who holds keys, and what policy guarantees
 - [Troubleshooting](docs/troubleshooting.md): messages and symptoms, with their fixes
-- [Findings](docs/findings.md): three timed integrations by coding agents, and what they changed
+- [Findings](docs/findings.md): 3 timed integrations by coding agents, and what they changed
 - [API reference](docs/api/README.md): every export, generated from the source
 - [Examples](docs/examples/README.md): the code in these pages, typechecked and tested
 - [CONTEXT.md](CONTEXT.md) and [decisions](docs/adr/README.md): the vocabulary, invariants and architectural decisions
@@ -245,15 +245,15 @@ They are ES modules with TypeScript declarations, which CommonJS can `require` o
 
 ```sh
 pnpm install
-pnpm check   # lint, format, typecheck (which builds the packages) and every test
-pnpm run docs    # refreshes the examples in the docs and the generated API reference
+pnpm check      # lint, format, typecheck (which builds the packages) and every test
+pnpm run docs   # refreshes the examples in the docs and the generated API reference
 ```
 
 Development needs Node 24 or later and pnpm 11.
 
 | Directory  | What lives there                                                         |
 | ---------- | ------------------------------------------------------------------------ |
-| `packages` | The eight packages                                                       |
+| `packages` | The 8 packages                                                           |
 | `apps`     | The Acme Cloud demo and the browser extension prototype                  |
 | `docs`     | Guides, examples, the API reference, decisions and findings              |
 | `plugins`  | The Claude Code plugin                                                   |

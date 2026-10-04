@@ -1,6 +1,6 @@
 {
   "name": "@plurid/uitive-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Typed contracts, usage learning and policy for interfaces that adapt to each user",
   "keywords": [
     "uitive",
