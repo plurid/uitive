@@ -45,7 +45,7 @@ Choices about an API description live in `curation.json`, in that folder, keyed 
     "orders.cancel": { "confirm": "cancel order" },
     "fulfillments.create": {
       "effect": "write",
-      "reason": "Fulfilments can be cancelled until they ship"
+      "reason": "Fulfillments can be canceled until they ship"
     },
     "orders.archive": { "include": false }
   }

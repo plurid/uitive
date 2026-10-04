@@ -192,7 +192,7 @@ export interface ContractSpec<
 > {
   /** Identifies the application, such as `cloud-console`. */
   id: string;
-  /** Bump when behaviour that can't be hashed changes, such as a validator. @default '1' */
+  /** Bump when behavior that can't be hashed changes, such as a validator. @default '1' */
   version?: string;
   /** What the application is, written for the model. */
   description: string;

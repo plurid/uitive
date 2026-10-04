@@ -27,8 +27,8 @@ export const drawing = defineApp({
   contexts: { tool: ['pen', 'shape', 'text'] },
   actions: {
     'stroke.width': action({ label: 'Stroke width', description: 'How thick lines are' }),
-    'stroke.colour': action({ label: 'Stroke colour', description: 'The colour of lines' }),
-    'fill.colour': action({ label: 'Fill colour', description: 'The colour inside shapes' }),
+    'stroke.color': action({ label: 'Stroke color', description: 'The color of lines' }),
+    'fill.color': action({ label: 'Fill color', description: 'The color inside shapes' }),
     'text.size': action({ label: 'Text size', description: 'How large text is' }),
     'shape.duplicate': action({
       label: 'Duplicate',
@@ -41,13 +41,13 @@ export const drawing = defineApp({
     options: list({
       label: 'Tool options',
       description: 'Options for the tool in hand',
-      items: ['stroke.width', 'stroke.colour', 'fill.colour', 'text.size', 'shape.duplicate'],
+      items: ['stroke.width', 'stroke.color', 'fill.color', 'text.size', 'shape.duplicate'],
       capacity: 3,
       context: 'tool',
       available: (tool) =>
         tool === 'text'
-          ? ['text.size', 'stroke.colour']
-          : ['stroke.width', 'stroke.colour', 'fill.colour', 'shape.duplicate'],
+          ? ['text.size', 'stroke.color']
+          : ['stroke.width', 'stroke.color', 'fill.color', 'shape.duplicate'],
     }),
     density,
     views,

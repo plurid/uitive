@@ -25,7 +25,7 @@ export interface Persona {
   actions?: readonly [number, number];
   /** Context values active for an action, such as the service a verb happens on. */
   contexts?: (action: string, draw: () => number) => Record<string, string> | undefined;
-  /** From this session on, these weights apply instead: a change of behaviour. */
+  /** From this session on, these weights apply instead: a change of behavior. */
   shift?: { session: number; weights: Readonly<Record<string, number>> };
   /** How often an overflow item is reached through the palette rather than overflow. @default 0.3 */
   palette?: number;

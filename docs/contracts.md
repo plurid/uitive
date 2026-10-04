@@ -33,7 +33,7 @@ export const shop = defineApp({
     // Every page starts as itself: one region, so the application looks exactly as before.
     orders: page({})({
       label: 'Orders',
-      description: 'The orders to fulfil and follow up',
+      description: 'The orders to fulfill and follow up',
       standard: () => ui.page(ui.region('orders')),
     }),
     order: page(orderBlocks)({
@@ -138,8 +138,8 @@ export const drawing = defineApp({
   contexts: { tool: ['pen', 'shape', 'text'] },
   actions: {
     'stroke.width': action({ label: 'Stroke width', description: 'How thick lines are' }),
-    'stroke.colour': action({ label: 'Stroke colour', description: 'The colour of lines' }),
-    'fill.colour': action({ label: 'Fill colour', description: 'The colour inside shapes' }),
+    'stroke.color': action({ label: 'Stroke color', description: 'The color of lines' }),
+    'fill.color': action({ label: 'Fill color', description: 'The color inside shapes' }),
     'text.size': action({ label: 'Text size', description: 'How large text is' }),
     'shape.duplicate': action({
       label: 'Duplicate',
@@ -152,13 +152,13 @@ export const drawing = defineApp({
     options: list({
       label: 'Tool options',
       description: 'Options for the tool in hand',
-      items: ['stroke.width', 'stroke.colour', 'fill.colour', 'text.size', 'shape.duplicate'],
+      items: ['stroke.width', 'stroke.color', 'fill.color', 'text.size', 'shape.duplicate'],
       capacity: 3,
       context: 'tool',
       available: (tool) =>
         tool === 'text'
-          ? ['text.size', 'stroke.colour']
-          : ['stroke.width', 'stroke.colour', 'fill.colour', 'shape.duplicate'],
+          ? ['text.size', 'stroke.color']
+          : ['stroke.width', 'stroke.color', 'fill.color', 'shape.duplicate'],
     }),
     density,
     views,
@@ -213,4 +213,4 @@ Contracts change, and people's interfaces survive it.
 
 - **Remove an action, a surface or a block**, and the changes that named it are dropped when the person's interface next loads; everything else they changed stays.
 - **The hash changes** whenever the contract does. A server refuses requests made with another hash (409, "The application changed; reload the page"), so deploy the client and the server's contract together.
-- **Bump `version`** when behaviour the hash can't see changes, such as a validator.
+- **Bump `version`** when behavior the hash can't see changes, such as a validator.

@@ -29,7 +29,7 @@ Then ask the agent to integrate Uitive. `init` installs the playbook, a skill na
 
 `init --dir app/uitive` puts the folder elsewhere, such as inside the only folder the build compiles; package.json records it as `uitive.dir`, where every command finds it. With Next.js, `init` also writes `api/uitive/[kind]/route.ts` in `app`, or in `src/app` when there is one.
 
-At the repository's root, it configures the coding agents it finds: Claude Code (`.mcp.json` and the skill), Cursor (`.cursor/mcp.json`) and VS Code (`.vscode/mcp.json`). It adds its MCP server to a configuration that exists, keeping everything else in it; one it can't parse, such as JSON with comments, it leaves as it is and says what to add by hand. With none of these found, it configures Claude Code and says so: Codex, which it recognises by an `AGENTS.md`, has nothing it can configure. `--no-agents` leaves them all alone.
+At the repository's root, it configures the coding agents it finds: Claude Code (`.mcp.json` and the skill), Cursor (`.cursor/mcp.json`) and VS Code (`.vscode/mcp.json`). It adds its MCP server to a configuration that exists, keeping everything else in it; one it can't parse, such as JSON with comments, it leaves as it is and says what to add by hand. With none of these found, it configures Claude Code and says so: Codex, which it recognizes by an `AGENTS.md`, has nothing it can configure. `--no-agents` leaves them all alone.
 
 ## The commands
 
@@ -78,7 +78,7 @@ An API description describes everything; an interface shows a part. Past 40 sour
     "orders.cancel": { "confirm": "cancel order" },
     "fulfillments.create": {
       "effect": "write",
-      "reason": "Fulfilments can be cancelled until they ship"
+      "reason": "Fulfillments can be canceled until they ship"
     },
     "orders.archive": { "include": false }
   }

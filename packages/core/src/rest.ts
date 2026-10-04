@@ -80,7 +80,7 @@ export interface RestAction {
 interface RestBase {
   /** The API's base URL, such as `https://api.example.com`; empty for the page's own origin. */
   base: string;
-  /** Headers for every request, such as authorisation. */
+  /** Headers for every request, such as authorization. */
   headers?: (context: BindingContext) => Record<string, string> | Promise<Record<string, string>>;
   /** Sends cookies, for an application's own API. @default 'same-origin' */
   credentials?: 'omit' | 'same-origin' | 'include';

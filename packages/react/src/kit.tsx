@@ -143,7 +143,7 @@ export interface Kit {
   }>;
   /** A link to a route, followed through the application's router. */
   Link: ComponentType<{ href: string; children?: ReactNode; onClick?: () => void }>;
-  /** A labelled input for one field, such as an action's param in a form. */
+  /** A labeled input for one field, such as an action's param in a form. */
   Field: ComponentType<{
     field: Field;
     value: string;

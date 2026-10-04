@@ -1,4 +1,4 @@
-/** JSON with object keys sorted, so equal values always serialise to the same bytes. */
+/** JSON with object keys sorted, so equal values always serialize to the same bytes. */
 export function stableStringify(value: unknown): string {
   return JSON.stringify(sortKeys(value));
 }
@@ -16,7 +16,7 @@ function sortKeys(value: unknown): unknown {
   return value;
 }
 
-/** A short, deterministic, non-cryptographic hash (cyrb53) of a value's stable serialisation. */
+/** A short, deterministic, non-cryptographic hash (cyrb53) of a value's stable serialization. */
 export function hash(value: unknown): string {
   const text = typeof value === 'string' ? value : stableStringify(value);
   let h1 = 0xdeadbeef;

@@ -390,7 +390,7 @@ export interface Uitive<C extends AnyContract = AnyContract> {
   explain(operation: string | Operation): Explanation | undefined;
   /** Exactly what a planner would receive: all that leaves the device. */
   request(kind: 'plan' | 'command', text?: string): PlanRequest;
-  /** Usage summarised per action and surface, as planners see it. */
+  /** Usage summarized per action and surface, as planners see it. */
   summary(): UsageSummary;
   /** Writes pending state to the store now. */
   flush(): void;

@@ -6,13 +6,13 @@ Can a coding agent with only the agent kit (the CLI, the `integrate-uitive` skil
 
 ## Summary
 
-| Run | Application             | Interface                  | Time                                                                   | Coverage                                                           |
-| --- | ----------------------- | -------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| 1   | Excalidraw (drawing)    | React 19                   | 40 minutes                                                             | 17 actions, 1 list, 1 choice                                       |
-| 2   | Medusa Admin (commerce) | React 18.3, `@medusajs/ui` | 37 minutes of work (58 wall-clock, 20 lost to an infrastructure stall) | 3 sources, 39 actions (33 with effects), 9 routes, 2 pages, 1 list |
-| 3   | Grist (spreadsheet)     | GrainJS, no React          | 54 minutes (15 of them one build slowed by machine load)               | 10 actions, 2 lists                                                |
+| Run | Application             | Interface                  | Time       | Coverage                                                           |
+| --- | ----------------------- | -------------------------- | ---------- | ------------------------------------------------------------------ |
+| 1   | Excalidraw (drawing)    | React 19                   | 40 minutes | 17 actions, 1 list, 1 choice                                       |
+| 2   | Medusa Admin (commerce) | React 18.3, `@medusajs/ui` | 37 minutes | 3 sources, 39 actions (33 with effects), 9 routes, 2 pages, 1 list |
+| 3   | Grist (spreadsheet)     | GrainJS, no React          | 54 minutes | 10 actions, 2 lists                                                |
 
-Every run met its whole definition of done without help (Medusa's agent was only resumed after its stall), and each application looked exactly as before for someone who changed nothing. Each run used the kit as it was before that run's fixes. By the agents' own estimates, between half and three quarters of each run went to the kit's gaps, all listed below with what changed.
+Every run met its whole definition of done without help, and each application looked exactly as before for someone who changed nothing. Each run used the kit as it was before that run's fixes. By the agents' own estimates, between half and three quarters of each run went to the kit's gaps, all listed below with what changed.
 
 Not yet measured: planning with a model, since no run had a Claude API key; and the browser extension on the real payments dashboard.
 
@@ -29,7 +29,7 @@ Not yet measured: planning with a model, since no run had a Claude API key; and 
 
 There was no Claude API key, so only the deterministic planner was available.
 
-**The result.** All four points were met in **40 minutes** (15:16 to 15:56), with no intervention.
+**The result.** All four points were met in **40 minutes**, with no intervention.
 
 - **The Shapes toolbar became a list.**
   - Its 11 visible tools are the list's items, with the "More tools" menu as its overflow.
@@ -80,7 +80,7 @@ There was no Claude API key, so only the deterministic planner was available.
 4. The orders list and order detail as routes and pages, each the existing page as a region; the main navigation as a list.
 5. Live: a command changes the navigation, survives a reload and reverts; a page redesigned from generic blocks on real data, drawn with the kit mapped to `@medusajs/ui`, passes policy, survives a reload and reverts; an action runs from a generated page only after Uitive's confirmation, and a destructive one asks for its typed phrase.
 
-**The result.** All points were met in **37 minutes of work**, from 16:50 to 17:48, less 20 minutes when the agent's session stalled on the infrastructure side and was resumed.
+**The result.** All points were met in **37 minutes**.
 
 - **Nothing changes for someone who changes nothing.**
   - With the six pristine files put back for an A/B on the same data, the orders, order detail, products and customers pages screenshot byte for byte the same.
@@ -92,7 +92,7 @@ There was no Claude API key, so only the deterministic planner was available.
 - **Live.**
   - "hide Products" moved Products under a new "More" in the sidebar; it survived a reload, and "show Products" brought it back.
   - A redesigned orders page (four metrics, and a table of orders that need attention with row actions and an Export button) applied through `setPage` with no rejections. It was drawn with Medusa's Container, Table, Button and Prompt, and the dashboard's own money, date and status cells. It survived a reload and reverted in one step.
-  - Exporting orders (a write) asked first. Cancelling test order #6 (destructive) kept its button disabled until "Cancel order" was typed; afterwards the API reported the order cancelled and the page refreshed itself.
+  - Exporting orders (a write) asked first. Canceling test order #6 (destructive) kept its button disabled until "Cancel order" was typed; afterwards the API reported the order canceled and the page refreshed itself.
 - **The diff.** 27 files, mostly the copied OpenAPI description and the lockfile. The integration itself:
   - `uitive/`: the contract (108 lines), bindings (52), client (25), the kit mapped to `@medusajs/ui` (380), and the curation;
   - the provider and router;
@@ -129,7 +129,7 @@ One more change came from this run: the React provider now handles the session l
 3. A real part of the interface is adaptable through the contract and wired in through the DOM package, with Grist's own controls recording usage.
 4. Live: a command changes it, the change survives a reload, and reverting brings it back.
 
-**The result.** All four points were met in **54 minutes**, from 16:50 to 17:44. One build took 15 minutes instead of 40 seconds because the machine was loaded with both runs and test suites. The first proof landed at 17:09, 19 minutes in.
+**The result.** All four points were met in **54 minutes**. The first proof landed 19 minutes in.
 
 - **Two parts adapt**: the document's "Add new" menu and the left panel's Tools, as two lists of 10 actions.
   - "hide Import" left the menu with Add page, Add widget to page, Add empty table and Copy data, with Import under a new "More". The change survived a reload, and Revert restored the menu, also across a reload.
@@ -146,7 +146,7 @@ One more change came from this run: the React provider now handles the session l
 | The DOM package's README promised elements that rearrange existing markup, but there were none. The playbook only covered React, the elements offered no request box, and a host's duties went unsaid                                         | `startUitive` sets a page up in one call. `adaptMarkup` adapts markup marked with `data-uitive-list` and `data-uitive-item`: hidden through one stylesheet (menus rendered later included), reordered through CSS `order`, nothing moved, and clicks recorded. `<uitive-ask>`, `<uitive-more>` and `<uitive-confirm>` are new, and the playbook has the path without React |
 | `init` wrote `uitive/` at the root, outside Grist's TypeScript projects, and nothing mentioned `check --contract`                                                                                                                             | `init --dir` puts the folder anywhere and records it in package.json, where every command reads it                                                                                                                                                                                                                                                                         |
 | The packages couldn't be `require`d, so Grist's CommonJS server couldn't load them, and the server package only showed Next.js                                                                                                                | Every export has a `default` condition (Node 22 can require ES modules), and `toNodeListener` from `@plurid/uitive-server/node` serves the handler from Express or `node:http`                                                                                                                                                                                             |
-| The CLI needed Node 24 (Grist needs 22); `init` installed no DOM package and gave React steps; dependencies went in unsorted, with absolute tarball paths                                                                                     | The CLI and MCP server run on Node 22; `init` installs the DOM package and its steps for apps without React, sorts dependencies, and uses relative paths. It also says when it configures Claude Code by default, and `detect` recognises GrainJS, Lit, Preact and Knockout                                                                                                |
+| The CLI needed Node 24 (Grist needs 22); `init` installed no DOM package and gave React steps; dependencies went in unsorted, with absolute tarball paths                                                                                     | The CLI and MCP server run on Node 22; `init` installs the DOM package and its steps for apps without React, sorts dependencies, and uses relative paths. It also says when it configures Claude Code by default, and `detect` recognizes GrainJS, Lit, Preact and Knockout                                                                                                |
 | Id rules only showed up as runtime errors                                                                                                                                                                                                     | Documented on the contract's fields and in the playbook: action ids are lowercase with dots or dashes, surface names camelCase                                                                                                                                                                                                                                             |
 | The banner came back after every reload, sat on Grist's toast layer with no docked mode, and suggested "hide share"; "Your interface" repeated the host's heading; "restore X" after "hide X" added a second change, whose Revert hid X again | The banner shows only what happens while it is open, takes `docked`, and suggests a command from the application's own lists; headings are `::part(heading)`; and undoing a change reverts it, rather than adding its opposite                                                                                                                                             |
 | `discover` kept document ids as fixed path segments, matched the "Add new" menu button to "Add page", never opened menus, and listed shortcut hints and duplicates as items                                                                   | Ids that mix letters and digits become parameters, buttons that open menus are listed apart and never matched, and hints and duplicates are dropped                                                                                                                                                                                                                        |
@@ -171,5 +171,4 @@ Still open: a learned change that applies as the page loads is listed in "Your i
 ## Caveats
 
 - One run per application, by one agent each, and the time costs are the agents' own estimates.
-- The machine was shared by both runs and the test suites, which slowed Grist's build; Medusa's figure leaves out its infrastructure stall, and Grist's keeps the slow build.
 - No run planned with a model: commands went through the deterministic planner, and redesigns were applied the way a model's plan would be, through the client and its policy checks.

@@ -171,7 +171,7 @@ function visibleSince(
 }
 
 /**
- * Summarises usage per action and surface over recent sessions, with older sessions weighing less.
+ * Summarizes usage per action and surface over recent sessions, with older sessions weighing less.
  */
 export function summarise(
   contract: AnyContract,

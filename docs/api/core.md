@@ -489,7 +489,7 @@ Type parameters: `A extends Record<string, ActionSpec>`, `S extends Record<strin
 | Property      | Type                                   | Default | Description                                                                                                                                                                           |
 | ------------- | -------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`          | `string`                               |         | Identifies the application, such as `cloud-console`.                                                                                                                                  |
-| `version?`    | `string`                               | `'1'`   | Bump when behaviour that can't be hashed changes, such as a validator.                                                                                                                |
+| `version?`    | `string`                               | `'1'`   | Bump when behavior that can't be hashed changes, such as a validator.                                                                                                                 |
 | `description` | `string`                               |         | What the application is, written for the model.                                                                                                                                       |
 | `actions`     | `A`                                    |         | What people can do. IDs are lowercase, with dots, colons or dashes, such as `orders.cancel` or `table.add-empty`, since structured outputs don't guarantee the casing of enum values. |
 | `contexts?`   | `C`                                    | `{}`    | Every value of each context, such as every tool. Names are camelCase; values are lowercase, like action IDs.                                                                          |
@@ -2081,7 +2081,7 @@ Uses: [`RestSource`](#restsource).
 | -------------- | ---------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------- |
 | `sources`      | `Readonly<Record<string, RestSource>>`                                                   |                    | Each source's list endpoint and how it pages, filters and sorts, by source ID.          |
 | `base`         | `string`                                                                                 |                    | The API's base URL, such as `https://api.example.com`; empty for the page's own origin. |
-| `headers?`     | `(context: BindingContext) => Record<string, string> \| Promise<Record<string, string>>` |                    | Headers for every request, such as authorisation.                                       |
+| `headers?`     | `(context: BindingContext) => Record<string, string> \| Promise<Record<string, string>>` |                    | Headers for every request, such as authorization.                                       |
 | `credentials?` | `'omit' \| 'same-origin' \| 'include'`                                                   | `'same-origin'`    | Sends cookies, for an application's own API.                                            |
 | `fetch?`       | `HttpFetch`                                                                              | `globalThis.fetch` | The `fetch` it calls, such as one that adds a CSRF token.                               |
 
@@ -2097,7 +2097,7 @@ Uses: [`RestAction`](#restaction).
 | `actions`      | `Readonly<Record<string, RestAction>>`                                                   |                    | Each action's method and path, by action ID; params fill `{placeholders}` in the path, and the rest go in the body. |
 | `idempotency?` | `string`                                                                                 |                    | The header that carries each run's idempotency key, for APIs that honour one.                                       |
 | `base`         | `string`                                                                                 |                    | The API's base URL, such as `https://api.example.com`; empty for the page's own origin.                             |
-| `headers?`     | `(context: BindingContext) => Record<string, string> \| Promise<Record<string, string>>` |                    | Headers for every request, such as authorisation.                                                                   |
+| `headers?`     | `(context: BindingContext) => Record<string, string> \| Promise<Record<string, string>>` |                    | Headers for every request, such as authorization.                                                                   |
 | `credentials?` | `'omit' \| 'same-origin' \| 'include'`                                                   | `'same-origin'`    | Sends cookies, for an application's own API.                                                                        |
 | `fetch?`       | `HttpFetch`                                                                              | `globalThis.fetch` | The `fetch` it calls, such as one that adds a CSRF token.                                                           |
 
@@ -3201,7 +3201,7 @@ Uses: [`ActionIdOf`](#actionidof), [`ActionView`](#actionview), [`Adaptation`](#
 | `import()`           | Takes a definition from `export`, checked against this contract like any change.                                                                                                                                                 |
 | `explain()`          | Why a change was made, in plain words, with its evidence.                                                                                                                                                                        |
 | `request()`          | Exactly what a planner would receive: all that leaves the device.                                                                                                                                                                |
-| `summary()`          | Usage summarised per action and surface, as planners see it.                                                                                                                                                                     |
+| `summary()`          | Usage summarized per action and surface, as planners see it.                                                                                                                                                                     |
 | `flush()`            | Writes pending state to the store now.                                                                                                                                                                                           |
 
 ### UitiveOptions
@@ -4214,7 +4214,7 @@ Uses: [`AnyContract`](#anycontract), [`Persona`](#persona), [`SessionReport`](#s
 
 ### summarise
 
-Summarises usage per action and surface over recent sessions, with older sessions weighing less.
+Summarizes usage per action and surface over recent sessions, with older sessions weighing less.
 
 ```ts
 function summarise(
@@ -4267,7 +4267,7 @@ A simulated user: how often they use each action, and how they reach it.
 | `weights`     | `Readonly<Record<string, number>>`                                            |            | Relative frequencies of the actions this persona uses.                          |
 | `actions?`    | `readonly [number, number]`                                                   | `[12, 24]` | Actions per session, inclusive.                                                 |
 | `contexts?`   | `(action: string, draw: () => number) => Record<string, string> \| undefined` |            | Context values active for an action, such as the service a verb happens on.     |
-| `shift?`      | `{ session: number; weights: Readonly<Record<string, number>> }`              |            | From this session on, these weights apply instead: a change of behaviour.       |
+| `shift?`      | `{ session: number; weights: Readonly<Record<string, number>> }`              |            | From this session on, these weights apply instead: a change of behavior.        |
 | `palette?`    | `number`                                                                      | `0.3`      | How often an overflow item is reached through the palette rather than overflow. |
 
 ### SessionRecord
@@ -4387,7 +4387,7 @@ const EXTRA_AREAS = 2;
 
 ### hash
 
-A short, deterministic, non-cryptographic hash (cyrb53) of a value's stable serialisation.
+A short, deterministic, non-cryptographic hash (cyrb53) of a value's stable serialization.
 
 ```ts
 function hash(value: unknown): string;
@@ -4449,7 +4449,7 @@ Uses: [`AnyContract`](#anycontract), [`PlanRequest`](#planrequest).
 
 ### stableStringify
 
-JSON with object keys sorted, so equal values always serialise to the same bytes.
+JSON with object keys sorted, so equal values always serialize to the same bytes.
 
 ```ts
 function stableStringify(value: unknown): string;
@@ -4469,7 +4469,7 @@ One source with everything that belongs to it: what a planner is shown together.
 
 | Property  | Type                | Description                                 |
 | --------- | ------------------- | ------------------------------------------- |
-| `source`  | `string`            | The source at its centre.                   |
+| `source`  | `string`            | The source at its center.                   |
 | `actions` | `readonly string[]` | Actions that act on its rows, or change it. |
 | `routes`  | `readonly string[]` | Routes that show its rows.                  |
 | `terms`   | `readonly string[]` | The words it is found by.                   |

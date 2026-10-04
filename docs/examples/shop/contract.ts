@@ -105,7 +105,7 @@ export const shop = defineApp({
     // Every page starts as itself: one region, so the application looks exactly as before.
     orders: page({})({
       label: 'Orders',
-      description: 'The orders to fulfil and follow up',
+      description: 'The orders to fulfill and follow up',
       standard: () => ui.page(ui.region('orders')),
     }),
     order: page(orderBlocks)({

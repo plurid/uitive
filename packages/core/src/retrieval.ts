@@ -5,7 +5,7 @@ import { humanise } from './field.js';
 
 /** One source with everything that belongs to it: what a planner is shown together. */
 export interface Area {
-  /** The source at its centre. */
+  /** The source at its center. */
   source: string;
   /** Actions that act on its rows, or change it. */
   actions: readonly string[];

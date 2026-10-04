@@ -258,6 +258,6 @@ Development needs Node 24 or later and pnpm 11.
 | `about`    | The identity                                                             |
 | `legacy`   | The 2019 implementation, archived                                        |
 
-## Licence
+## License
 
 [MIT](LICENSE) © 2019 Plurid, Inc.

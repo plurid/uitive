@@ -659,7 +659,7 @@ Uses: [`ChartSeries`](#chartseries), [`Field`](core.md#field-type), [`ListItem`]
 | `Value`   | One value, shown by its type, such as money with its currency or a reference by name.                                                                                                    |
 | `Button`  | A button: row actions, the actions block and dialogs use it.                                                                                                                             |
 | `Link`    | A link to a route, followed through the application's router.                                                                                                                            |
-| `Field`   | A labelled input for one field, such as an action's param in a form.                                                                                                                     |
+| `Field`   | A labeled input for one field, such as an action's param in a form.                                                                                                                      |
 | `Dialog`  | A modal with a title, for confirmations and the forms of actions run from a row.                                                                                                         |
 | `Notice`  | What happened when an action ran from a generated page. Map it to the design system's toast or alert: each run mounts a new one, so a toast can show itself on mount and render nothing. |
 | `Status`  | What a block shows around or instead of data: no rows, loading, an error, or a partial result.                                                                                           |
