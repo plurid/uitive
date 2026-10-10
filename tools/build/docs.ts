@@ -23,7 +23,13 @@ export async function documents(): Promise<string[]> {
     .map((name) => `docs/${name}`);
   const packages = await readdir(join(root, 'packages'));
   const readmes = packages.map((name) => `packages/${name}/README.md`);
-  const candidates = ['README.md', ...guides, ...readmes, 'apps/extension/README.md'];
+  const candidates = [
+    'README.md',
+    'CHANGELOG.md',
+    ...guides,
+    ...readmes,
+    'apps/extension/README.md',
+  ];
   const found = await Promise.all(
     candidates.map(async (path) => ((await exists(path)) ? path : '')),
   );

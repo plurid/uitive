@@ -16,7 +16,7 @@ export const pattern = (origin: string) => {
 export const manifest = (options: ManifestOptions = {}) => ({
   manifest_version: 3,
   name: 'Uitive',
-  version: '0.1.0',
+  version: '0.2.0',
   description: 'Reshape the work apps you use by asking, within what each app allows.',
   minimum_chrome_version: '116',
   action: { default_title: 'Uitive' },

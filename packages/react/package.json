@@ -1,6 +1,6 @@
 {
   "name": "@plurid/uitive-react",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "React bindings for Uitive: interfaces that adapt to each user within the app's contract",
   "keywords": [
     "uitive",

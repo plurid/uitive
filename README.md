@@ -220,7 +220,7 @@ Say what you use the cloud for on the home page, ask for changes with ⌘K, comp
 | [`uitive`](packages/cli/README.md)                     | The agent kit: detect, init, survey, generate, discover and check; run it with `npx uitive`                                   |
 | [`@plurid/uitive-mcp`](packages/mcp/README.md)         | The agent kit as Model Context Protocol tools                                                                                 |
 
-They are ES modules with TypeScript declarations, which CommonJS can `require` on Node 22.12 or later. They need Node 22 or later for the tools, React 18.3 or 19 for the React bindings, and zod 4.2 or later, shared with the application. Uitive is a rewrite of the 2019 library, archived in [legacy](legacy/README.md).
+They are ES modules with TypeScript declarations, which CommonJS can `require` on Node 22.12 or later. They need Node 22 or later for the tools, React 18.3 or 19 for the React bindings, and zod 4.2 or later, shared with the application. Uitive is a rewrite of the 2019 library, archived in [legacy](legacy/README.md). What changed in each release, and how to upgrade: [CHANGELOG](CHANGELOG.md).
 
 ## Documentation
 

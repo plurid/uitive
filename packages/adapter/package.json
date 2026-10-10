@@ -1,6 +1,6 @@
 {
   "name": "@plurid/uitive-adapter",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Uitive for pages it doesn't own: role trees, discovery, and adapters as data, wherever JavaScript runs",
   "keywords": [
     "uitive",
