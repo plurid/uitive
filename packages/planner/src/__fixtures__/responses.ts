@@ -2,11 +2,18 @@ import { vi } from 'vitest';
 
 const encoder = new TextEncoder();
 
-/** A streamed response of server-sent events, as `fetch` resolves it. */
+/**
+ * A streamed response of server-sent events, as `fetch` resolves it, in chunks of a few bytes so
+ * that events and characters split across them, as they do on the network.
+ */
 export function events(items: readonly unknown[], status = 200) {
-  const chunks = items.map((item) =>
-    encoder.encode(`data: ${typeof item === 'string' ? item : JSON.stringify(item)}\n\n`),
+  const bytes = encoder.encode(
+    items
+      .map((item) => `data: ${typeof item === 'string' ? item : JSON.stringify(item)}\n\n`)
+      .join(''),
   );
+  const chunks: Uint8Array[] = [];
+  for (let at = 0; at < bytes.length; at += 7) chunks.push(bytes.slice(at, at + 7));
   return {
     ok: status >= 200 && status < 300,
     status,

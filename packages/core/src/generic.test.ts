@@ -457,3 +457,77 @@ describe('generic blocks', () => {
     expect(result.rejected[0]?.rule).toBe('kind');
   });
 });
+
+describe('charts of money', () => {
+  const chart = (kind: string, stacked: boolean, aggregate: Partial<Query['aggregate']>) =>
+    messageOf(
+      pageOf([{ block: 'chart', props: { data: 'sums', kind, stacked } }], {
+        sums: query('payments', {
+          aggregate: { measure: 'sum', of: 'payments.amount', ...aggregate },
+        }),
+      }),
+      home,
+      true,
+    );
+
+  it('never add amounts in different currencies into one pie or stack', () => {
+    expect(chart('pie', false, { by: 'payments.currency' })).toBe(
+      'Chart: would add amounts in different currencies: show them as bars',
+    );
+    expect(
+      chart('bar', true, { by: 'payments.created', bucket: 'month', split: 'payments.currency' }),
+    ).toBe('Chart: would stack amounts in different currencies: leave them side by side');
+    expect(chart('bar', false, { by: 'payments.currency' })).toBeUndefined();
+    expect(
+      chart('line', false, { by: 'payments.created', bucket: 'month', split: 'payments.currency' }),
+    ).toBeUndefined();
+    const counted = pageOf(
+      [{ block: 'chart', props: { data: 'n', kind: 'pie', stacked: false } }],
+      {
+        n: query('payments', { aggregate: { measure: 'count', by: 'payments.currency' } }),
+      },
+    );
+    expect(messageOf(counted)).toBeUndefined();
+  });
+});
+
+describe('links', () => {
+  it("fall back to the route's own label", () => {
+    const value = validatePage(
+      payments,
+      home,
+      pageOf([{ block: 'links', props: { items: [{ label: ' ', route: 'home', entity: '' }] } }]),
+    );
+    expect(value.elements[1]?.props).toEqual({
+      items: [{ label: 'Home', route: 'home', entity: '' }],
+    });
+    expect(
+      messageOf(
+        pageOf([
+          { block: 'links', props: { items: [{ label: 'x', route: 'customer', entity: '..' }] } },
+        ]),
+      ),
+    ).toBe('Links: ".." can\'t name a row');
+  });
+
+  it('let a planner name a row only as $current, the page its own', () => {
+    const link = (route: string, entity: string) =>
+      pageOf([{ block: 'links', props: { items: [{ label: 'Open', route, entity }] } }]);
+    expect(messageOf(link('payment', '$current'), paymentPage, true)).toBeUndefined();
+    expect(messageOf(link('payment', '$CURRENT'), paymentPage, true)).toBeUndefined();
+    expect(messageOf(link('payment', 'ch_001'), paymentPage, true)).toBe(
+      "Links: names a row only as $current, the page's own row",
+    );
+    expect(messageOf(link('home', 'ch_001'), home, true)).toBe(
+      "Links: names a row only as $current, the page's own row",
+    );
+    // The person may link to any row they know.
+    expect(messageOf(link('payment', 'ch_001'), paymentPage)).toBeUndefined();
+    expect(messageOf(link('customer', '$current'), paymentPage)).toBe(
+      "Links: $current is the page's own row, and customer shows customers",
+    );
+    expect(messageOf(link('payment', '$current'), home)).toBe(
+      "Links: $current is the page's own row, and payment shows payments",
+    );
+  });
+});

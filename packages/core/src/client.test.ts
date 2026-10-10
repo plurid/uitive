@@ -1,10 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 import { editor } from './__fixtures__/editor.js';
+import { payments } from './__fixtures__/payments.js';
 import { createUitive, type Uitive } from './client.js';
 import { action, defineApp, list } from './contract.js';
+import { KEEP_FINISHED } from './definition.js';
 import { heuristicPlanner } from './heuristic.js';
-import { remotePlanner, type Planner } from './planner.js';
+import { ui } from './page.js';
+import { remotePlanner, type Planner, type ProposedOperation } from './planner.js';
 import { memoryStore } from './storage.js';
+
+const answering = (operations: ProposedOperation[]): Planner => ({
+  name: 'model',
+  async plan() {
+    return { origin: 'model', operations, meta: { planner: 'model', ms: 0 } };
+  },
+});
 
 const MINUTE = 60_000;
 
@@ -116,6 +126,8 @@ describe('plan and apply', () => {
     const waiting = client.getSnapshot().pending[0]?.id as string;
     expect(client.accept(waiting)).toBe(true);
     expect(ids(client.surface('toolbar').visible)).toContain('table');
+    // Saying yes makes the change the person's own.
+    expect(client.request('plan').state.user).toEqual(['toolbar||promote|table']);
   });
 
   it('learns from use once a session, across reloads and overlapping calls', async () => {
@@ -296,9 +308,11 @@ describe('commands', () => {
       },
       fallback: heuristicPlanner(),
     });
-    const client = createUitive({ contract: editor, now: clock().now, planner });
+    const onError = vi.fn();
+    const client = createUitive({ contract: editor, now: clock().now, planner, onError });
     const goal = await client.ask('I insert tables and images', { goal: true });
     expect(goal.meta?.fellBack).toBe('offline');
+    expect(onError).toHaveBeenCalledWith(new Error('offline'));
     expect(goal.status).toBe('done');
     // A redesign request needs the model; offline, the answer says so instead of guessing.
     const redesign = await client.ask('make my toolbar about writing reports');
@@ -334,6 +348,7 @@ describe('commands', () => {
     expect(client.surface('macros').suggestions.map((entry) => entry.title)).toEqual(['Emphasis']);
     expect(client.accept(plan.applied[0] as string)).toBe(true);
     expect(client.surface('macros').items.map((entry) => entry.title)).toEqual(['Emphasis']);
+    expect(client.request('plan').state.user).toEqual(['macros||add|emphasis']);
 
     // A person who lets the interface act on its own gets new items at once.
     const trusting = createUitive({ contract: editor, now: clock().now, planner: suggesting });
@@ -357,13 +372,22 @@ describe('ownership', () => {
     expect(target.import({ format: 'something else' }).status).toBe('not_allowed');
   });
 
-  it('resets to the standard interface but keeps usage; clearing forgets everything', () => {
+  it('resets to the standard interface but keeps usage; clearing forgets everything', async () => {
     const client = createUitive({ contract: editor, now: clock().now });
+    await earnTable(client);
+    client.revert(client.nextSession()?.applied[0] as string);
     client.record('table', { via: 'overflow' });
     client.hide('toolbar', 'bold');
+    client.freeze(true);
+    client.setGoal('I write reports');
     client.reset();
     expect(ids(client.surface('toolbar').visible)).toContain('bold');
     expect(client.summary().rows.some((row) => row.action === 'table')).toBe(true);
+    // What the person decided about planners outlasts the layout.
+    const definition = client.getSnapshot().definition;
+    expect(definition.operations).toEqual([]);
+    expect(definition).toMatchObject({ frozen: true, goal: 'I write reports' });
+    expect(definition.cooldowns.map((entry) => entry.key)).toEqual(['toolbar||promote|table']);
     client.clearData();
     expect(client.summary().rows.some((row) => row.action === 'table')).toBe(false);
   });
@@ -374,6 +398,208 @@ describe('ownership', () => {
     const plan = await earnTable(client);
     expect(plan.pending).toBe(0);
     expect(plan.rejected.map((entry) => entry.rule)).toEqual(['frozen']);
+  });
+});
+
+describe('what a model may do with words', () => {
+  it('never deletes the person’s pages, nor brings back a change they blocked', async () => {
+    const client = createUitive({
+      contract: payments,
+      now: () => 0,
+      planner: answering([
+        {
+          change: { kind: 'userPage', surface: 'userPages', op: 'delete', slug: 'morning' },
+          evidence: [{ intent: true }],
+          scope: 'explicit',
+        },
+      ]),
+    });
+    client.createPage('Morning');
+    const answer = await client.ask('make the home page calmer');
+    expect(answer.status).toBe('not_allowed');
+    expect(answer.rejected[0]?.message).toBe(
+      'Delete your page morning yourself, from Your interface',
+    );
+    expect(client.userPages().map((entry) => entry.slug)).toEqual(['morning']);
+
+    const blocked = createUitive({
+      contract: editor,
+      now: () => 0,
+      planner: answering([
+        {
+          change: { kind: 'list', surface: 'toolbar', op: 'promote', target: 'table' },
+          evidence: [],
+          scope: 'explicit',
+        },
+        {
+          change: { kind: 'list', surface: 'toolbar', op: 'hide', target: 'share' },
+          evidence: [],
+          scope: 'explicit',
+        },
+        {
+          change: { kind: 'choice', surface: 'density', op: 'set', value: 'compact' },
+          evidence: [],
+          scope: 'explicit',
+        },
+      ]),
+    });
+    blocked.import({
+      format: 'uitive.definition',
+      version: 1,
+      contract: { id: 'editor', hash: '' },
+      definition: { operations: [], blocked: ['toolbar||promote|table'], frozen: true },
+    });
+    const tidy = await blocked.ask('tidy my toolbar');
+    expect(tidy.rejected.map((entry) => entry.rule)).toEqual(['blocked', 'required']);
+    // A command applies at once, frozen or not: freeze stops planned changes only.
+    expect(tidy.status).toBe('partial');
+    expect(blocked.surface('density')).toBe('compact');
+  });
+
+  it('lets the person delete a page in plain words the deterministic planner reads', async () => {
+    const client = createUitive({
+      contract: payments,
+      now: () => 0,
+      planner: {
+        name: 'local',
+        async plan() {
+          return {
+            origin: 'heuristic',
+            operations: [
+              {
+                change: { kind: 'userPage', surface: 'userPages', op: 'delete', slug: 'morning' },
+                evidence: [{ intent: true }],
+                scope: 'explicit',
+              },
+            ],
+            meta: { planner: 'local', ms: 0 },
+          };
+        },
+      },
+    });
+    client.createPage('Morning');
+    expect((await client.ask('delete my morning page')).status).toBe('done');
+    expect(client.userPages()).toEqual([]);
+  });
+});
+
+describe('caps and goals', () => {
+  const macro = (item: string): ProposedOperation => ({
+    change: {
+      kind: 'collection',
+      surface: 'macros',
+      op: 'add',
+      item,
+      value: { label: item, steps: ['bold', 'italic'] },
+    },
+    evidence: [{ action: 'bold', metric: 'uses' }],
+  });
+
+  it('never lets plans or commands overfill a collection', async () => {
+    const plans = createUitive({
+      contract: editor,
+      now: () => 0,
+      autonomy: 'auto',
+      planner: answering([macro('one'), macro('two'), macro('three'), macro('four')]),
+    });
+    plans.record('bold');
+    const plan = await plans.plan();
+    expect(plans.surface('macros').items).toHaveLength(2);
+    expect(plan.rejected.map((entry) => entry.rule)).toEqual(['capacity', 'capacity']);
+
+    const commands = createUitive({
+      contract: editor,
+      now: () => 0,
+      planner: answering(
+        [macro('one'), macro('two'), macro('three')].map((entry) => ({
+          ...entry,
+          scope: 'explicit' as const,
+        })),
+      ),
+    });
+    expect((await commands.ask('make me some macros')).status).toBe('partial');
+    expect(commands.surface('macros').items).toHaveLength(2);
+  });
+
+  it('takes a blank goal for none, and keeps goals short', async () => {
+    const planner: Planner = answering([
+      {
+        change: { kind: 'choice', surface: 'density', op: 'set', value: 'compact' },
+        evidence: [{ intent: true }],
+      },
+    ]);
+    const plan = vi.fn(planner.plan);
+    const client = createUitive({ contract: editor, now: () => 0, planner: { ...planner, plan } });
+    client.setGoal('I want more on screen');
+    expect((await client.ask('   ', { goal: true })).status).toBe('done');
+    expect(client.getSnapshot().definition.goal).toBeUndefined();
+    expect(plan).not.toHaveBeenCalled();
+    expect((await client.plan()).rejected.map((entry) => entry.rule)).toEqual(['evidence']);
+
+    client.setGoal(`  ${'x'.repeat(700)} `);
+    expect(client.getSnapshot().definition.goal).toHaveLength(500);
+    client.setGoal('   ');
+    expect(client.getSnapshot().definition.goal).toBeUndefined();
+  });
+});
+
+describe('history', () => {
+  it('keeps one suggestion per page, however often plans repeat it', async () => {
+    const value = ui.page(ui.section('Mine', 'stack', [ui.region('original')]));
+    const client = createUitive({
+      contract: payments,
+      now: () => 0,
+      planner: answering([
+        {
+          change: { kind: 'page', surface: 'customer', op: 'set', value },
+          evidence: [{ intent: true }],
+        },
+      ]),
+    });
+    client.setGoal('I watch customers');
+    for (let index = 0; index < 5; index++) await client.plan();
+    const suggested = client
+      .getSnapshot()
+      .definition.operations.filter((entry) => entry.status === 'suggested');
+    expect(suggested).toHaveLength(1);
+  });
+
+  it('compacts finished changes, keeping what a second revert needs', async () => {
+    const client = createUitive({ contract: editor, now: () => 0 });
+    await earnTable(client);
+    const planned = client.nextSession()?.applied[0] as string;
+    client.revert(planned);
+    for (let index = 0; index < KEEP_FINISHED + 20; index++) {
+      client.hide('toolbar', 'bold');
+      client.restore('toolbar', 'bold');
+    }
+    const operations = client.getSnapshot().definition.operations;
+    expect(operations.length).toBeLessThanOrEqual(KEEP_FINISHED + 1);
+    expect(operations.some((entry) => entry.id === planned)).toBe(true);
+  });
+
+  it('knows where use happened, in the contract’s spelling', () => {
+    const client = createUitive({ contract: editor, now: () => 0 });
+    client.record('print', { via: 'overflow', surface: 'FILE' });
+    client.record('print', { via: 'overflow', surface: 'nowhere' });
+    expect(client.events().map((event) => event.surface)).toEqual(['file', undefined]);
+  });
+
+  it('counts a new context in the summary at once', () => {
+    const client = createUitive({ contract: editor, now: () => 0 });
+    client.setContext('tool', 'text');
+    client.record('bold');
+    client.nextSession();
+    const contexts = () =>
+      new Set(
+        client
+          .summary()
+          .rows.filter((row) => row.surface === 'tableBar')
+          .map((row) => row.context),
+      );
+    expect(contexts()).toEqual(new Set(['text']));
+    client.setContext('tool', 'table');
+    expect(contexts()).toEqual(new Set(['text', 'table']));
   });
 });
 

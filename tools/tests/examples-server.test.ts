@@ -3,6 +3,7 @@ import { createUitive, query, remotePlanner, type FetchLike } from '@plurid/uiti
 import { parseCuration } from 'uitive';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { discovery } from '../../docs/examples/adapter/discover.ts';
+import { sessions } from '../../docs/examples/server/session.ts';
 import { shop } from '../../docs/examples/shop/contract.ts';
 
 // The examples read keys from the environment; a developer's own must never be used here.
@@ -92,11 +93,18 @@ describe('the server example', () => {
   );
   const post = (headers: Record<string, string> = {}) =>
     handler(
-      new Request('https://shop.example/api/uitive/command', { method: 'POST', body, headers }),
+      new Request('https://shop.example/api/uitive/command', {
+        method: 'POST',
+        body,
+        headers: { 'content-type': 'application/json', ...headers },
+      }),
     );
+  sessions.set('abc', { user: 'ada' });
 
   it('plans for signed-in people only', async () => {
     expect((await post({ cookie: 'session=abc' })).status).toBe(200);
+    // A cookie with the right name proves nothing; only a session the application knows does.
+    expect((await post({ cookie: 'session=forged' })).status).toBe(401);
     expect((await post()).status).toBe(401);
     expect((await handler(new Request('https://shop.example/api/uitive/command'))).status).toBe(
       404,

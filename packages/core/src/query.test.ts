@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NOW, payments } from './__fixtures__/payments.js';
+import { shop } from './__fixtures__/shop.js';
 import { checkQuery, query, type Query, type QueryCheck } from './query.js';
 import { parseTime, parseValue, startOf, timeOf, type Clock } from './values.js';
 
@@ -257,5 +258,92 @@ describe('checkQuery', () => {
         ),
       ).toMatch(/sorts by its grouping/);
     });
+  });
+});
+
+describe('calendar times', () => {
+  const local = (ms: number | undefined, zone: string) =>
+    ms === undefined
+      ? undefined
+      : new Intl.DateTimeFormat('en-CA', {
+          timeZone: zone,
+          hourCycle: 'h23',
+          dateStyle: 'short',
+          timeStyle: 'short',
+        }).format(ms);
+
+  it('moves days and weeks along the calendar across daylight saving', () => {
+    const york = 'America/New_York';
+    // New York fell back on Sunday 2026-11-01; a day before noon is still noon.
+    const sunday = { now: Date.UTC(2026, 10, 1, 17), timeZone: york };
+    expect(local(parseTime('-1d', sunday), york)).toBe('2026-10-31, 12:00');
+    expect(local(parseTime('-1w', sunday), york)).toBe('2026-10-25, 12:00');
+    const monday = { now: Date.UTC(2026, 10, 2, 17), timeZone: york };
+    expect(local(parseTime('yesterday', monday), york)).toBe('2026-11-01, 00:00');
+    // Minutes and hours stay elapsed time.
+    expect(iso(parseTime('-24h', monday))).toBe('2026-11-01T17:00:00.000Z');
+  });
+
+  it('starts a day whose midnight never happens at the first moment it has', () => {
+    // Chile moved its clocks from 00:00 to 01:00 on 2022-09-11.
+    const start = startOf(Date.UTC(2022, 8, 11, 16), 'day', 'America/Santiago');
+    expect(local(start, 'America/Santiago')).toBe('2022-09-11, 01:00');
+  });
+
+  it('reads a date-time without an offset in the clock zone', () => {
+    const tokyo: Clock = { now: 0, timeZone: 'Asia/Tokyo' };
+    expect(iso(parseTime('2026-10-01T00:00', tokyo))).toBe('2026-09-30T15:00:00.000Z');
+    expect(parseTime('2026-10-01T00:00', tokyo)).toBe(parseTime('2026-10-01', tokyo));
+    expect(iso(parseTime('2026-10-01T09:30:15Z', tokyo))).toBe('2026-10-01T09:30:15.000Z');
+    expect(parseTime('2026-02-30', tokyo)).toBeUndefined();
+  });
+
+  it('reads a stored date as the start of that day where the person is', () => {
+    const day = { ...field('payments.created'), unit: 'date' as const };
+    expect(iso(timeOf(day, '2026-10-03', 'America/New_York'))).toBe('2026-10-03T04:00:00.000Z');
+    expect(iso(timeOf(day, '2026-10-03'))).toBe('2026-10-03T00:00:00.000Z');
+  });
+
+  it('refuses a comma that may be a decimal comma', () => {
+    const amount = field('payments.amount');
+    expect(parseValue(amount, '25,50', clock)).toBeUndefined();
+    expect(parseValue(amount, '1,5', clock)).toBeUndefined();
+    expect(parseValue(amount, '1,250', clock)).toEqual({ kind: 'number', value: 1250 });
+    expect(parseValue(amount, '1,00,000', clock)).toEqual({ kind: 'number', value: 100000 });
+    const filter = [{ field: 'payments.amount', op: 'gt', values: ['25,50'] }];
+    expect(
+      problem(checkQuery(payments, { ...query('payments', { fields: ['payments.id'] }), filter })),
+    ).toMatch(/with a point for decimals/);
+  });
+});
+
+describe('amounts one hop away', () => {
+  const sum = (of: string, rest: Partial<Query> = {}) =>
+    checkQuery(shop, { ...query('orders'), ...rest, aggregate: { measure: 'sum', of } });
+  const where = (name: string, value: string) => ({
+    filter: [{ field: name, op: 'eq' as const, values: [value] }],
+  });
+
+  it('sums them only in one of their own currencies', () => {
+    expect(problem(sum('orders.customer.balance'))).toMatch(/group by orders.customer.currency/);
+    // The order's currency says nothing about the customer's.
+    expect(problem(sum('orders.customer.balance', where('orders.currency', 'usd')))).toMatch(
+      /several currencies/,
+    );
+    expect(
+      problem(sum('orders.customer.balance', where('orders.customer.currency', 'usd'))),
+    ).toBeUndefined();
+    const byCurrency = {
+      measure: 'max',
+      of: 'orders.customer.balance',
+      by: 'orders.customer.currency',
+    };
+    expect(
+      problem(checkQuery(shop, { ...query('orders'), aggregate: byCurrency })),
+    ).toBeUndefined();
+  });
+
+  it('refuses them when their currency is out of reach', () => {
+    expect(problem(sum('orders.account.limit'))).toMatch(/summarize Accounts instead/);
   });
 });

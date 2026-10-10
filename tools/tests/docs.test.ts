@@ -49,6 +49,18 @@ describe('the documentation', () => {
     expect([...(await stale(files)), ...(await leftovers(files))]).toEqual([]);
   }, 60_000);
 
+  it('comes out the same in a locale that sorts letters differently', () => {
+    // Lithuanian puts y between i and j, so any sort that follows the machine's locale shows.
+    const lithuanian = { ...process.env, LC_ALL: 'lt_LT.UTF-8', LANG: 'lt_LT.UTF-8' };
+    expect(() =>
+      execFileSync(process.execPath, ['tools/build/docs.ts', '--check'], {
+        cwd: root,
+        env: lithuanian,
+        stdio: 'pipe',
+      }),
+    ).not.toThrow();
+  }, 60_000);
+
   it('links only to files and headings that exist', () => {
     const broken: string[] = [];
     for (const path of documents) {

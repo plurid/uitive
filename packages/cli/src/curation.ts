@@ -108,6 +108,13 @@ export function curate(
     const all = new Map<string, ApiField>(
       [...entry.fields, ...entry.extra].map((field) => [field.name, field]),
     );
+    for (const [name, path] of Object.entries(choice?.pick ?? {})) {
+      if (all.has(name)) continue;
+      const skipped = entry.skipped.find((item) => item.name === name);
+      problems.push(
+        `${where}.pick: "${name}" ${skipped?.reason ?? `can't be picked from ${path}`}`,
+      );
+    }
     let fields = entry.fields;
     if (choice?.fields) {
       const wanted = new Set([entry.key, ...choice.fields, ...Object.keys(choice.pick ?? {})]);
@@ -145,6 +152,11 @@ export function curate(
     const filter = Object.fromEntries(
       Object.entries(entry.capabilities.filter).filter(([name]) => names.has(name)),
     );
+    // Where each kept field is in a row, fields brought back from those left out included.
+    const { pick: _pick, ...endpoint } = entry.rest;
+    const pick = Object.fromEntries(
+      fields.flatMap((field) => (field.pointer ? [[field.name, field.pointer]] : [])),
+    );
     sources.push({
       ...entry,
       ...(choice?.label ? { label: choice.label } : {}),
@@ -160,8 +172,9 @@ export function curate(
         sort: entry.capabilities.sort.filter((name) => names.has(name)),
       },
       rest: {
-        ...entry.rest,
+        ...endpoint,
         ...(choice?.query ? { query: { ...entry.rest.query, ...choice.query } } : {}),
+        ...(Object.keys(pick).length > 0 ? { pick } : {}),
       },
       ...(choice?.scan === undefined ? {} : { scan: choice.scan }),
       ...(choice?.ttl === undefined ? {} : { ttl: choice.ttl }),

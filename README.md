@@ -155,7 +155,7 @@ export function Toolbar({ run }: { run(action: string): void }) {
 }
 ```
 
-Wrap the editor in `UitiveProvider`, and add `<UitiveBanner>` and an ask box built on `useCommand`. Now "hide Bold" or "move Table to the top" changes the toolbar for that person alone. Someone who keeps opening Table from More finds it on the toolbar at the start of a later session, with the banner saying why and Revert one click away. [Getting started](docs/getting-started.md) walks through every step.
+Wrap the editor in `UitiveProvider`, and add `<UitiveBanner>` and an ask box built on `useCommand`. Now "hide Bold" or "move Table to the top" changes the toolbar for that person alone. Someone who keeps opening Table from More finds it on the toolbar at the start of a later session, listed in "Your interface" with its reason and Revert one click away. [Getting started](docs/getting-started.md) walks through every step.
 
 ### With a coding agent
 

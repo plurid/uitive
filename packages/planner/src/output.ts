@@ -4,6 +4,7 @@ import {
   type ClaimedEvidence,
   type Metric,
   type OutputRejection,
+  type PlanRequest,
   type ProposedOperation,
 } from '@plurid/uitive-core';
 
@@ -44,13 +45,22 @@ export interface PlannerOutput {
   }[];
 }
 
-const scopeOf = (basis: string): Pick<ProposedOperation, 'scope'> =>
-  basis === 'request' ? { scope: 'explicit' } : basis === 'goal' ? { scope: 'goal' } : {};
+const scopeOf = (basis: string, kind: PlanRequest['kind']): Pick<ProposedOperation, 'scope'> => {
+  if (basis === 'goal') return { scope: 'goal' };
+  // Nobody asked for anything in an unprompted plan, whatever basis the model claims.
+  return basis === 'request' && kind === 'command' ? { scope: 'explicit' } : {};
+};
 
 const contextOf = (value: string) => (value === 'none' ? {} : { context: value });
 
-/** Turns the model's flat output into proposed operations for policy to check. */
-export function toOperations(output: PlannerOutput): ProposedOperation[] {
+/**
+ * Turns the model's flat output into proposed operations for policy to check. Only a command's
+ * operations can be explicit: in a plan (`kind: 'plan'`), basis `request` counts for nothing.
+ */
+export function toOperations(
+  output: PlannerOutput,
+  kind: PlanRequest['kind'] = 'command',
+): ProposedOperation[] {
   const note = output.note.trim() || undefined;
   const operations: ProposedOperation[] = [];
   for (const entry of output.lists ?? []) {
@@ -68,14 +78,14 @@ export function toOperations(output: PlannerOutput): ProposedOperation[] {
         ...(entry.op === 'move' && entry.index >= 0 ? { index: entry.index } : {}),
       },
       evidence,
-      ...scopeOf(entry.basis),
+      ...scopeOf(entry.basis, kind),
     });
   }
   for (const entry of output.choices ?? []) {
     operations.push({
       change: { kind: 'choice', surface: entry.surface, op: 'set', value: entry.value },
       evidence: [{ intent: true }],
-      ...scopeOf(entry.basis),
+      ...scopeOf(entry.basis, kind),
     });
   }
   for (const entry of output.pages ?? []) {
@@ -92,7 +102,7 @@ export function toOperations(output: PlannerOutput): ProposedOperation[] {
           ...(entry.op === 'create' || entry.op === 'set' ? { value } : {}),
         },
         evidence: [{ intent: true }],
-        ...scopeOf(entry.basis),
+        ...scopeOf(entry.basis, kind),
       });
       continue;
     }
@@ -106,7 +116,7 @@ export function toOperations(output: PlannerOutput): ProposedOperation[] {
         ...(entry.op === 'set' ? { value } : {}),
       },
       evidence: [{ intent: true }],
-      ...scopeOf(entry.basis),
+      ...scopeOf(entry.basis, kind),
     });
   }
   if (note !== undefined && operations[0]) operations[0] = { ...operations[0], note };

@@ -48,8 +48,9 @@ Adapts an application's own markup to the person's interface, for applications w
 Mark each list's container with `data-uitive-list="<list>"` and each item inside it with
 `data-uitive-item="<action>"`. Items the person moves out are hidden by one stylesheet, so markup
 rendered later, such as a menu's, adapts too; reordered lists set CSS `order` on their
-container's children, which needs a flex or grid box. Nothing is moved, so the application's
-framework keeps its nodes. Clicks on items record usage. Returns a function that undoes it all.
+container's children, which needs a flex or grid box, then or once it shows. Nothing is moved,
+so the application's framework keeps its nodes, and keyboard focus and screen readers follow the
+markup's own order. Clicks on items record usage. Returns a function that undoes it all.
 
 ```ts
 function adaptMarkup(client: MarkupClientLike, options?: MarkupOptions): () => void;
@@ -101,11 +102,11 @@ Uses: [`Uitive`](core.md#uitive).
 How `adaptMarkup` and `startUitive` work: where the markup is, whether clicks count as use,
 and who hears of problems.
 
-| Property     | Type                        | Default        | Description                                                                                                                        |
-| ------------ | --------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `root?`      | `Document \| ShadowRoot`    | `document`     | Where the markup lives.                                                                                                            |
-| `record?`    | `boolean`                   | `true`         | Whether clicks on items record usage.                                                                                              |
-| `onProblem?` | `(problem: string) => void` | `console.warn` | Told once about each list that can't adapt as the person asked, such as a reordered list whose container isn't a flex or grid box. |
+| Property     | Type                        | Default        | Description                                                                                                                                                                     |
+| ------------ | --------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `root?`      | `Document \| ShadowRoot`    | `document`     | Where the markup lives.                                                                                                                                                         |
+| `record?`    | `boolean`                   | `true`         | Whether clicks on items record usage.                                                                                                                                           |
+| `onProblem?` | `(problem: string) => void` | `console.warn` | Told once about each list that can't adapt as the person asked, such as a reordered list whose container isn't a flex or grid box; a hidden container is checked once it shows. |
 
 ## Elements
 
@@ -149,7 +150,8 @@ Uses: [`ClientLike`](#clientlike).
 
 `<uitive-confirm>`: asks the person before an action changes data: what it does and to what, and
 for a destructive action, the phrase to type. Place it once. While it is in the page, actions
-with effects wait for the person's answer; without it, they are refused.
+with effects wait for the person's answer; without it, they are refused. It asks in a modal
+dialog that holds focus and gives it back when the run is answered.
 
 ```ts
 class UitiveConfirm extends UitiveElement<ConfirmClientLike> {}
@@ -209,7 +211,8 @@ Uses: [`ClientLike`](#clientlike).
 `adaptMarkup`, so nothing is ever out of reach. Choosing one clicks the hidden original, so the
 application's own handler runs; when the original isn't in the page, it emits `uitive-open`
 (`detail: { list, action }`) for the application to run. Shows nothing while no item is out.
-The `label` attribute names its button (default "More").
+The `label` attribute names its button (default "More"). Opening it focuses the first item;
+the arrow keys, Home and End move between items, and Escape closes it.
 
 ```ts
 class UitiveMore extends UitiveElement<MoreClientLike> {}

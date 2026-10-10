@@ -56,6 +56,21 @@ describe('checkAdapter', () => {
       'anchors.notices: required anchors must sit outside replaceable regions (main)',
     ]);
   });
+
+  it('finds loops among anchors that aren’t required, and test-mode patterns that don’t compile', () => {
+    const broken = structuredClone(shipped) as Adapter;
+    broken.anchors.first = { within: 'second', match: [{ role: 'link' }], required: false };
+    broken.anchors.second = { within: 'first', match: [{ role: 'link' }], required: false };
+    const [name = '', connector] = Object.entries(broken.connectors)[0] ?? [];
+    if (!connector) throw new Error('The shipped adapter has a connector');
+    connector.testMode = '^/(test';
+    const result = checkAdapter(broken);
+    expect('problems' in result && result.problems).toEqual([
+      'anchors.first: "within" loops',
+      'anchors.second: "within" loops',
+      `connectors.${name}.testMode: ^/(test doesn't compile`,
+    ]);
+  });
 });
 
 describe('routeOf', () => {

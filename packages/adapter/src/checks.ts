@@ -61,6 +61,8 @@ export function checkAdapter(input: unknown): Checked {
     }
     return seen;
   };
+  // Every anchor's ancestors, worked out once: a loop is a problem whether or not it is required.
+  const ancestors = new Map(Object.keys(anchors).map((name) => [name, chain(name)]));
   for (const [name, entry] of Object.entries(anchors)) {
     if (entry.within !== undefined) anchor(`anchors.${name}.within`, entry.within);
     for (const strategy of entry.match) {
@@ -111,7 +113,7 @@ export function checkAdapter(input: unknown): Checked {
   }
   for (const [name, entry] of Object.entries(anchors)) {
     if (!entry.required) continue;
-    const inside = chain(name).find((ancestor) => regionAnchors.has(ancestor));
+    const inside = (ancestors.get(name) ?? []).find((ancestor) => regionAnchors.has(ancestor));
     if (inside !== undefined || regionAnchors.has(name)) {
       problems.push(
         `anchors.${name}: required anchors must sit outside replaceable regions (${inside ?? name})`,
@@ -122,6 +124,9 @@ export function checkAdapter(input: unknown): Checked {
   for (const [name, connector] of Object.entries(adapter.connectors)) {
     for (const [mode, pattern] of Object.entries(connector.keys)) {
       if (!compiles(pattern)) problems.push(`connectors.${name}.keys.${mode}: doesn't compile`);
+    }
+    if (connector.testMode !== undefined && !compiles(connector.testMode)) {
+      problems.push(`connectors.${name}.testMode: ${connector.testMode} doesn't compile`);
     }
     for (const source of Object.keys(connector.sources)) {
       if (!contract.source(source))

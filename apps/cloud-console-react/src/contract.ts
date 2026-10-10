@@ -106,7 +106,8 @@ export const cloud = defineApp({
       }),
       key: 'id',
       title: 'name',
-      capabilities: { filter: { id: ['eq', 'in'], category: ['eq'] } },
+      // The bindings page with offsets, so every row is reachable, within each scan.
+      capabilities: { filter: { id: ['eq', 'in'], category: ['eq'] }, pagination: 'offset' },
       scan: 200,
     }),
     resources: source({
@@ -128,7 +129,7 @@ export const cloud = defineApp({
       }),
       key: 'id',
       summary: ['id', 'state'],
-      capabilities: { filter: { service: ['eq'], state: ['eq'] } },
+      capabilities: { filter: { service: ['eq'], state: ['eq'] }, pagination: 'offset' },
       scan: 2000,
       ttl: 5,
     }),
@@ -143,7 +144,7 @@ export const cloud = defineApp({
         value: z.number(),
       }),
       key: 'id',
-      capabilities: { filter: { service: ['eq'], metric: ['eq'] } },
+      capabilities: { filter: { service: ['eq'], metric: ['eq'] }, pagination: 'offset' },
     }),
     logs: source({
       label: 'Logs',
@@ -157,7 +158,7 @@ export const cloud = defineApp({
       }),
       key: 'id',
       title: 'text',
-      capabilities: { filter: { service: ['eq'] } },
+      capabilities: { filter: { service: ['eq'] }, pagination: 'offset' },
     }),
     alerts: source({
       label: 'Alerts',
@@ -171,6 +172,7 @@ export const cloud = defineApp({
       }),
       key: 'id',
       title: 'message',
+      capabilities: { pagination: 'offset' },
     }),
   },
   routes: {

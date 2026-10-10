@@ -1,4 +1,5 @@
 import type { Adaptation, AnyContract, AppliedOperation, CommandStatus } from '@plurid/uitive-core';
+import { accept } from './accept.js';
 import type { ClientLike } from './client-like.js';
 import { UitiveElement } from './element.js';
 import { escape, plural } from './html.js';
@@ -57,6 +58,8 @@ function heading(
 export class UitiveBanner extends UitiveElement {
   #dismissed = new Set<string>();
   #seen: { client: ClientLike; ids: Set<string> } | undefined;
+  /** Why the last Accept pressed here couldn't apply, for the adaptation it was pressed in. */
+  #refusal: { adaptation: string; text: string } | undefined;
 
   connectedCallback(): void {
     this.content.setAttribute('role', 'status');
@@ -107,6 +110,7 @@ export class UitiveBanner extends UitiveElement {
       .change.done .title { color: var(--_muted); text-decoration: line-through; }
       .change .actions { margin-top: 4px; }
       .rejected li::before { content: '· '; color: var(--_muted); }
+      .refusal { color: var(--_danger); }
       footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
       footer:empty { display: none; }
     `;
@@ -136,6 +140,8 @@ export class UitiveBanner extends UitiveElement {
       snapshot.definition.version,
       snapshot.autonomy,
       snapshot.pending.map((operation) => `${operation.id}${operation.held ? '*' : ''}`).join(),
+      snapshot.preview ?? '',
+      this.#refusal?.adaptation === current?.id ? this.#refusal?.text : '',
     ].join('|');
   }
 
@@ -210,6 +216,11 @@ export class UitiveBanner extends UitiveElement {
       }
       ${changes.length ? `<ul class="changes">${changes.join('')}</ul>` : ''}
       ${
+        this.#refusal?.adaptation === adaptation.id
+          ? `<p class="refusal">${escape(this.#refusal.text)}</p>`
+          : ''
+      }
+      ${
         refusals.length
           ? `<div><h3>Not changed</h3><ul class="rejected">${refusals
               .map((rejection) => `<li>${escape(rejection.message)}</li>`)
@@ -238,8 +249,14 @@ export class UitiveBanner extends UitiveElement {
     if (argument === undefined) return;
     if (action === 'revert') client.revert(argument);
     else if (action === 'keep') client.keep(argument);
-    else if (action === 'accept') client.accept(argument);
-    else if (action === 'dismiss') client.dismiss(argument);
+    else if (action === 'accept') {
+      const text = accept(client, argument);
+      const current = this.#current(client);
+      if (text !== undefined && current) {
+        this.#refusal = { adaptation: current.id, text };
+        this.update(true);
+      }
+    } else if (action === 'dismiss') client.dismiss(argument);
     else if (action === 'preview') {
       client.preview(client.getSnapshot().preview === argument ? undefined : argument);
     } else if (action === 'revert-all') client.revertAdaptation(argument);

@@ -2,13 +2,16 @@ import type { Effect } from '@plurid/uitive-adapter';
 import { orders } from '@plurid/uitive-dom';
 import type { Resolution } from './anchors.ts';
 
+/** What the engine applies: effects, or a replaced region without its redesign, as at start. */
+export type Marking = Effect | Omit<Extract<Effect, { kind: 'overlay' }>, 'page'>;
+
 export interface Applied {
   /** Effects that couldn't apply, and why; hides apply one by one, so the rest still do. */
   failed: { effect: Effect['kind']; target: string; reason: string }[];
 }
 
 export interface Engine {
-  apply(effects: readonly Effect[], anchors: ReadonlyMap<string, Resolution>): Applied;
+  apply(effects: readonly Marking[], anchors: ReadonlyMap<string, Resolution>): Applied;
   /** Shows the page as it is, until turned off. */
   original(on: boolean): void;
   readonly showingOriginal: boolean;
@@ -28,7 +31,14 @@ export function createEngine(document: Document): Engine {
   let marked = new Map<Element, Set<string>>();
   let css = '';
   let original = false;
-  const write = () => sheet.replaceSync(original ? '' : css);
+  let written = '';
+  // Replacing a sheet restyles the whole page, so it happens only when the rules change.
+  const write = () => {
+    const next = original ? '' : css;
+    if (next === written) return;
+    sheet.replaceSync(next);
+    written = next;
+  };
   return {
     get showingOriginal() {
       return original;
@@ -42,7 +52,7 @@ export function createEngine(document: Document): Engine {
       const rules: string[] = [];
       const failed: Applied['failed'] = [];
       const mark = (element: Element, name: string, value: string) => {
-        element.setAttribute(name, value);
+        if (element.getAttribute(name) !== value) element.setAttribute(name, value);
         next.set(element, (next.get(element) ?? new Set()).add(name));
       };
       for (const effect of effects) {

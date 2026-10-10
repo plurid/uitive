@@ -186,7 +186,7 @@ Planners emit IDs as enum values, whose casing structured outputs don't guarante
 
 ## The JSON contract
 
-A contract also exists as data: `toJson` writes it, and `fromJson` reads it back with the same hash, so adapters, coding agents and planners on other machines can exchange it. Functions don't travel: a page's standard is written out, and validators are reattached when it loads. Schemas that wouldn't survive the trip, such as ones with transforms, are refused, and `check` says which.
+A contract also exists as data: `toJson` writes it, and `fromJson` reads it back with the same hash, so adapters, coding agents and planners on other machines can exchange it. Functions don't travel: a page's standard is written out, a collection's title becomes the property it reads, and validators are reattached when it loads. Schemas that wouldn't survive the trip, such as ones with transforms, are refused, and `check` says which. So are patterns, in either direction: a hostile one can stall validation, so check such values in a validator.
 
 ## What `check` checks
 
@@ -194,7 +194,7 @@ A contract also exists as data: `toJson` writes it, and `fromJson` reads it back
 
 - **contract**: it loads, compiles and validates.
 - **json**: it reads back from JSON unchanged.
-- **schemas**: every request schema keeps to what providers' structured outputs accept: no optional fields, one union, at most 60 KB, and enums of at most 400 values. A provider with tighter limits gets the request again over a smaller part of the contract.
+- **schemas**: every request schema keeps to what providers' structured outputs accept: no optional fields, one union, at most 60 KB, and enums of at most 400 values. Past 8 sources, that is the schema a page about each source starts from, and the largest a request can reach: the 8 sources with the most fields together, with the 24 actions that take the most params. A block whose props hold a record, a union or a nullable value can't be offered to models, and the check names the prop. A provider with tighter limits gets the request again over a smaller part of the contract.
 - **bindings**: the bindings bind what the contract needs: `fetch` for sources, `perform` for actions with effects.
 
 It also warns about actions that share a label, sources their own label doesn't find, sources over 40 fields, contracts over 40 sources or 200 actions, and two copies of zod.
@@ -212,5 +212,5 @@ Contracts change, and people's interfaces survive it.
   ```
 
 - **Remove an action, a surface or a block**, and the changes that named it are dropped when the person's interface next loads; everything else they changed stays.
-- **The hash changes** whenever the contract does. A server refuses requests made with another hash (409, "The application changed; reload the page"), so deploy the client and the server's contract together.
+- **The hash changes** whenever the contract does, standard pages included. A server refuses requests made with another hash (409, "The application changed; reload the page"), so deploy the client and the server's contract together.
 - **Bump `version`** when behavior the hash can't see changes, such as a validator.

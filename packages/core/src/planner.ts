@@ -55,6 +55,10 @@ export interface PlanMeta {
   subset?: readonly string[];
   /** A second round fixed what policy rejected in the first. */
   repaired?: boolean;
+  /**
+   * Why the second round failed, when what policy accepted of the first answer was kept instead.
+   */
+  unrepaired?: string;
   /** Model calls made. */
   stages?: number;
   /** The model that planned, for model planners. */
@@ -94,7 +98,7 @@ export interface StateView {
   }[];
   /** Each choice's value. */
   choices: Readonly<Record<string, string>>;
-  /** Each collection's item IDs. */
+  /** Each collection's item titles, as the person sees them. */
   collections: Readonly<Record<string, readonly string[]>>;
   /** The pages in view now, as they are. */
   pages: readonly { surface: string; context?: string; value: AnyPage }[];
@@ -278,6 +282,7 @@ export const planResultSchema = z.object({
     cost: z.number().optional(),
     subset: z.array(z.string()).optional(),
     repaired: z.boolean().optional(),
+    unrepaired: z.string().optional(),
     stages: z.number().optional(),
   }),
 });
@@ -290,7 +295,11 @@ export interface RemotePlannerOptions {
   fallback?: Planner;
   /** The `fetch` it calls. @default globalThis.fetch */
   fetch?: FetchLike;
-  /** How long to wait before the fallback answers. @default 60000 for plans, 20000 for commands */
+  /**
+   * How long to wait for the server before the fallback answers. While progress streams, each
+   * line from the server starts the wait again, so a long redesign isn't cut short. @default
+   * 60000 for plans, 20000 for commands
+   */
   timeoutMs?: number;
   /** Headers sent with every request, such as one the server's `authorize` reads. */
   headers?: Record<string, string>;
@@ -302,12 +311,13 @@ export function remotePlanner(options: RemotePlannerOptions): Planner {
     name: 'remote',
     async plan(request, contract, planOptions = {}) {
       const started = Date.now();
+      const wait = waiting(
+        options.timeoutMs ?? (request.kind === 'plan' ? 60_000 : 20_000),
+        planOptions.signal,
+      );
       try {
         const send = options.fetch ?? (globalThis as { fetch?: FetchLike }).fetch;
         if (!send) throw new Error('fetch is unavailable');
-        const timeout = options.timeoutMs ?? (request.kind === 'plan' ? 60_000 : 20_000);
-        const signals = (globalThis as { AbortSignal?: { timeout?(ms: number): unknown } })
-          .AbortSignal;
         const streaming = planOptions.onProgress !== undefined;
         const response = await send(`${options.url.replace(/\/$/, '')}/${request.kind}`, {
           method: 'POST',
@@ -317,7 +327,7 @@ export function remotePlanner(options: RemotePlannerOptions): Planner {
             ...options.headers,
           },
           body: JSON.stringify(request),
-          signal: planOptions.signal ?? signals?.timeout?.(timeout),
+          ...(wait.signal === undefined ? {} : { signal: wait.signal }),
         });
         if (!response.ok) {
           const body = (await response.json().catch(() => undefined)) as
@@ -327,7 +337,7 @@ export function remotePlanner(options: RemotePlannerOptions): Planner {
         }
         const ndjson = response.headers?.get('content-type')?.includes('ndjson') && response.body;
         const result = ndjson
-          ? await readStream(response.body as PlannerStream, planOptions.onProgress)
+          ? await readStream(response.body as PlannerStream, planOptions.onProgress, wait.restart)
           : await response.json();
         return planResultSchema.parse(result) as PlanResult;
       } catch (error) {
@@ -335,9 +345,59 @@ export function remotePlanner(options: RemotePlannerOptions): Planner {
         const result = await options.fallback.plan(request, contract);
         const reason = error instanceof Error ? error.message : String(error);
         return { ...result, meta: { ...result.meta, ms: Date.now() - started, fellBack: reason } };
+      } finally {
+        wait.stop();
       }
     },
   };
+}
+
+interface Platform {
+  AbortController?: new () => { signal: SignalLike; abort(reason?: unknown): void };
+  AbortSignal?: { any?(signals: unknown[]): unknown };
+  setTimeout?(callback: () => void, ms: number): unknown;
+  clearTimeout?(handle: unknown): void;
+}
+
+interface SignalLike {
+  aborted: boolean;
+  reason?: unknown;
+  addEventListener(type: 'abort', listener: () => void): void;
+}
+
+/**
+ * The wait for a server: a timer that `restart` starts again, combined with the caller's signal so
+ * that neither replaces the other. Where the platform has no timers, only the caller's signal.
+ */
+function waiting(ms: number, caller: unknown): { signal: unknown; restart(): void; stop(): void } {
+  const platform = globalThis as Platform;
+  const { AbortController, setTimeout, clearTimeout } = platform;
+  if (!AbortController || !setTimeout || !clearTimeout) {
+    return { signal: caller, restart() {}, stop() {} };
+  }
+  const timer = new AbortController();
+  let handle: unknown;
+  const restart = () => {
+    clearTimeout(handle);
+    handle = setTimeout(
+      () => timer.abort(new Error(`no answer from the server within ${ms} ms`)),
+      ms,
+    );
+  };
+  restart();
+  let signal: unknown = timer.signal;
+  if (caller !== undefined) {
+    if (platform.AbortSignal?.any) signal = platform.AbortSignal.any([caller, timer.signal]);
+    else {
+      const either = new AbortController();
+      for (const source of [caller as SignalLike, timer.signal]) {
+        if (source.aborted) either.abort(source.reason);
+        else source.addEventListener('abort', () => either.abort(source.reason));
+      }
+      signal = either.signal;
+    }
+  }
+  return { signal, restart, stop: () => clearTimeout(handle) };
 }
 
 interface DecoderLike {
@@ -348,6 +408,7 @@ interface DecoderLike {
 async function readStream(
   body: PlannerStream,
   onProgress: ((progress: PlanProgress) => void) | undefined,
+  heard: () => void,
 ): Promise<unknown> {
   const Decoder = (globalThis as { TextDecoder?: new () => DecoderLike }).TextDecoder;
   if (!Decoder) throw new Error('TextDecoder is unavailable');
@@ -357,6 +418,7 @@ async function readStream(
   let result: unknown;
   const handle = (line: string) => {
     if (line.trim() === '') return;
+    heard();
     const message = JSON.parse(line) as {
       type?: string;
       progress?: PlanProgress;

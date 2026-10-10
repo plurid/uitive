@@ -9,11 +9,26 @@ import {
   choice,
   createUitive,
   defineApp,
+  fromRows,
   heuristicPlanner,
   list,
   memoryStore,
+  query,
+  ui,
 } from '@plurid/uitive-core';
-import { useCommand, useLifecycle, useSnapshot, useSurface } from './hooks.js';
+import { payments, rows } from '../../core/src/__fixtures__/payments.js';
+import {
+  useCommand,
+  useLifecycle,
+  usePending,
+  useRanked,
+  useSnapshot,
+  useSurface,
+  useUitiveRouter,
+  useUserPages,
+} from './hooks.js';
+import { Page } from './page.js';
+import { UitiveProvider } from './provider.js';
 
 const contract = defineApp({
   id: 'notes',
@@ -175,5 +190,109 @@ describe('useCommand', () => {
     });
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('done'));
     expect(client.surface('density')).toBe('compact');
+  });
+});
+
+describe('hydration', () => {
+  it('reads the state nothing stored during hydration, then the person’s own', async () => {
+    const store = memoryStore();
+    const browser = createUitive({ contract: payments, store });
+    browser.createPage('Morning check');
+    browser.hide('nav', 'go.payouts');
+    browser.flush();
+    function Panel({ client }: { client: ReturnType<typeof createUitive<typeof payments>> }) {
+      const pages = useUserPages(client);
+      const pending = usePending(client);
+      const snapshot = useSnapshot(client);
+      const ranked = useRanked(client);
+      return (
+        <div>
+          <ul>
+            {pages.map((page) => (
+              <li key={page.slug}>{page.title}</li>
+            ))}
+          </ul>
+          <output>{`${pending.length}|${snapshot.definition.operations.length}|${ranked.length}`}</output>
+          <Page
+            value={ui.page(
+              ui.section('', 'stack', [
+                ui.block('actions', { list: 'nav', items: [], size: 'regular' }),
+              ]),
+            )}
+            blocks={{}}
+          />
+        </div>
+      );
+    }
+    const server = createUitive({ contract: payments });
+    const html = renderToString(
+      <UitiveProvider client={server} styles={false}>
+        <Panel client={server} />
+      </UitiveProvider>,
+    );
+    expect(html).toContain('Payouts');
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    document.body.append(container);
+    const errors: unknown[] = [];
+    const client = createUitive({ contract: payments, store });
+    await act(async () => {
+      hydrateRoot(
+        container,
+        <UitiveProvider client={client} styles={false}>
+          <Panel client={client} />
+        </UitiveProvider>,
+        { onRecoverableError: (error) => errors.push(error) },
+      );
+    });
+    expect(errors).toEqual([]);
+    await waitFor(() => expect(container.textContent).toContain('Morning check'));
+    expect(container.textContent).not.toContain('Payouts');
+    container.remove();
+  });
+});
+
+describe('useQueries', () => {
+  it('waits for the page’s row before reading a query about it', async () => {
+    const errors: unknown[] = [];
+    const filters: unknown[] = [];
+    const base = fromRows(rows);
+    const client = createUitive({
+      contract: payments,
+      onError: (error) => errors.push(error),
+      bindings: {
+        fetch: (request, context) => {
+          filters.push(request.filter);
+          return base(request, context);
+        },
+      },
+    });
+    const one = query('payments', {
+      fields: ['payments.id', 'payments.description'],
+      filter: [{ field: 'payments.id', op: 'eq', values: ['$current'] }],
+      limit: 1,
+    });
+    function App() {
+      useUitiveRouter(client, { path: '/payments/ch_001', navigate: () => {} });
+      return (
+        <Page
+          value={ui.page(
+            ui.section('', 'stack', [
+              ui.block('detail', { data: 'one', fields: ['payments.description'], columns: 1 }),
+            ]),
+            [{ name: 'one', query: one }],
+          )}
+          blocks={{}}
+        />
+      );
+    }
+    render(
+      <UitiveProvider client={client}>
+        <App />
+      </UitiveProvider>,
+    );
+    expect(await screen.findByText('Order 1001')).toBeTruthy();
+    expect(errors).toEqual([]);
+    expect(filters).toHaveLength(1);
   });
 });

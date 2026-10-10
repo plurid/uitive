@@ -4,24 +4,26 @@
 
 The model planner, for any provider: contracts compiled to structured outputs, the prompt, and models from Anthropic, OpenAI and every server that speaks its API, Gemini, or your own. It runs on servers and in extensions.
 
-Install: `pnpm add @plurid/uitive-planner`, with `@anthropic-ai/sdk` ^0.131.0, `zod` ^4.2.0 as peers. Guides: [Planning](../planning.md).
+Install: `pnpm add @plurid/uitive-planner`, with `zod` ^4.2.0 as a peer, and optionally `@anthropic-ai/sdk` ^0.131.0. Guides: [Planning](../planning.md).
 
-- [The model planner](#the-model-planner): [`modelPlanner`](#modelplanner), [`repairText`](#repairtext), [`toOperations`](#tooperations), [`ModelPlannerOptions`](#modelplanneroptions), [`PlannerOutput`](#planneroutput)
+- [The model planner](#the-model-planner): [`modelPlanner`](#modelplanner), [`planRequestSchema`](#planrequestschema), [`repairText`](#repairtext), [`toOperations`](#tooperations), [`ModelPlannerOptions`](#modelplanneroptions), [`PlannerOutput`](#planneroutput)
 - [Models](#models): [`anthropic`](#anthropic), [`costOf`](#costof), [`DEFAULT_MODELS`](#default_models), [`environmentModel`](#environmentmodel), [`google`](#google), [`openai`](#openai), [`PlannerError`](#plannererror), [`AnthropicOptions`](#anthropicoptions), [`GoogleOptions`](#googleoptions), [`Model`](#model), [`ModelCall`](#modelcall), [`ModelMessage`](#modelmessage), [`ModelPrices`](#modelprices), [`ModelReply`](#modelreply), [`ModelUsage`](#modelusage), [`OpenAIOptions`](#openaioptions)
-- [`@plurid/uitive-planner/schema`](#pluriduitive-plannerschema): [`limits`](#limits), [`outputSchema`](#outputschema), [`size`](#size), [`vocabulary`](#vocabulary), [`SchemaOptions`](#schemaoptions), [`Vocabulary`](#vocabulary-type)
+- [`@plurid/uitive-planner/schema`](#pluriduitive-plannerschema): [`limits`](#limits), [`offeredBlocks`](#offeredblocks), [`outputSchema`](#outputschema), [`size`](#size), [`vocabulary`](#vocabulary), [`SchemaOptions`](#schemaoptions), [`Vocabulary`](#vocabulary-type)
 - [`@plurid/uitive-planner/prompt`](#pluriduitive-plannerprompt): [`contractText`](#contracttext), [`requestText`](#requesttext), [`RULES`](#rules)
 
 ## The model planner
 
-Source: [`output.ts`](../../packages/planner/src/output.ts), [`plan.ts`](../../packages/planner/src/plan.ts)
+Source: [`output.ts`](../../packages/planner/src/output.ts), [`plan.ts`](../../packages/planner/src/plan.ts), [`request.ts`](../../packages/planner/src/request.ts)
 
 ### modelPlanner
 
 Plans with a language model from any provider. The contract compiles to the schema the answer
 must follow, so a model that keeps to it can only name what the application offers; answers are
-checked against it all the same. Large contracts are first scoped to the areas a request needs,
-and each scope's schema and prompt are prepared once, so providers' caches stay warm. An answer
-that strays from the schema, or that policy would partly reject, goes back once for repair.
+checked against it all the same. Large contracts, by sources or by the size of their enums, are
+first scoped to the areas a request needs, and each scope's schema and prompt are prepared once,
+so providers' caches stay warm. An answer that strays from the schema, or that policy would
+partly reject, goes back once for repair; when the repair fails, what policy accepted of the
+first answer stands.
 
 ```ts
 function modelPlanner(options: ModelPlannerOptions): Planner;
@@ -30,6 +32,19 @@ function modelPlanner(options: ModelPlannerOptions): Planner;
 Also exported by `@plurid/uitive-server`.
 
 Uses: [`ModelPlannerOptions`](#modelplanneroptions), [`Planner`](core.md#planner).
+
+### planRequestSchema
+
+What a planner may be sent, as data from a client: every field typed, every string and list
+capped, the request and goal at most 500 characters, and the environment structure only
+(patterned names, counts and states). The handler answers 400 to anything else, before any model
+sees it.
+
+```ts
+const planRequestSchema: ZodObject;
+```
+
+Also exported by `@plurid/uitive-server`.
 
 ### repairText
 
@@ -45,15 +60,16 @@ Uses: [`OutputRejection`](core.md#outputrejection).
 
 ### toOperations
 
-Turns the model's flat output into proposed operations for policy to check.
+Turns the model's flat output into proposed operations for policy to check. Only a command's
+operations can be explicit: in a plan (`kind: 'plan'`), basis `request` counts for nothing.
 
 ```ts
-function toOperations(output: PlannerOutput): ProposedOperation[];
+function toOperations(output: PlannerOutput, kind?: PlanRequest['kind']): ProposedOperation[];
 ```
 
 Also exported by `@plurid/uitive-server`.
 
-Uses: [`PlannerOutput`](#planneroutput), [`ProposedOperation`](core.md#proposedoperation).
+Uses: [`PlannerOutput`](#planneroutput), [`PlanRequest`](core.md#planrequest), [`ProposedOperation`](core.md#proposedoperation).
 
 ### ModelPlannerOptions
 
@@ -175,9 +191,11 @@ Also exported by `@plurid/uitive-server`.
 
 The model whose key the environment holds, so a server plans with whichever provider it has a key
 for: Anthropic (`ANTHROPIC_API_KEY`), else OpenAI (`OPENAI_API_KEY`), else Gemini
-(`GEMINI_API_KEY` or `GOOGLE_API_KEY`). `UITIVE_MODEL` names the model, else each provider's
-default. Without a key, nothing, for the deterministic planner to take over. Runtimes without a
-process environment, such as Cloudflare Workers, pass their own variables.
+(`GEMINI_API_KEY` or `GOOGLE_API_KEY`), each with its default model. `UITIVE_MODEL` names the
+model, with its provider first when its name doesn't tell (`openai:qwen3`); a model whose
+provider is named or known (`claude-…`, `gpt-…`, `gemini-…`) plans only with that provider's key.
+Without a key, nothing, for the deterministic planner to take over. Runtimes without a process
+environment, such as Cloudflare Workers, pass their own variables.
 
 ```ts
 function environmentModel(
@@ -219,17 +237,24 @@ Uses: [`Model`](#model), [`OpenAIOptions`](#openaioptions).
 
 ### PlannerError
 
-A planner failure, with the HTTP status the handler answers with.
+A planner failure, with the HTTP status the handler answers with. Its `message` may hold a
+provider's own words and the address of a model's server, so only `onError` hears it; the
+browser gets `publicMessage`.
 
 ```ts
 class PlannerError extends Error {
   readonly status: number;
   readonly reason?: 'too-complex' | undefined;
+  readonly publicMessage: string;
   constructor(message: string, status: number, reason?: 'too-complex' | undefined);
 }
 ```
 
 Also exported by `@plurid/uitive-server`.
+
+| Member          | Description                                                                               |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| `publicMessage` | What the handler tells the browser: fixed for each status, so details stay on the server. |
 
 ### AnthropicOptions
 
@@ -238,14 +263,14 @@ which key or client.
 
 Also exported by `@plurid/uitive-server`.
 
-| Property     | Type                                              | Default                                                                    | Description                                                                                |
-| ------------ | ------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `model?`     | `string`                                          | `'claude-opus-5-5'`                                                        | The model.                                                                                 |
-| `effort?`    | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max'` | `'low'`                                                                    | How much the model thinks before answering; `low` keeps commands quick.                    |
-| `timeoutMs?` | `number`                                          | `60000`                                                                    | How long a call may take before it fails.                                                  |
-| `fallbacks?` | `boolean`                                         | `true`                                                                     | Server-side refusal fallback (beta `server-side-fallback-2026-07-01`).                     |
-| `apiKey?`    | `string`                                          |                                                                            | The API key, where there is no environment to read it from, such as in Cloudflare Workers. |
-| `client?`    | `Pick<Anthropic, 'beta'>`                         | one from the environment: ANTHROPIC_API_KEY or an `ant auth login` profile | The Anthropic client, such as one made for a browser extension's worker.                   |
+| Property     | Type                                              | Default                                                                    | Description                                                                                                                                                                     |
+| ------------ | ------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model?`     | `string`                                          | `'claude-opus-5-5'`                                                        | The model.                                                                                                                                                                      |
+| `effort?`    | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max'` | `'low'`                                                                    | How much the model thinks before answering; `low` keeps commands quick. Sent only to models that take it, which Haiku 4.5 doesn't.                                              |
+| `timeoutMs?` | `number`                                          | `60000`                                                                    | How long a call may take before it fails.                                                                                                                                       |
+| `fallbacks?` | `boolean`                                         | `true`                                                                     | Server-side refusal fallback (beta `server-side-fallback-2026-07-01`), sent only to models that offer it: Fable 5.1, Mythos 5.1, Opus 5 and later, and Sonnet 5.5, never Haiku. |
+| `apiKey?`    | `string`                                          |                                                                            | The API key, where there is no environment to read it from, such as in Cloudflare Workers.                                                                                      |
+| `client?`    | `Pick<Anthropic, 'beta'>`                         | one from the environment: ANTHROPIC_API_KEY or an `ant auth login` profile | The Anthropic client, such as one made for a browser extension's worker.                                                                                                        |
 
 ### GoogleOptions
 
@@ -391,6 +416,26 @@ function limits(schema: unknown): {
 
 Also exported by `@plurid/uitive-planner/schema`, `@plurid/uitive-server`.
 
+### offeredBlocks
+
+The blocks a request's schema offers pages besides sections, tabs and regions, by name: the
+application's own, unless `native` is false, and the generic blocks its scope can feed. The
+prompt describes these, so it never names a block the schema leaves out.
+
+```ts
+function offeredBlocks(
+  contract: AnyContract,
+  options?: SchemaOptions,
+): {
+  own: string[];
+  generic: GenericName[];
+};
+```
+
+Also exported by `@plurid/uitive-planner/schema`, `@plurid/uitive-server`.
+
+Uses: [`AnyContract`](core.md#anycontract), [`GenericName`](core.md#genericname), [`SchemaOptions`](#schemaoptions).
+
 ### outputSchema
 
 Compiles a contract into the one structured-output schema every call uses: flat operation
@@ -468,15 +513,20 @@ Source: [`prompt.ts`](../../packages/planner/src/prompt.ts)
 ### contractText
 
 The application's contract as text: stable across users, so it caches. For large contracts,
-a subset scopes the sources described to those chosen for the request.
+a subset scopes the sources described to those chosen for the request. It names the blocks the
+schema for the same subset and `native` offers, and no others.
 
 ```ts
-function contractText(contract: AnyContract, subset?: Subset): string;
+function contractText(
+  contract: AnyContract,
+  subset?: Subset,
+  options?: Pick<SchemaOptions, 'native'>,
+): string;
 ```
 
 Also exported by `@plurid/uitive-planner/prompt`, `@plurid/uitive-server`.
 
-Uses: [`AnyContract`](core.md#anycontract), [`Subset`](core.md#subset).
+Uses: [`AnyContract`](core.md#anycontract), [`SchemaOptions`](#schemaoptions), [`Subset`](core.md#subset).
 
 ### requestText
 

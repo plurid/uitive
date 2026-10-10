@@ -4,6 +4,7 @@ import { payments, sources } from './__fixtures__/payments.js';
 import { action, defineApp, type RowOf, type SourceIdOf } from './contract.js';
 import { currencyDigits, describeFields, field, humanize } from './field.js';
 import { qualifiedFields, source } from './source.js';
+import { formatValue } from './values.js';
 
 const base = {
   id: 'app',
@@ -94,6 +95,36 @@ describe('fields', () => {
     expect(currencyDigits('jpy')).toBe(0);
     expect(currencyDigits('KWD')).toBe(3);
     expect(currencyDigits('nope')).toBe(2);
+  });
+
+  it("knows ISO 4217's minor units, which display digits differ from", () => {
+    expect(['IDR', 'COP', 'HUF', 'PKR', 'MGA'].map(currencyDigits)).toEqual([2, 2, 2, 2, 2]);
+    expect(['IQD', 'TND', 'BHD'].map(currencyDigits)).toEqual([3, 3, 3]);
+    expect(['ISK', 'KRW', 'VND', 'XOF', 'CLP'].map(currencyDigits)).toEqual([0, 0, 0, 0, 0]);
+    expect(['CLF', 'UYW'].map(currencyDigits)).toEqual([4, 4]);
+    const [amount] = describeFields(z.object({ amount: field.money({ minor: true }) }));
+    // 1,000,000 cents of a peso is 10,000 pesos.
+    expect(formatValue(amount!, 1_000_000, 'COP', 'en')).toMatch(/10,000/);
+  });
+
+  it('takes minor units where an API differs from ISO 4217', () => {
+    const [amount] = describeFields(
+      z.object({ amount: field.money({ currency: 'c', minor: true, digits: { isk: 2, MGA: 0 } }) }),
+    );
+    expect(amount?.digits).toEqual({ ISK: 2, MGA: 0 });
+    expect(formatValue(amount!, 10_000, 'ISK', 'en')).toMatch(/100/);
+    expect(formatValue(amount!, 10_000, 'MGA', 'en')).toMatch(/10,000/);
+    expect(() =>
+      describeFields(z.object({ amount: field.money({ minor: true, digits: { ISK: 7 } }) })),
+    ).toThrow(/ISK takes 0 to 4 decimal places/);
+  });
+
+  it('knows dates without a time', () => {
+    const fields = describeFields(
+      z.object({ day: z.iso.date(), at: z.iso.datetime(), on: field.time({ unit: 'date' }) }),
+    );
+    expect(fields.map((entry) => entry.unit)).toEqual(['date', 'iso', 'date']);
+    expect(formatValue(fields[0]!, '2026-10-03', undefined, 'en-US')).toBe('Oct 3, 2026');
   });
 });
 

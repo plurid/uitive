@@ -19,5 +19,6 @@ export type { PlannerOutput } from './output.js';
 export { modelPlanner } from './plan.js';
 export type { ModelPlannerOptions } from './plan.js';
 export { contractText, requestText, RULES } from './prompt.js';
-export { limits, outputSchema, size, vocabulary } from './schema.js';
+export { planRequestSchema } from './request.js';
+export { limits, offeredBlocks, outputSchema, size, vocabulary } from './schema.js';
 export type { SchemaOptions, Vocabulary } from './schema.js';

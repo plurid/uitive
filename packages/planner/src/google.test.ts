@@ -142,4 +142,26 @@ describe('google', () => {
       status: 429,
     });
   });
+
+  it('fails when the stream reports an error, rather than answering with nothing', async () => {
+    const overloaded = events([
+      { candidates: [{ content: { parts: [{ text: '{"sta' }] } }] },
+      { error: { code: 503, message: 'The model is overloaded', status: 'UNAVAILABLE' } },
+    ]);
+    await expect(
+      google({ model: 'm', apiKey: 'k', fetch: fetching(overloaded) }).generate(call()),
+    ).rejects.toMatchObject({
+      status: 502,
+      message: 'Gemini failed mid-answer: The model is overloaded',
+    });
+    const exhausted = events([
+      { error: { code: 429, message: 'Quota', status: 'RESOURCE_EXHAUSTED' } },
+    ]);
+    await expect(
+      google({ model: 'm', apiKey: 'k', fetch: fetching(exhausted) }).generate(call()),
+    ).rejects.toMatchObject({ status: 429 });
+    await expect(
+      google({ model: 'm', apiKey: 'k', fetch: fetching(events(['{not json'])) }).generate(call()),
+    ).rejects.toMatchObject({ status: 502, message: 'Gemini sent an unreadable event' });
+  });
 });

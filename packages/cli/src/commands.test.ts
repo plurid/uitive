@@ -76,6 +76,26 @@ describe('uitive', () => {
     expect(code).toContain("'orders.cancel': action({");
   });
 
+  it('refuses counts that aren’t whole numbers, and says when problems keep blocks unwritten', async () => {
+    expect(await cli('discover', '--url', 'http://localhost:1/', '--pages', 'abc')).toEqual({
+      code: 1,
+      out: '',
+      err: 'uitive: --pages takes a whole number of at least 1, not "abc"\n',
+    });
+    expect(await cli('discover', '--url', 'http://localhost:1/', '--per-route', '0')).toMatchObject(
+      { code: 1, err: 'uitive: --per-route takes a whole number of at least 1, not "0"\n' },
+    );
+    const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
+    await writeFile(join(cwd, 'package.json'), '{}');
+    await writeFile(
+      join(cwd, 'card.tsx'),
+      'export const Card = (props: { size: string | number }) => null;\n',
+    );
+    const blocks = await cli('generate', 'blocks', 'card.tsx#Card', '--cwd', cwd);
+    expect(blocks).toMatchObject({ code: 1, out: 'Nothing written.\n' });
+    expect(blocks.err).toMatch(/^uitive: card\.tsx#Card: prop size is string \| number/);
+  });
+
   it('asks for a curation before generating from a large API', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
     const paths = Object.fromEntries(

@@ -244,7 +244,7 @@ A session ends after 30 minutes without use (`idleMinutes`). [Testing](testing.m
 
 ## Check it
 
-`uitive check` loads the contract and bindings and checks they hold: IDs, the JSON form, request schemas a model can answer in, labels and bindings. It prints what the contract covers, and exits with 1 when something fails, so it belongs in CI. It loads the modules without typechecking them, so run `tsc` too.
+`uitive check` loads the contract and bindings and checks they hold: IDs, the JSON form, request schemas a model can answer in, and bindings, with warnings about labels. It prints what the contract covers, and exits with 1 when something fails, so it belongs in CI. It loads the modules without typechecking them, so run `tsc` too.
 
 ```sh
 npx uitive check

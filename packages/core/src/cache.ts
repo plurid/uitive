@@ -1,7 +1,14 @@
 import type { AnyContract } from './contract.js';
-import { runQuery, type BindingContext, type Fetchers, type QueryResult } from './data.js';
+import {
+  rowMatches,
+  runQuery,
+  type BindingContext,
+  type Fetchers,
+  type QueryResult,
+  type Row,
+} from './data.js';
 import { hash } from './hash.js';
-import type { Query } from './query.js';
+import { NONE, type Filter, type Query } from './query.js';
 
 /** A query's result as far as it is known. Stable between changes, so it is safe to render. */
 export interface DataEntry {
@@ -50,9 +57,16 @@ export interface DataClient {
   subscribe(listener: () => void): () => void;
   /** Marks results that read these sources stale, so they fetch again when next read. */
   invalidate(sources: readonly string[]): void;
+  /**
+   * Whether a result row passes filters as queries apply them, on this client's clock, time zone
+   * and user: for the rows an action's `when` allows.
+   */
+  matches(filters: readonly Filter[], row: Row, scope?: DataScope): boolean;
 }
 
 const RETRY_MS = 5_000;
+// However short a source's ttl, a result stays fresh this long, so reading it can't loop.
+const FRESH_MS = 1_000;
 const TIME_LITERAL = /^\d{4}-\d{2}-\d{2}/;
 
 interface Slot {
@@ -60,6 +74,10 @@ interface Slot {
   query: Query;
   scope: DataScope;
   invalid: boolean;
+  /** Counts invalidations, so one that lands while a fetch is in flight isn't lost. */
+  generation: number;
+  /** The clock relative times last resolved against. */
+  ranAt?: number;
   failedAt?: number;
   flight?: Promise<QueryResult>;
 }
@@ -90,13 +108,43 @@ export function createData(
 
   const keyOf = (query: Query, scope: DataScope) => {
     const context = options.context?.() ?? {};
-    // Relative times move with the clock, so their results key on the minute.
-    const minute = relative(query) ? Math.floor(now() / 60_000) : 0;
-    return hash({ query, current: scope.current, minute, me: context.me, zone: context.timeZone });
+    return hash({ query, current: scope.current, me: context.me, zone: context.timeZone });
   };
 
   const ttlOf = (result: QueryResult) =>
-    Math.min(...result.reads.map((id) => (contract.source(id)?.ttl ?? 30) * 1000));
+    Math.max(
+      FRESH_MS,
+      Math.min(...result.reads.map((id) => (contract.source(id)?.ttl ?? 30) * 1000)),
+    );
+
+  // Relative times move with the clock, so their results are fresh within the minute they ran.
+  const expired = (slot: Slot, result: QueryResult) =>
+    now() - result.at > ttlOf(result) ||
+    (relative(slot.query) &&
+      slot.ranAt !== undefined &&
+      Math.floor(now() / 60_000) !== Math.floor(slot.ranAt / 60_000));
+
+  // Before a first result, the sources a query reaches are known from its fields.
+  const readsOf = (query: Query): string[] => {
+    const found = new Set([contract.source(query.source)?.id ?? query.source]);
+    const { of, by, split } = query.aggregate;
+    for (const name of [
+      ...query.fields,
+      ...query.filter.map((entry) => entry.field),
+      ...query.sort.map((entry) => entry.field),
+      of,
+      by,
+      split,
+    ]) {
+      if (name === NONE) continue;
+      const path = contract.path(name);
+      if (path?.target !== undefined) found.add(path.target);
+      if (path?.via === undefined && path?.field.type === 'ref' && path.field.source) {
+        found.add(path.field.source);
+      }
+    }
+    return [...found];
+  };
 
   const set = (key: string, slot: Slot, entry: DataEntry) => {
     slot.entry = entry;
@@ -126,20 +174,26 @@ export function createData(
 
   const start = (key: string, slot: Slot): Promise<QueryResult> => {
     if (slot.flight) return slot.flight;
-    const flight = throttle(() =>
-      runQuery(contract, fetchers, slot.query, {
-        clock: { now: now(), ...timeZoneOf(options.context?.()) },
+    let generation = slot.generation;
+    const flight = throttle(() => {
+      generation = slot.generation;
+      const ranAt = now();
+      slot.ranAt = ranAt;
+      // Freshness counts from arrival, so a fetch slower than its ttl isn't stale on arrival.
+      return runQuery(contract, fetchers, slot.query, {
+        clock: { now: ranAt, ...timeZoneOf(options.context?.()) },
         ...(slot.scope.current === undefined ? {} : { current: slot.scope.current }),
         context: options.context?.() ?? {},
-      }),
-    );
+      }).then((result) => ({ ...result, at: now() }));
+    });
     slot.flight = flight;
     flight.then(
       (result) => {
         slot.flight = undefined;
-        slot.invalid = false;
+        // A write that invalidated while the fetch ran may have changed what it read.
+        slot.invalid = slot.generation !== generation;
         slot.failedAt = undefined;
-        set(key, slot, { status: 'ready', result, stale: false });
+        set(key, slot, { status: 'ready', result, stale: slot.invalid });
         notify();
       },
       (error: unknown) => {
@@ -163,7 +217,13 @@ export function createData(
     const key = keyOf(query, scope);
     let slot = slots.get(key);
     if (!slot) {
-      slot = { entry: { status: 'loading', stale: false }, query, scope, invalid: false };
+      slot = {
+        entry: { status: 'loading', stale: false },
+        query,
+        scope,
+        invalid: false,
+        generation: 0,
+      };
       set(key, slot, slot.entry);
     }
     return [key, slot];
@@ -183,8 +243,8 @@ export function createData(
         }
         return slot.entry;
       }
-      const expired = entry.result !== undefined && now() - entry.result.at > ttlOf(entry.result);
-      if ((expired || slot.invalid) && !slot.flight) {
+      const old = entry.result !== undefined && expired(slot, entry.result);
+      if ((old || slot.invalid) && !slot.flight) {
         if (!entry.stale) slot.entry = { ...entry, stale: true };
         void start(key, slot).catch(() => {});
       }
@@ -199,7 +259,7 @@ export function createData(
       const [key, slot] = slotFor(query, scope);
       const { entry } = slot;
       if (entry.status === 'ready' && entry.result && !slot.invalid) {
-        if (now() - entry.result.at <= ttlOf(entry.result)) return Promise.resolve(entry.result);
+        if (!expired(slot, entry.result)) return Promise.resolve(entry.result);
       }
       return start(key, slot);
     },
@@ -212,15 +272,25 @@ export function createData(
     invalidate(sources) {
       let touched = false;
       for (const slot of slots.values()) {
-        const reads = slot.entry.result?.reads ?? [slot.query.source];
+        const reads = slot.entry.result?.reads ?? readsOf(slot.query);
         if (!reads.some((id) => sources.includes(id))) continue;
         slot.invalid = true;
+        slot.generation++;
         if (slot.entry.status === 'ready' && !slot.entry.stale) {
           slot.entry = { ...slot.entry, stale: true };
         }
         touched = true;
       }
       if (touched) notify();
+    },
+
+    matches(filters, row, scope = {}) {
+      const context = options.context?.() ?? {};
+      return rowMatches(contract, filters, row, {
+        clock: { now: now(), ...timeZoneOf(context) },
+        ...(scope.current === undefined ? {} : { current: scope.current }),
+        ...(context.me === undefined ? {} : { me: context.me }),
+      });
     },
   };
 }

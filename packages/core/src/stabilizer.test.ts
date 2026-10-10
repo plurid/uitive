@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { editor } from './__fixtures__/editor.js';
 import { emptyEditor, operation, summaryOf, type Use } from './__fixtures__/usage.js';
 import {
+  emptyDefinition,
   operationKey,
   resolveList,
   type Change,
@@ -68,41 +69,71 @@ function settled(
 
 describe('stage', () => {
   const model = (change: Change): Operation => operation(change);
-  const options = { ...DEFAULT_STABILIZER, hysteresis: true };
+  const options = (session: number) => ({ ...DEFAULT_STABILIZER, hysteresis: true, session });
 
-  it('holds a weak model change until a second plan proposes it', () => {
-    const first = stage([model(promote('table'))], {}, [0.5], options);
+  it('holds a weak model change until a plan in a later session proposes it', () => {
+    const first = stage([model(promote('table'))], {}, [0.5], options(1));
     expect(first.pending[0]?.held).toBe(true);
-    const second = stage([model(promote('table'))], first.seen, [0.5], options);
+    const second = stage([model(promote('table'))], first.seen, [0.5], options(2));
     expect(second.pending[0]?.held).toBe(false);
   });
 
+  it('counts plans in one session once, so planning again proves nothing', () => {
+    const first = stage([model(promote('table'))], {}, [0.5], options(1));
+    const again = stage([model(promote('table'))], first.seen, [0.5], options(1));
+    expect(again.pending[0]?.held).toBe(true);
+    expect(again.seen).toEqual({ 'toolbar||promote|table': { count: 1, session: 1 } });
+  });
+
   it('lets strong model changes and every heuristic change through at once', () => {
-    expect(stage([model(promote('table'))], {}, [2], options).pending[0]?.held).toBe(false);
+    expect(stage([model(promote('table'))], {}, [2], options(1)).pending[0]?.held).toBe(false);
     const heuristic = { ...model(promote('table')), origin: 'heuristic' as const };
-    expect(stage([heuristic], {}, [0], options).pending[0]?.held).toBe(false);
+    expect(stage([heuristic], {}, [0], options(1)).pending[0]?.held).toBe(false);
   });
 
   it('forgets changes a plan no longer proposes', () => {
-    const first = stage([model(promote('table'))], {}, [0.5], options);
-    const second = stage([model(promote('image'))], first.seen, [0.5], options);
-    expect(second.seen).toEqual({ 'toolbar||promote|image': 1 });
+    const first = stage([model(promote('table'))], {}, [0.5], options(1));
+    const second = stage([model(promote('image'))], first.seen, [0.5], options(2));
+    expect(second.seen).toEqual({ 'toolbar||promote|image': { count: 1, session: 2 } });
   });
 });
 
 describe('settle', () => {
   it('applies the strongest changes within the budget and keeps the rest pending', () => {
-    const result = settled([
-      pending(promote('link'), 1),
-      pending(promote('table'), 3),
-      pending(promote('image'), 2),
-    ]);
+    const used: Use[] = [
+      ...uses,
+      ['print', 'overflow', 5],
+      ['comment', 'overflow', 5, { tool: 'text' }],
+    ];
+    const result = settled(
+      [
+        pending(
+          { kind: 'list', surface: 'tableBar', context: 'text', op: 'promote', target: 'comment' },
+          1,
+        ),
+        pending(promote('table'), 3),
+        pending({ kind: 'list', surface: 'file', op: 'promote', target: 'print' }, 2),
+      ],
+      emptyEditor(),
+      5,
+      used,
+    );
     expect(
       result.applied.map((entry) => entry.change.kind === 'list' && entry.change.target),
-    ).toEqual(['table', 'image']);
+    ).toEqual(['table', 'print']);
     expect(
       result.pending.map((entry) => entry.change.kind === 'list' && entry.change.target),
-    ).toEqual(['link']);
+    ).toEqual(['comment']);
+  });
+
+  it('pushes at most one item out of view per surface at a time, counting evictions', () => {
+    const result = settled([pending(promote('table'), 3), pending(promote('image'), 2)]);
+    expect(
+      result.applied.map((entry) => entry.change.kind === 'list' && entry.change.target),
+    ).toEqual(['table']);
+    expect(
+      result.pending.map((entry) => entry.change.kind === 'list' && entry.change.target),
+    ).toEqual(['image']);
   });
 
   it('demotes at most one item per surface at a time', () => {
@@ -147,6 +178,42 @@ describe('settle', () => {
     expect(again.pending).toHaveLength(1);
   });
 
+  it('spares an item still settling when another must make room, or waits', () => {
+    const history: Use[] = [
+      ['table', 'overflow', 3],
+      ...(['bold', 'italic', 'underline', 'strike'] as const).flatMap((action): Use[] => [
+        [action, 'region', 3],
+        [action, 'region', 5],
+      ]),
+      ['image', 'overflow', 5],
+      ['image', 'overflow', 5],
+    ];
+    // Session 4: table is promoted. Session 5: image needs room, and table is the least used.
+    const first = settled([pending(promote('table'), 5, 4)], emptyEditor(), 4, history);
+    expect(first.applied).toHaveLength(1);
+    const second = settled([pending(promote('image'), 5, 5)], first.definition, 5, history);
+    const change = second.applied[0]?.change;
+    expect(change?.kind === 'list' && change.evict).toBe('strike');
+    expect(resolveList(editor, second.definition, 'toolbar').visible.has('table')).toBe(true);
+
+    // With every evictable item freshly moved, the change waits instead.
+    let crowded = emptyDefinition(editor);
+    for (const target of ['quote', 'code', 'link', 'table', 'image']) {
+      crowded = applyOperation(crowded, operation(promote(target)), {
+        contract: editor,
+        summary: summaryOf([]),
+        session: 4,
+        adaptation: 'a',
+      });
+    }
+    const waiting = settled([pending(promote('comment'), 5, 5)], crowded, 5, [
+      ['comment', 'overflow', 5],
+      ['comment', 'overflow', 5],
+    ]);
+    expect(waiting.applied).toHaveLength(0);
+    expect(waiting.pending).toHaveLength(1);
+  });
+
   it('drops expired changes and re-checks the rest against the current definition', () => {
     const result = settled(
       [pending(promote('table'), 5, 0), pending(promote('bold'), 5, 6)],
@@ -175,6 +242,22 @@ describe('revert', () => {
     expect(definition.blocked).toEqual(['toolbar||promote|table']);
   });
 
+  it('counts only planned reverts toward a block', () => {
+    const summary = summaryOf(uses);
+    const context = { contract: editor, summary, session: 5, adaptation: 'a1' };
+    const choose = { kind: 'choice', surface: 'density', op: 'set', value: 'compact' } as const;
+    let definition = applyOperation(emptyEditor(), operation(choose, { origin: 'user' }), context);
+    definition = revert(definition, definition.operations[0]?.id as string, 5, DEFAULT_STABILIZER);
+    definition = applyOperation(
+      definition,
+      operation(choose, { evidence: [{ intent: 'denser' }] }),
+      context,
+    );
+    definition = revert(definition, definition.operations[1]?.id as string, 5, DEFAULT_STABILIZER);
+    expect(definition.blocked).toEqual([]);
+    expect(definition.cooldowns).toEqual([{ key: 'density||set|compact', until: 10 }]);
+  });
+
   it('never cools down the user’s own changes', () => {
     const definition = applyOperation(
       emptyEditor(),
@@ -196,14 +279,47 @@ describe('revert', () => {
 });
 
 describe('evictFor', () => {
+  const comment: Change = {
+    kind: 'list',
+    surface: 'tableBar',
+    context: 'text',
+    op: 'promote',
+    target: 'comment',
+  };
+
+  it('picks the least used item, then the last in standard order, when the list is full', () => {
+    expect(evictFor(editor, emptyEditor(), comment, summaryOf([]))).toBe('italic');
+    const used = (action: string) => summaryOf([[action, 'region', 5, { tool: 'text' }]]);
+    expect(evictFor(editor, emptyEditor(), comment, used('bold'))).toBe('italic');
+    expect(evictFor(editor, emptyEditor(), comment, used('italic'))).toBe('bold');
+  });
+
   it('needs no eviction while the list has room', () => {
-    const change: Change = {
-      kind: 'list',
-      surface: 'tableBar',
-      context: 'text',
-      op: 'promote',
-      target: 'comment',
-    };
-    expect(evictFor(editor, emptyEditor(), change, summaryOf([]))).toBe('italic');
+    const roomy = applyOperation(
+      emptyEditor(),
+      operation(
+        { kind: 'list', surface: 'tableBar', context: 'text', op: 'hide', target: 'bold' },
+        { origin: 'user' },
+      ),
+      { contract: editor, summary: summaryOf([]), session: 5, adaptation: 'a1' },
+    );
+    expect(evictFor(editor, roomy, comment, summaryOf([]))).toBeUndefined();
+  });
+});
+
+describe('applyOperation', () => {
+  it('replaces an earlier suggestion with the same aim', () => {
+    const add = (label: string): Change => ({
+      kind: 'collection',
+      surface: 'macros',
+      op: 'add',
+      item: 'emphasis',
+      value: { label, steps: ['bold', 'italic'] },
+    });
+    const context = { contract: editor, summary: summaryOf([]), session: 5, adaptation: 'a1' };
+    let definition = applyOperation(emptyEditor(), operation(add('One')), context, 'suggested');
+    definition = applyOperation(definition, operation(add('Two')), context, 'suggested');
+    expect(definition.operations.map((entry) => entry.status)).toEqual(['suggested']);
+    expect(resolveList(editor, definition, 'toolbar').visible.size).toBe(6);
   });
 });

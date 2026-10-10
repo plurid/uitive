@@ -18,9 +18,10 @@ Source: [`provider.tsx`](../../packages/react/src/provider.tsx)
 
 ### Confirmations
 
-Asks the user before a generated interface changes data: the action, what it will do it to,
-and for destructive actions the phrase to type. Mount it once, inside the provider; without
-it, generated interfaces can't write at all.
+Asks the user before a generated interface changes data: the action, every param it will run
+with, and for destructive actions the phrase to type. Mount it once, inside the provider.
+Buttons and destructive runs wait for it, and are refused without it; a generated form that
+shows every value it will send counts as the yes.
 
 ```ts
 function Confirmations(): JSX.Element | null;
@@ -53,7 +54,8 @@ Uses: [`UitiveContextValue`](#uitivecontextvalue).
 
 ### UitiveDebug
 
-`<uitive-debug>`: the developer panel.
+`<uitive-debug>`: the developer panel. `collapsed` starts it folded. Bundlers leave it out of
+builds that never render it.
 
 ```ts
 function UitiveDebug(
@@ -61,6 +63,7 @@ function UitiveDebug(
     client: unknown;
   } & {
     personas?: readonly Persona[];
+    collapsed?: boolean;
   },
 ): ReactElement;
 ```
@@ -114,12 +117,13 @@ Uses: [`AnyContract`](core.md#anycontract), [`Kit`](#kit), [`Uitive`](core.md#ui
 
 Type parameters: `C extends AnyContract`.
 
-| Property    | Type        | Default      | Description                                                                 |
-| ----------- | ----------- | ------------ | --------------------------------------------------------------------------- |
-| `client`    | `Uitive<C>` |              | The client from `createUitive`.                                             |
-| `kit?`      | `Kit`       | `defaultKit` | What generic blocks are drawn with.                                         |
-| `styles?`   | `boolean`   | `true`       | Adds the default kit's styles, which kits built with `createKit` still use. |
-| `children?` | `ReactNode` |              | The application.                                                            |
+| Property    | Type        | Default      | Description                                                                                                                  |
+| ----------- | ----------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `client`    | `Uitive<C>` |              | The client from `createUitive`.                                                                                              |
+| `kit?`      | `Kit`       | `defaultKit` | What generic blocks are drawn with.                                                                                          |
+| `styles?`   | `boolean`   | `true`       | Adds the default kit's styles, which kits built with `createKit` still use.                                                  |
+| `nonce?`    | `string`    |              | The nonce of a `style-src` Content Security Policy, for the kit's styles, when the page allows no inline styles without one. |
+| `children?` | `ReactNode` |              | The application.                                                                                                             |
 
 ### UitiveContextValue
 
@@ -190,7 +194,8 @@ Uses: [`AnyContract`](core.md#anycontract), [`Confirmation`](core.md#confirmatio
 
 ### useLatest
 
-The latest adaptation, for banners. Re-renders only when a new one arrives.
+The latest adaptation, for banners. Re-renders only when a new one arrives; none during server
+rendering.
 
 ```ts
 function useLatest<C extends AnyContract>(client: Uitive<C>): Adaptation | undefined;
@@ -224,7 +229,7 @@ Uses: [`AnyContract`](core.md#anycontract), [`Location`](core.md#location), [`Ui
 
 ### usePending
 
-Changes waiting for the next safe moment.
+Changes waiting for the next safe moment; none during server rendering.
 
 ```ts
 function usePending<C extends AnyContract>(client: Uitive<C>): readonly Pending[];
@@ -267,7 +272,8 @@ Uses: [`Adaptation`](core.md#adaptation), [`AnyContract`](core.md#anycontract), 
 
 ### useQueries
 
-Several queries' results at once, in order; an undefined query reads as loading.
+Several queries' results at once, in order; an undefined query reads as loading, as does one
+naming `$current` until the row is known.
 
 ```ts
 function useQueries<C extends AnyContract>(
@@ -282,7 +288,8 @@ Uses: [`AnyContract`](core.md#anycontract), [`DataEntry`](core.md#dataentry), [`
 ### useQuery
 
 One query's result, shared with everything else that asks for it. Fetches when there is none
-or it went stale; renders from the cache meanwhile.
+or it went stale; renders from the cache meanwhile. A query naming `$current` loads until the
+row is known.
 
 ```ts
 function useQuery<C extends AnyContract>(
@@ -296,7 +303,8 @@ Uses: [`AnyContract`](core.md#anycontract), [`DataEntry`](core.md#dataentry), [`
 
 ### useRanked
 
-Every action, ranked for a palette by how the user reaches for them.
+Every action, ranked for a palette by how the user reaches for them. Server rendering ranks
+them as for someone new.
 
 ```ts
 function useRanked<C extends AnyContract>(client: Uitive<C>): readonly ActionView<ActionIdOf<C>>[];
@@ -307,7 +315,8 @@ Uses: [`ActionIdOf`](core.md#actionidof), [`ActionView`](core.md#actionview), [`
 ### useSnapshot
 
 The client's whole snapshot. It changes with every usage event, so use it for panels, not for
-the interface itself; prefer [`useSurface`](#usesurface) there.
+the interface itself; prefer [`useSurface`](#usesurface) there. Server rendering and hydration read the
+state of a client with nothing stored.
 
 ```ts
 function useSnapshot<C extends AnyContract>(client: Uitive<C>): Snapshot;
@@ -365,7 +374,7 @@ Uses: [`AnyContract`](core.md#anycontract), [`Uitive`](core.md#uitive).
 
 ### useUserPages
 
-The pages the user made.
+The pages the user made; none during server rendering, so hydration never mismatches.
 
 ```ts
 function useUserPages<C extends AnyContract>(client: Uitive<C>): readonly UserPage[];
@@ -375,7 +384,8 @@ Uses: [`AnyContract`](core.md#anycontract), [`Uitive`](core.md#uitive), [`UserPa
 
 ### useView
 
-Whether the user is looking at their own interface or the standard one.
+Whether the user is looking at their own interface or the standard one; `yours` during server
+rendering.
 
 ```ts
 function useView<C extends AnyContract>(client: Uitive<C>): View;
@@ -415,8 +425,10 @@ Uses: [`AnyPage`](core.md#anypage), [`Element`](core.md#element).
 
 ### Page
 
-Renders a page, standard or redesigned, with the application's own components. Sections,
-tabs and blocks carry `data-layout`, `data-block` and `data-element` attributes for styling.
+Renders a page, standard or redesigned, with the application's own components. For styling,
+the page and its sections carry `data-layout`, and each block, or section or tabs nested in a
+section, sits in a wrapper with `data-block` and `data-element`; a page's top-level sections and
+tabs sit directly in the page.
 
 ```ts
 function Page<B extends Record<string, BlockSpec>>(props: PageProps<B>): JSX.Element | null;
@@ -460,7 +472,7 @@ Type parameters: `B extends Record<string, BlockSpec>`.
 | ------------ | -------------------- | ----------------------------- | ------------------------------------------------------------------------------- |
 | `value`      | `AnyPage`            |                               | The page, usually from `useSurface`.                                            |
 | `blocks`     | `BlockComponents<B>` |                               | A component for each of the application's own blocks; generic blocks need none. |
-| `regions?`   | `RegionComponents`   |                               | What each region shows, such as the page as it was before Uitive.               |
+| `regions?`   | `RegionComponents`   | `{}`                          | What each region shows, such as the page as it was before Uitive.               |
 | `context?`   | `string`             |                               | The page's context value, such as the service shown.                            |
 | `current?`   | `string`             | the row the location is about | The key of the row the page is about.                                           |
 | `className?` | `string`             | `'uitive-page'`               | The class of the page's wrapper.                                                |
@@ -521,11 +533,12 @@ const kitStyles: string;
 
 One point of a chart series.
 
-| Property | Type               | Description                            |
-| -------- | ------------------ | -------------------------------------- |
-| `x`      | `number \| string` | A time in milliseconds, or a category. |
-| `label`  | `string`           | The point's label, as people read it.  |
-| `y`      | `number`           | Its value.                             |
+| Property    | Type               | Description                                                                               |
+| ----------- | ------------------ | ----------------------------------------------------------------------------------------- |
+| `x`         | `number \| string` | A time in milliseconds, or a category; points with the same `x` line up across series.    |
+| `label`     | `string`           | The point's label, as people read it.                                                     |
+| `y`         | `number`           | Its value; money in major units.                                                          |
+| `currency?` | `string`           | For money: the currency the value is in. Amounts in different currencies are never added. |
 
 ### ChartSeries
 
@@ -654,13 +667,13 @@ Uses: [`ChartSeries`](#chartseries), [`Field`](core.md#field-type), [`ListItem`]
 | `Table`   | Rows under column headers: the table block, with row actions in its cells.                                                                                                               |
 | `List`    | Rows as a list, each with a title, a subtitle, a badge and its own actions.                                                                                                              |
 | `Stat`    | One figure with its label: the metric block.                                                                                                                                             |
-| `Chart`   | Series drawn as lines, bars, areas or a pie.                                                                                                                                             |
+| `Chart`   | Series drawn as lines, bars, areas or a pie. A chart never stacks or totals amounts in different currencies, and offers its figures to assistive technology as well as a picture.        |
 | `Badge`   | A short label with a tone, such as a status.                                                                                                                                             |
 | `Value`   | One value, shown by its type, such as money with its currency or a reference by name.                                                                                                    |
 | `Button`  | A button: row actions, the actions block and dialogs use it.                                                                                                                             |
 | `Link`    | A link to a route, followed through the application's router.                                                                                                                            |
 | `Field`   | A labeled input for one field, such as an action's param in a form.                                                                                                                      |
-| `Dialog`  | A modal with a title, for confirmations and the forms of actions run from a row.                                                                                                         |
+| `Dialog`  | A modal with a title, for confirmations and the forms of actions run from a row. It takes focus when it opens, keeps it inside, closes on Escape and gives focus back when it closes.    |
 | `Notice`  | What happened when an action ran from a generated page. Map it to the design system's toast or alert: each run mounts a new one, so a toast can show itself on mount and render nothing. |
 | `Status`  | What a block shows around or instead of data: no rows, loading, an error, or a partial result.                                                                                           |
 

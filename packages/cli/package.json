@@ -48,5 +48,8 @@
   },
   "devDependencies": {
     "playwright-core": "1.63.0"
+  },
+  "bugs": {
+    "url": "https://github.com/plurid/uitive/issues"
   }
 }

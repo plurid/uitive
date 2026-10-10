@@ -8,11 +8,15 @@ import {
   collection,
   defineApp,
   list,
+  page,
   type ActionIdOf,
   type CollectionValue,
   type ListValue,
   type SurfaceIdOf,
 } from './contract.js';
+import { fromJson, toJson } from './json.js';
+import { ui } from './page.js';
+import { checkQuery } from './query.js';
 
 const base = {
   id: 'app',
@@ -201,5 +205,73 @@ describe('types', () => {
     client.record('teleport');
     // @ts-expect-error: not a surface of the editor.
     client.surface('sidebar');
+  });
+});
+
+describe('contract checks', () => {
+  const app = (extra: Record<string, unknown>) =>
+    defineApp({
+      id: 'app',
+      description: 'An app',
+      actions: { open: action({ label: 'Open', description: 'Open' }) },
+      surfaces: {},
+      ...extra,
+    });
+
+  it('find only what the contract declares, never what every object inherits', () => {
+    const contract = app({});
+    expect(contract.source('constructor')).toBeUndefined();
+    expect(contract.source('__proto__')).toBeUndefined();
+    const checked = checkQuery(contract, { source: '__proto__', aggregate: { measure: 'count' } });
+    expect(checked).toEqual({ ok: false, problem: 'No source "__proto__"' });
+    expect(() =>
+      app({
+        actions: {
+          open: action({ label: 'Open', description: 'Open', invalidates: ['constructor'] }),
+        },
+      }),
+    ).toThrow(/invalidates unknown source "constructor"/);
+    expect(() =>
+      app({ regions: { main: { label: 'Main', description: 'Main', entity: 'constructor' } } }),
+    ).toThrow(/unknown source "constructor"/);
+    expect(() => app({ routes: { a: { path: '/a/:id', entity: 'constructor' } } })).toThrow(
+      /unknown source "constructor"/,
+    );
+  });
+
+  it('refuse an alias two actions claim', () => {
+    expect(() =>
+      app({
+        actions: {
+          one: action({ label: 'One', description: 'One', aliases: ['old'] }),
+          two: action({ label: 'Two', description: 'Two', aliases: ['old'] }),
+        },
+      }),
+    ).toThrow('actions: "old" is an alias of both one and two');
+  });
+
+  it('hash standard pages, and keep the hash through JSON', () => {
+    const shown = (region: string) =>
+      app({
+        regions: {
+          one: { label: 'One', description: 'One' },
+          two: { label: 'Two', description: 'Two' },
+        },
+        contexts: { tab: ['first', 'second'] },
+        surfaces: {
+          home: page({})({
+            label: 'Home',
+            description: 'Home',
+            context: 'tab',
+            standard: (tab) => ui.page(ui.region(tab === 'second' ? region : 'one')),
+          }),
+        },
+      });
+    const one = shown('one');
+    const two = shown('two');
+    expect(one.hash).not.toBe(two.hash);
+    expect(shown('two').hash).toBe(two.hash);
+    expect(fromJson(toJson(two)).hash).toBe(two.hash);
+    expect(fromJson(JSON.parse(JSON.stringify(toJson(one)))).hash).toBe(one.hash);
   });
 });

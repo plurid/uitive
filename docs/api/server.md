@@ -16,9 +16,11 @@ Source: [`handler.ts`](../../packages/server/src/handler.ts)
 
 ### createUitiveHandler
 
-A Fetch-standard handler: `POST …/plan` and `POST …/command` take a plan request and answer
-with a plan result. It owns the contract (clients send only its hash) and never logs bodies.
-Clients that accept `application/x-ndjson` get progress lines, then the result or an error.
+A Fetch-standard handler: `POST …/plan` and `POST …/command` take a plan request as JSON and
+answer with a plan result. It owns the contract (clients send only its hash), refuses cross-site
+requests, checks every request's shape before a planner sees it, never logs bodies, and tells
+the browser only what failed, never a provider's details. Clients that accept
+`application/x-ndjson` get progress lines, then the result or an error.
 
 ```ts
 function createUitiveHandler(options: HandlerOptions): (request: Request) => Promise<Response>;
@@ -33,14 +35,15 @@ limits.
 
 Uses: [`AnyContract`](core.md#anycontract), [`Planner`](core.md#planner).
 
-| Property       | Type                                                | Default                         | Description                                                                                                                                    |
-| -------------- | --------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contract`     | `AnyContract`                                       |                                 | The contract the application's clients use; requests made with another are refused with 409.                                                   |
-| `planner`      | `Planner`                                           |                                 | Who plans, such as `modelPlanner({ model: environmentModel() })`, with the server's own key.                                                   |
-| `authorize?()` | `(request: Request) => boolean \| Promise<boolean>` |                                 | Whether a request may plan. Planning spends money, so the default only allows requests whose host is localhost; production needs a real check. |
-| `maxBody?`     | `number`                                            | `131072`                        | Largest request body in bytes.                                                                                                                 |
-| `perMinute?`   | `number`                                            | `20`                            | Requests per minute per client.                                                                                                                |
-| `onError?()`   | `(error: unknown) => void`                          | logs the message to the console | Told about failures; never sees request bodies.                                                                                                |
+| Property      | Type                                                | Default                                                                                                                            | Description                                                                                                                                                                                                                                                                                                                                   |
+| ------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contract`    | `AnyContract`                                       |                                                                                                                                    | The contract the application's clients use; requests made with another are refused with 409.                                                                                                                                                                                                                                                  |
+| `planner`     | `Planner`                                           |                                                                                                                                    | Who plans, such as `modelPlanner({ model })`, with the server's own key.                                                                                                                                                                                                                                                                      |
+| `authorize()` | `(request: Request) => boolean \| Promise<boolean>` |                                                                                                                                    | Whether a request may plan: the application's own check of the person's session, the one its API makes. Planning spends money, so there is no default. Until the application has one, allowing requests only outside production (`process.env.NODE_ENV !== 'production'`) keeps local development working and refuses everyone once deployed. |
+| `maxBody?`    | `number`                                            | `131072`                                                                                                                           | Largest request body in bytes.                                                                                                                                                                                                                                                                                                                |
+| `perMinute?`  | `number`                                            | `20`                                                                                                                               | Requests per minute per client, as `client` tells them apart.                                                                                                                                                                                                                                                                                 |
+| `client?()`   | `(request: Request) => string`                      | the right-most `X-Forwarded-For` entry, which the proxy in front of the server wrote, else `'local'`, one budget for every request | Tells clients apart for `perMinute`. Behind more than one proxy, return the address your own proxy recorded.                                                                                                                                                                                                                                  |
+| `onError?()`  | `(error: unknown) => void`                          | logs the message to the console                                                                                                    | Told about failures; never sees request bodies.                                                                                                                                                                                                                                                                                               |
 
 ## `@plurid/uitive-server/node`
 
@@ -51,7 +54,9 @@ Source: [`node.ts`](../../packages/server/src/node.ts)
 Serves a Fetch-standard handler from Node's `(request, response)` listeners: Express, Fastify's
 raw routes and `node:http` alike, in CommonJS or ES modules. A body that middleware such as
 `express.json()` already parsed is used as it is. Responses stream, so progress lines arrive as
-they are written, and a request the client abandons is aborted.
+they are written, and a request the client abandons is aborted. The request keeps its path and
+query under a fixed origin, since its Host header proves nothing. The listener never rejects:
+a request it can't read is answered 400, and a handler that throws, 500.
 
 ```ts
 app.use('/api/uitive', toNodeListener(handler));
@@ -89,13 +94,14 @@ Uses: [`NodeRequest`](#noderequest).
 
 ### NodeListenerOptions
 
-How `toNodeListener` reads requests.
+How `toNodeListener` reads requests, and whom it tells when the handler fails.
 
 Import from `@plurid/uitive-server/node`.
 
-| Property   | Type     | Default  | Description                                                          |
-| ---------- | -------- | -------- | -------------------------------------------------------------------- |
-| `maxBody?` | `number` | `131072` | Largest request body read, in bytes; larger ones are refused unread. |
+| Property     | Type                       | Default                         | Description                                                                                                                                    |
+| ------------ | -------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `maxBody?`   | `number`                   | 131072, the handler's default   | Largest request body read, in bytes; larger ones are refused unread. It is checked before the handler's own `maxBody`, so raise both together. |
+| `onError?()` | `(error: unknown) => void` | logs the message to the console | Told when the handler throws or its response breaks off; never sees request bodies.                                                            |
 
 ### NodeRequest
 
@@ -112,4 +118,4 @@ Import from `@plurid/uitive-server/node`.
 
 ## Re-exported
 
-From [`@plurid/uitive-planner`](planner.md): [`anthropic`](planner.md#anthropic), [`contractText`](planner.md#contracttext), [`costOf`](planner.md#costof), [`DEFAULT_MODELS`](planner.md#default_models), [`environmentModel`](planner.md#environmentmodel), [`google`](planner.md#google), [`limits`](planner.md#limits), [`modelPlanner`](planner.md#modelplanner), [`openai`](planner.md#openai), [`outputSchema`](planner.md#outputschema), [`PlannerError`](planner.md#plannererror), [`repairText`](planner.md#repairtext), [`requestText`](planner.md#requesttext), [`RULES`](planner.md#rules), [`size`](planner.md#size), [`toOperations`](planner.md#tooperations), [`vocabulary`](planner.md#vocabulary), [`AnthropicOptions`](planner.md#anthropicoptions), [`GoogleOptions`](planner.md#googleoptions), [`Model`](planner.md#model), [`ModelCall`](planner.md#modelcall), [`ModelMessage`](planner.md#modelmessage), [`ModelPlannerOptions`](planner.md#modelplanneroptions), [`ModelPrices`](planner.md#modelprices), [`ModelReply`](planner.md#modelreply), [`ModelUsage`](planner.md#modelusage), [`OpenAIOptions`](planner.md#openaioptions), [`PlannerOutput`](planner.md#planneroutput), [`SchemaOptions`](planner.md#schemaoptions), [`Vocabulary`](planner.md#vocabulary-type).
+From [`@plurid/uitive-planner`](planner.md): [`anthropic`](planner.md#anthropic), [`contractText`](planner.md#contracttext), [`costOf`](planner.md#costof), [`DEFAULT_MODELS`](planner.md#default_models), [`environmentModel`](planner.md#environmentmodel), [`google`](planner.md#google), [`limits`](planner.md#limits), [`modelPlanner`](planner.md#modelplanner), [`offeredBlocks`](planner.md#offeredblocks), [`openai`](planner.md#openai), [`outputSchema`](planner.md#outputschema), [`PlannerError`](planner.md#plannererror), [`planRequestSchema`](planner.md#planrequestschema), [`repairText`](planner.md#repairtext), [`requestText`](planner.md#requesttext), [`RULES`](planner.md#rules), [`size`](planner.md#size), [`toOperations`](planner.md#tooperations), [`vocabulary`](planner.md#vocabulary), [`AnthropicOptions`](planner.md#anthropicoptions), [`GoogleOptions`](planner.md#googleoptions), [`Model`](planner.md#model), [`ModelCall`](planner.md#modelcall), [`ModelMessage`](planner.md#modelmessage), [`ModelPlannerOptions`](planner.md#modelplanneroptions), [`ModelPrices`](planner.md#modelprices), [`ModelReply`](planner.md#modelreply), [`ModelUsage`](planner.md#modelusage), [`OpenAIOptions`](planner.md#openaioptions), [`PlannerOutput`](planner.md#planneroutput), [`SchemaOptions`](planner.md#schemaoptions), [`Vocabulary`](planner.md#vocabulary-type).

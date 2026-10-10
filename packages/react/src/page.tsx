@@ -47,7 +47,7 @@ export interface PageProps<B extends Record<string, BlockSpec>> {
   value: AnyPage;
   /** A component for each of the application's own blocks; generic blocks need none. */
   blocks: BlockComponents<B>;
-  /** What each region shows, such as the page as it was before Uitive. */
+  /** What each region shows, such as the page as it was before Uitive. @default {} */
   regions?: RegionComponents;
   /** The page's context value, such as the service shown. */
   context?: string;
@@ -61,8 +61,10 @@ const silent = () => () => {};
 const generic: readonly string[] = GENERIC;
 
 /**
- * Renders a page, standard or redesigned, with the application's own components. Sections,
- * tabs and blocks carry `data-layout`, `data-block` and `data-element` attributes for styling.
+ * Renders a page, standard or redesigned, with the application's own components. For styling,
+ * the page and its sections carry `data-layout`, and each block, or section or tabs nested in a
+ * section, sits in a wrapper with `data-block` and `data-element`; a page's top-level sections and
+ * tabs sit directly in the page.
  */
 export function Page<B extends Record<string, BlockSpec>>({
   value,

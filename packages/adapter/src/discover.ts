@@ -33,7 +33,7 @@ export interface PageFacts {
   buttons: { name: string; landmark: string; opens?: boolean }[];
   /** Its links, with where they go and the landmark they sit in. */
   links: { name: string; url: string; landmark: string }[];
-  /** Its tables: their columns and the buttons on each row, never the rows. */
+  /** Its tables: their columns and the buttons repeated on their rows, never the rows' data. */
   tables: { name: string; columns: string[]; rowActions: string[] }[];
   /** Explicit toolbars, and runs of three or more buttons side by side. */
   toolbars: { name: string; landmark: string; items: string[] }[];
@@ -65,8 +65,56 @@ const unique = (names: readonly string[]) => [...new Set(names.map(cleanName).fi
 const inDialog = (ancestors: readonly RoleNode[]) =>
   ancestors.some((node) => node.role === 'dialog' || node.role === 'alertdialog');
 
+/** What the page itself says, besides its accessibility tree. */
+export interface FactsOptions {
+  /**
+   * Names of the controls that open a menu or a panel, read from the page (`aria-haspopup` and
+   * `aria-expanded`): an ARIA snapshot marks one only while it is open, as `[expanded]`.
+   * @default []
+   */
+  menus?: readonly string[];
+}
+
+/**
+ * The buttons on a table's rows that are actions: a name repeated from row to row, or one in the
+ * same column as such a name, as "Start" beside "Stop". A name on one row only, such as a person's,
+ * is that row's data, and never read.
+ */
+function rowActions(table: RoleNode): string[] {
+  const columns = new Map<number, Map<string, Set<RoleNode>>>();
+  for (const { node: row } of walk(table.children)) {
+    if (row.role !== 'row') continue;
+    const cells = row.children.filter((cell) => cell.role !== 'columnheader');
+    for (const [index, cell] of cells.entries()) {
+      for (const { node, ancestors } of walk([cell])) {
+        // Buttons in column headers sort the table; they aren't actions on its rows.
+        if (node.role !== 'button' || ancestors.some((entry) => entry.role === 'columnheader'))
+          continue;
+        const name = cleanName(textOf(node));
+        if (name === '') continue;
+        const column = columns.get(index) ?? new Map<string, Set<RoleNode>>();
+        columns.set(index, column);
+        column.set(name, (column.get(name) ?? new Set()).add(row));
+      }
+    }
+  }
+  const actions: string[] = [];
+  for (const column of columns.values()) {
+    if ([...column.values()].some((rows) => rows.size > 1)) actions.push(...column.keys());
+  }
+  return [...new Set(actions)];
+}
+
 /** What a page offers, read from its accessibility tree. Structure only: rows are never read. */
-export function factsOf(tree: readonly RoleNode[], url: string): PageFacts {
+export function factsOf(
+  tree: readonly RoleNode[],
+  url: string,
+  options: FactsOptions = {},
+): PageFacts {
+  const menus = new Set((options.menus ?? []).map(cleanName));
+  // A button that opens a menu or a panel: what it opens is the part to adapt, not the button.
+  const opens = (node: RoleNode) =>
+    node.attributes.expanded !== undefined || menus.has(cleanName(textOf(node)));
   const facts: PageFacts = {
     url,
     path: pathOf(url),
@@ -102,24 +150,21 @@ export function factsOf(tree: readonly RoleNode[], url: string): PageFacts {
         });
       if (items.length > 0) facts.navigation.push({ name: node.name, items });
     }
-    if (node.role === 'table' || node.role === 'grid') {
-      const entries = [...walk(node.children)];
-      const inside = entries.map((entry) => entry.node);
-      const actions = new Set<string>();
-      for (const { node: item, ancestors: above } of entries) {
-        if (item.role !== 'button') continue;
-        claimed.add(item);
-        // Buttons in column headers sort the table; they aren't actions on its rows.
-        if (!above.some((entry) => entry.role === 'columnheader'))
-          actions.add(cleanName(textOf(item)));
+    // A dialog's tables and toolbars are a passing flow, and a table's own toolbars are its rows'.
+    const passing = inDialog([...ancestors, node]);
+    const inTable = ancestors.some((entry) => entry.role === 'table' || entry.role === 'grid');
+    if ((node.role === 'table' || node.role === 'grid') && !inTable) {
+      const inside = [...walk(node.children)].map((entry) => entry.node);
+      for (const item of inside) if (item.role === 'button') claimed.add(item);
+      if (!passing) {
+        facts.tables.push({
+          name: node.name,
+          columns: inside.filter((entry) => entry.role === 'columnheader').map(textOf),
+          rowActions: rowActions(node),
+        });
       }
-      facts.tables.push({
-        name: node.name,
-        columns: inside.filter((entry) => entry.role === 'columnheader').map(textOf),
-        rowActions: [...actions].filter(Boolean),
-      });
     }
-    if (node.role === 'toolbar') {
+    if (node.role === 'toolbar' && !passing && !inTable) {
       const items = unique(
         [...walk(node.children)]
           .map((entry) => entry.node)
@@ -148,7 +193,8 @@ export function factsOf(tree: readonly RoleNode[], url: string): PageFacts {
       run = [];
     };
     for (const child of node.children) {
-      if (child.role === 'button' && !claimed.has(child) && textOf(child) !== '') run.push(child);
+      if (child.role === 'button' && !claimed.has(child) && textOf(child) !== '' && !opens(child))
+        run.push(child);
       else flush();
     }
     flush();
@@ -159,8 +205,7 @@ export function factsOf(tree: readonly RoleNode[], url: string): PageFacts {
       facts.buttons.push({
         name: cleanName(textOf(node)),
         landmark: landmarkOf(ancestors),
-        // An expandable button opens a menu or a panel: what it opens is the part to adapt.
-        ...(node.attributes.expanded === undefined ? {} : { opens: true }),
+        ...(opens(node) ? { opens: true } : {}),
       });
     } else if (node.role === 'link' && node.properties.url) {
       facts.links.push({

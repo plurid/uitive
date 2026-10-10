@@ -14,7 +14,7 @@ export const notes = defineApp({
   description: 'A note-taking app',
   actions: {
     bold: action({ label: 'Bold', description: 'Bold the selection' }),
-    italic: action({ label: 'Italic', description: 'Italicise the selection' }),
+    italic: action({ label: 'Italic', description: 'Italicize the selection' }),
     share: action({ label: 'Share', description: 'Share the note' }),
     table: action({ label: 'Insert table', description: 'Insert a table' }),
     print: action({ label: 'Print', description: 'Print the note' }),

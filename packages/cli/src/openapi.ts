@@ -226,12 +226,21 @@ interface View {
   members: View[];
 }
 
+/** Most members a union keeps: past this many, it is only ever read as a union. */
+const MAX_MEMBERS = 64;
+
 class Resolver {
+  /** Views by the reference they were reached through, each worked out once. */
+  private readonly views = new Map<string, View>();
+  /** References being worked out, outermost first, so a cycle stops where it closes. */
+  private readonly stack = new Set<string>();
+
   constructor(private readonly doc: Json) {}
 
-  target(node: unknown): { node: Json; name: string } {
+  target(node: unknown): { node: Json; name: string; refs: string[] } {
     let current = node;
     let name = '';
+    const refs: string[] = [];
     for (let hops = 0; hops < 32 && isObject(current) && typeof current.$ref === 'string'; hops++) {
       const ref = current.$ref;
       if (!ref.startsWith('#')) {
@@ -239,14 +248,34 @@ class Resolver {
           `External reference ${ref}: bundle the spec into one file first, for example with \`npx @redocly/cli bundle\``,
         );
       }
+      refs.push(ref);
       name = decodeURIComponent(ref.slice(ref.lastIndexOf('/') + 1));
       current = pointer(this.doc, ref.slice(1));
     }
-    return { node: isObject(current) ? current : {}, name };
+    return { node: isObject(current) ? current : {}, name, refs };
   }
 
   view(node: unknown, depth = 0): View {
-    const { node: schema, name } = this.target(node);
+    const { node: schema, name, refs } = this.target(node);
+    const [ref] = refs;
+    const known = ref === undefined ? undefined : this.views.get(ref);
+    if (known) return known;
+    // Schemas that refer back to themselves, such as subtypes made of their own union, would
+    // otherwise unfold without end: where the cycle closes, only the schema's own level is read.
+    const cycle = refs.some((entry) => this.stack.has(entry));
+    if (cycle) return this.read(schema, name, undefined);
+    for (const entry of refs) this.stack.add(entry);
+    try {
+      const view = this.read(schema, name, depth > 32 ? undefined : depth);
+      if (ref !== undefined) this.views.set(ref, view);
+      return view;
+    } finally {
+      for (const entry of refs) this.stack.delete(entry);
+    }
+  }
+
+  /** A schema's view; without a depth, its own level only, with no parts to combine. */
+  private read(schema: Json, name: string, depth: number | undefined): View {
     const view: View = {
       name,
       types: new Set(),
@@ -259,7 +288,6 @@ class Resolver {
       items: schema.items,
       members: [],
     };
-    if (depth > 8) return view;
     const types = schema.type;
     for (const type of Array.isArray(types) ? types : types === undefined ? [] : [types]) {
       if (type === 'null') view.nullable = true;
@@ -271,6 +299,7 @@ class Resolver {
     }
     if (Array.isArray(schema.required))
       for (const key of schema.required) view.required.add(String(key));
+    if (depth === undefined) return view;
     for (const part of Array.isArray(schema.allOf) ? schema.allOf : []) {
       merge(view, this.view(part, depth + 1), false);
     }
@@ -282,7 +311,7 @@ class Resolver {
       const member = this.view(part, depth + 1);
       const onlyNull = member.types.size === 0 && member.nullable && member.properties.size === 0;
       if (member.nullable) view.nullable = true;
-      if (!onlyNull) view.members.push(member);
+      if (!onlyNull && view.members.length < MAX_MEMBERS) view.members.push(member);
     }
     const [only] = view.members;
     if (view.members.length === 1 && only && view.types.size === 0) {
@@ -308,7 +337,7 @@ function merge(into: View, from: View, named: boolean) {
   into.description ||= from.description;
   if (into.values.length === 0) into.values = from.values;
   into.items ??= from.items;
-  into.members.push(...from.members);
+  into.members.push(...from.members.slice(0, Math.max(0, MAX_MEMBERS - into.members.length)));
   if (named) into.name ||= from.name;
 }
 
@@ -335,45 +364,62 @@ const PREFIXES = /^(v\d+(\.\d+)?|api|rest|admin|public|internal)$/i;
 const MONEY_NAME =
   /(^|_)(amount|total|subtotal|price|cost|balance|fee|tax|discount|refunded|captured|net|gross)(_|$)/;
 const TIME_NAME = /(^|_)(created|updated|deleted|date|time|timestamp)$|_at$|_on$/;
-const DESTRUCTIVE = new Set([
+/**
+ * The starts of words that say a write moves money or can't be undone: `pay` covers payment and
+ * payout, `cancel` cancellation, `delet` deletion. Effects err on the safe side.
+ */
+const DESTRUCTIVE = [
   'refund',
   'void',
-  'capture',
-  'payout',
+  'captur',
   'transfer',
   'pay',
-  'charge',
+  'charg',
+  'debit',
+  'withdraw',
+  'settl',
+  'disburs',
+  'purchas',
+  'checkout',
   'confirm',
-  'approve',
-  'decline',
+  'approv',
+  'declin',
   'cancel',
-  'close',
+  'clos',
   'reject',
-  'revoke',
-  'terminate',
-  'archive',
-  'delete',
-  'remove',
-  'purge',
+  'revok',
+  'revoc',
+  'terminat',
+  'archiv',
+  'delet',
+  'destroy',
+  'remov',
+  'eras',
+  'wipe',
+  'purg',
   'reset',
-  'disable',
-  'deactivate',
-  'expire',
-  'finalize',
-  'finalise',
+  'disabl',
+  'deactivat',
+  'expir',
+  'finaliz',
+  'finalis',
   'uncollectible',
-  'reverse',
+  'revers',
   'send',
-  'submit',
+  'submi',
   'ship',
-  'shipment',
-  'fulfill',
   'fulfil',
-  'fulfillment',
-  'complete',
-  'authorize',
-  'authorise',
-]);
+  'complet',
+  'authoriz',
+  'authoris',
+  'deploy',
+  'publish',
+  'releas',
+];
+/** Words that start like one of those but say nothing of the kind. */
+const HARMLESS = new Set(['payload', 'shipping', 'sender']);
+const destructive = (word: string) =>
+  !HARMLESS.has(word) && DESTRUCTIVE.some((start) => word.startsWith(start));
 
 /** The source a field names, such as `customer_id`, or `type_id` on products for `product-types`. */
 function refTarget(name: string, index: Index, owner: string): string | undefined {
@@ -677,7 +723,7 @@ export function inventory(
   }
   const ids = new Set(sources.map((entry) => entry.id));
   const actions: ApiAction[] = [];
-  const taken = new Set<string>();
+  const paths = new Map<ApiAction, Operation>();
   for (const operation of operations) {
     if (operation.method === 'get') continue;
     if (operation.op.deprecated === true) {
@@ -689,11 +735,10 @@ export function inventory(
       skipped.push({ operation: operation.key, reason: built.skip });
       continue;
     }
-    let id = built.id;
-    if (taken.has(id)) id = `${id}.${operation.method}`;
-    taken.add(id);
-    actions.push({ ...built, id });
+    actions.push(built);
+    paths.set(built, operation);
   }
+  distinguish(actions, paths);
   return {
     title: text(info.title) || 'API',
     version: text(info.version),
@@ -702,6 +747,54 @@ export function inventory(
     actions,
     skipped,
   };
+}
+
+/**
+ * Gives actions that share an ID one each, whatever order the description lists their paths in.
+ * The first by method, then path, keeps the ID; another method adds its own (`.patch`), the same
+ * method adds what its path says that the ID doesn't (`.v2`), and a number settles the rest.
+ */
+function distinguish(actions: ApiAction[], operations: ReadonlyMap<ApiAction, Operation>) {
+  const groups = new Map<string, ApiAction[]>();
+  for (const action of actions) groups.set(action.id, [...(groups.get(action.id) ?? []), action]);
+  const taken = new Set(groups.keys());
+  const rank = (action: ApiAction) => {
+    const operation = operations.get(action);
+    return [
+      (METHODS as readonly string[]).indexOf(operation?.method ?? ''),
+      operation?.path ?? '',
+    ] as const;
+  };
+  for (const id of [...groups.keys()].sort()) {
+    const group = (groups.get(id) ?? []).sort((a, b) => {
+      const [left, right] = [rank(a), rank(b)];
+      return left[0] - right[0] || (left[1] < right[1] ? -1 : left[1] > right[1] ? 1 : 0);
+    });
+    const [first, ...rest] = group;
+    for (const action of rest) {
+      const operation = operations.get(action);
+      const method = operation?.method ?? 'post';
+      const words = new Set(id.split(/[.-]/));
+      const path = (operation?.path ?? '')
+        .split('/')
+        .filter((part) => part !== '' && !part.startsWith('{'))
+        .map(kebab)
+        .filter((part) => part !== '' && !words.has(part) && !words.has(singular(part)))
+        .join('-');
+      const tries = [
+        ...(first && method !== operations.get(first)?.method ? [method] : []),
+        ...(path ? [path] : []),
+        method,
+      ].map((suffix) => `${id}.${suffix}`);
+      let chosen = tries.find((candidate) => !taken.has(candidate));
+      for (let count = 2; chosen === undefined; count++) {
+        const candidate = `${tries[0]}-${count}`;
+        if (!taken.has(candidate)) chosen = candidate;
+      }
+      taken.add(chosen);
+      action.id = chosen;
+    }
+  }
 }
 
 function rowsOf(
@@ -1171,16 +1264,32 @@ function buildAction(
       skipped.push({ name: entry.name, reason: 'one too many' });
     }
   }
+  // A run sends the path's params and a body, nothing else: an action that needs more would only
+  // ever fail, as a source that needs a parameter would.
+  const needs = [
+    ...operation.params
+      .filter((param) => param.in !== 'path' && param.required === true)
+      .map((param) => text(param.name)),
+    ...skipped.filter((entry) => entry.reason.endsWith(' (required)')).map((entry) => entry.name),
+  ];
+  if (needs.length > 0) return { skip: `needs ${needs.join(', ')}` };
 
   // What the action does, plus, for creations, what it creates: creating a refund moves money.
-  const words = [...parts, verb ?? '', ...(verb === 'create' ? [resource] : [])]
-    .flatMap((part) => part.split('-'))
-    .map(singular);
-  const word = words.find((entry) => DESTRUCTIVE.has(entry));
+  // The operation's ID and summary can say more, such as "Cancel an order" for a status update,
+  // once the names of what it acts on are left out: updating a payment is no payment.
+  const split = (value: string) => kebab(value).split('-').filter(Boolean).map(singular);
+  const named = new Set([resource, owner?.id ?? ''].flatMap(split));
+  const summary = text(operation.op.summary);
+  const words = [
+    ...[...parts, verb ?? '', ...(verb === 'create' ? [resource] : [])].flatMap(split),
+    ...[text(operation.op.operationId), summary]
+      .flatMap(split)
+      .filter((entry) => !named.has(entry)),
+  ];
+  const word = words.find(destructive);
   const effect: ApiAction['effect'] = method === 'delete' || word ? 'destructive' : 'write';
   const reason = method === 'delete' ? 'deletes' : word ? `${word}: hard to undo` : 'changes data';
 
-  const summary = text(operation.op.summary);
   const thing = (part: string) => singular(part).replace(/-/g, ' ');
   const fallback = verb
     ? `${verb} ${[resource, ...parts].slice(-2).map(thing).join(' ')}`

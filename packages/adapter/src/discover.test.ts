@@ -109,6 +109,8 @@ describe('matchAction', () => {
 
 describe('factsOf', () => {
   it('leaves dialogs and sorting out, cleans names, and marks what opens a menu', () => {
+    // As Playwright writes it: `[expanded]` only while a menu is open, nothing while it is shut,
+    // so the page says which buttons open menus.
     const facts = factsOf(
       parseAriaSnapshot(
         [
@@ -120,12 +122,16 @@ describe('factsOf', () => {
           '  - button "Search \u2318K"',
           '  - button "Accessibility F4"',
           '- main:',
-          '  - button "Add new" [expanded=false]',
+          '  - button "Add new"',
+          '  - button "Share" [expanded]',
           '  - button "Export"',
           '  - table "Orders":',
           '    - row:',
           '      - columnheader "Created":',
           '        - button "Created"',
+          '    - row:',
+          '      - cell:',
+          '        - button "Refund"',
           '    - row:',
           '      - cell:',
           '        - button "Refund"',
@@ -136,6 +142,7 @@ describe('factsOf', () => {
         ].join('\n'),
       ),
       'http://localhost/orders',
+      { menus: ['Add new'] },
     );
     expect(facts.navigation[0]?.items.map((item) => item.name)).toEqual([
       'Orders',
@@ -144,10 +151,74 @@ describe('factsOf', () => {
     ]);
     expect(facts.buttons).toEqual([
       { name: 'Add new', landmark: 'main', opens: true },
+      { name: 'Share', landmark: 'main', opens: true },
       { name: 'Export', landmark: 'main' },
     ]);
     expect(facts.tables[0]?.rowActions).toEqual(['Refund']);
     expect(facts.toolbars).toEqual([]);
+  });
+
+  it('never makes actions of a dialog\u2019s toolbars and tables', () => {
+    const facts = factsOf(
+      parseAriaSnapshot(
+        [
+          '- main:',
+          '  - heading "Orders" [level=1]',
+          '  - dialog "Delete this order?":',
+          '    - toolbar "Confirm":',
+          '      - button "Delete order"',
+          '      - button "Keep it"',
+          '    - table "Refunds":',
+          '      - row:',
+          '        - cell:',
+          '          - button "Refund"',
+          '      - row:',
+          '        - cell:',
+          '          - button "Refund"',
+        ].join('\n'),
+      ),
+      'http://localhost/orders',
+    );
+    expect(facts).toMatchObject({ buttons: [], tables: [], toolbars: [] });
+    const discovery = discoverApp([facts], {
+      actions: { 'orders.delete': { label: 'Delete order', description: '' } },
+      actionIds: ['orders.delete'],
+      sourceIds: ['orders'],
+    });
+    expect(discovery.actions).toEqual([]);
+  });
+
+  it('keeps a row\u2019s buttons only when they repeat from row to row, never the row\u2019s data', () => {
+    const facts = factsOf(
+      parseAriaSnapshot(
+        [
+          '- main:',
+          '  - table "Customers":',
+          '    - row:',
+          '      - columnheader "Name"',
+          '      - columnheader "State"',
+          '    - row:',
+          '      - cell:',
+          '        - button "Jane Doe jane@example.com"',
+          '      - cell:',
+          '        - button "Stop"',
+          '    - row:',
+          '      - cell:',
+          '        - button "John Roe john@example.com"',
+          '      - cell:',
+          '        - button "Start"',
+          '    - row:',
+          '      - cell:',
+          '        - button "Ann Poe ann@example.com"',
+          '      - cell:',
+          '        - button "Stop"',
+        ].join('\n'),
+      ),
+      'http://localhost/customers',
+    );
+    expect(facts.tables[0]?.rowActions).toEqual(['Stop', 'Start']);
+    expect(JSON.stringify(facts)).not.toContain('example.com');
+    expect(JSON.stringify(discoverApp([facts]))).not.toContain('example.com');
   });
 });
 
@@ -235,8 +306,8 @@ describe('discoverApp', () => {
       'orders.detail: Create fulfillment -> orders.fulfillments.create',
       'orders.detail: Capture payment -> payments.capture',
       'orders.detail: Refund -> payments.refund',
+      // The customers table has one row, so its "Delete" could be that row's data: left out.
       'customers: Add customer -> customers.create',
-      'customers: Delete -> customers.delete',
     ]);
     expect(discovery.unmapped).toEqual([{ route: 'orders', buttons: ['Create draft order'] }]);
   });

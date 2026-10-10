@@ -1,6 +1,6 @@
 import { access, readdir, readFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
-import { folderOf } from './folder.js';
+import { FOLDER, folderOf, within } from './folder.js';
 
 /** Something detection found, such as a framework, with its version. */
 export interface Detected {
@@ -37,9 +37,15 @@ export interface Detection {
   agents: ('claude-code' | 'cursor' | 'vscode' | 'codex')[];
   /** Whether Uitive is already set up. */
   uitive: boolean;
-  /** The pinned package manager, such as `yarn@1.22.22`, from `packageManager`. */
+  /**
+   * The pinned package manager, such as `yarn@1.22.22`, from `packageManager`; nothing unless it
+   * names npm, pnpm, yarn or bun and a version.
+   */
   packageManagerPin: string | null;
-  /** The repository's root, where coding agents run: the nearest folder with `.git`. */
+  /**
+   * The repository's root, where coding agents run: the nearest folder with `.git`. With a
+   * boundary and no `.git` inside it, the boundary.
+   */
   repository: string;
   /** For a workspace root: its packages with an interface, where Uitive belongs. */
   workspaces: { path: string; name: string; ui: Detected | null; framework: Detected | null }[];
@@ -47,7 +53,7 @@ export interface Detection {
   server: boolean;
 }
 
-const exists = (path: string) =>
+const present = (path: string) =>
   access(path).then(
     () => true,
     () => false,
@@ -97,7 +103,22 @@ const DESIGN_SYSTEMS = [
   'tailwindcss',
 ] as const;
 
-async function findSpecs(root: string): Promise<string[]> {
+/** What detection takes besides the folder. */
+export interface DetectOptions {
+  /**
+   * A folder detection never reads above or outside, such as the root an MCP server is confined
+   * to. Without one, it looks up to the repository's root.
+   */
+  boundary?: string;
+}
+
+/** A pinned package manager detection trusts enough to run, such as `pnpm@11.3.0`. */
+const PIN = /^(npm|pnpm|yarn|bun)@[\w.+-]+$/;
+
+async function findSpecs(
+  root: string,
+  allowed: (path: string) => Promise<boolean>,
+): Promise<string[]> {
   const found: string[] = [];
   const skip = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage', 'legacy']);
   const walk = async (directory: string, depth: number): Promise<void> => {
@@ -107,7 +128,10 @@ async function findSpecs(root: string): Promise<string[]> {
       const path = join(directory, entry.name);
       if (entry.isDirectory()) {
         if (!skip.has(entry.name) && !entry.name.startsWith('.')) await walk(path, depth + 1);
-      } else if (/^(openapi|swagger)([.-][\w.-]+)?\.(ya?ml|json)$/i.test(entry.name)) {
+      } else if (
+        /^(openapi|swagger)([.-][\w.-]+)?\.(ya?ml|json)$/i.test(entry.name) &&
+        (await allowed(path))
+      ) {
         found.push(relative(root, path));
       }
     }
@@ -119,7 +143,7 @@ async function findSpecs(root: string): Promise<string[]> {
 const FULL_STACK = new Set(['next', 'remix', 'react-router', 'astro', 'nuxt', 'sveltekit']);
 const SERVERS = ['express', 'fastify', 'koa', 'hono', '@nestjs/core', '@medusajs/framework'];
 
-async function manifestOf(folder: string): Promise<Record<string, unknown> | undefined> {
+async function readManifest(folder: string): Promise<Record<string, unknown> | undefined> {
   return readFile(join(folder, 'package.json'), 'utf8').then(
     (text) => JSON.parse(text) as Record<string, unknown>,
     () => undefined,
@@ -146,6 +170,7 @@ function pick(
 async function workspaceFolders(
   root: string,
   manifest: Record<string, unknown>,
+  allowed: (path: string) => Promise<boolean>,
 ): Promise<string[]> {
   const declared = manifest.workspaces as unknown;
   let patterns: string[] = Array.isArray(declared)
@@ -154,7 +179,8 @@ async function workspaceFolders(
       ? (declared as { packages: unknown[] }).packages.map(String)
       : [];
   if (patterns.length === 0) {
-    const yaml = await readFile(join(root, 'pnpm-workspace.yaml'), 'utf8').catch(() => '');
+    const file = join(root, 'pnpm-workspace.yaml');
+    const yaml = (await allowed(file)) ? await readFile(file, 'utf8').catch(() => '') : '';
     patterns = [...yaml.matchAll(/^\s*-\s*['"]?([^'"\n#]+?)['"]?\s*$/gm)].map(
       (match) => match[1] ?? '',
     );
@@ -163,23 +189,40 @@ async function workspaceFolders(
   for (const pattern of patterns.filter((entry) => entry !== '' && !entry.startsWith('!'))) {
     if (pattern.endsWith('/*')) {
       const base = join(root, pattern.slice(0, -2));
+      if (!(await allowed(base))) continue;
       const entries = await readdir(base, { withFileTypes: true }).catch(() => []);
       for (const entry of entries) if (entry.isDirectory()) folders.push(join(base, entry.name));
     } else if (!pattern.includes('*')) {
       folders.push(join(root, pattern));
     }
   }
-  return folders;
+  const kept: string[] = [];
+  for (const folder of folders) if (await allowed(folder)) kept.push(folder);
+  return kept;
 }
 
-/** What a project uses: everything `init` needs to set Uitive up to fit. */
-export async function detect(cwd: string = process.cwd()): Promise<Detection> {
+/**
+ * What a project uses: everything `init` needs to set Uitive up to fit. With a boundary, nothing
+ * above or outside it is read.
+ */
+export async function detect(
+  cwd: string = process.cwd(),
+  options: DetectOptions = {},
+): Promise<Detection> {
   const root = resolve(cwd);
+  const boundary = options.boundary === undefined ? undefined : resolve(options.boundary);
+  const allowed = async (path: string) => boundary === undefined || within(boundary, path);
+  if (!(await allowed(root))) throw new Error(`${root} is outside ${boundary}`);
+  const exists = async (path: string) => (await allowed(path)) && (await present(path));
+  const manifestOf = async (folder: string) =>
+    (await allowed(join(folder, 'package.json'))) ? readManifest(folder) : undefined;
   const manifest = await manifestOf(root);
   if (!manifest)
     throw new Error(`No package.json in ${root}; run this in the application's package`);
   const dependencies = dependenciesOf(manifest);
   const first = (table: readonly (readonly [string, string])[]) => pick(table, dependencies);
+  // Looking up for the repository and the workspace stops at the boundary.
+  const top = (directory: string) => boundary !== undefined && directory === boundary;
 
   // The repository's root is where coding agents run, and where their configuration belongs.
   let repository = root;
@@ -189,7 +232,11 @@ export async function detect(cwd: string = process.cwd()): Promise<Detection> {
       break;
     }
     const parent = resolve(directory, '..');
-    if (parent === directory) break;
+    if (top(directory) || parent === directory) {
+      // An agent confined to the boundary runs there.
+      if (boundary !== undefined) repository = boundary;
+      break;
+    }
     directory = parent;
   }
 
@@ -206,7 +253,7 @@ export async function detect(cwd: string = process.cwd()): Promise<Detection> {
     } else if (await exists(join(directory, 'package-lock.json'))) packageManager = 'npm';
     else {
       const parent = resolve(directory, '..');
-      if (parent === directory || directory === repository) break;
+      if (parent === directory || directory === repository || top(directory)) break;
       directory = parent;
       continue;
     }
@@ -216,10 +263,12 @@ export async function detect(cwd: string = process.cwd()): Promise<Detection> {
   for (let directory = root; ; directory = resolve(directory, '..')) {
     const found = await manifestOf(directory);
     if (typeof found?.packageManager === 'string') {
-      packageManagerPin = found.packageManager.split('+')[0] ?? null;
+      // It runs through npx when the package manager is missing, so only a plain pin is trusted.
+      const pin = found.packageManager.split('+')[0] ?? '';
+      packageManagerPin = PIN.test(pin) ? pin : null;
       break;
     }
-    if (directory === repository || resolve(directory, '..') === directory) break;
+    if (directory === repository || top(directory) || resolve(directory, '..') === directory) break;
   }
 
   const designSystems: Detected[] = DESIGN_SYSTEMS.flatMap((name) => {
@@ -242,7 +291,7 @@ export async function detect(cwd: string = process.cwd()): Promise<Detection> {
   if (await anywhere('AGENTS.md', '.codex')) agents.push('codex');
 
   const workspaces: Detection['workspaces'] = [];
-  for (const folder of await workspaceFolders(root, manifest)) {
+  for (const folder of await workspaceFolders(root, manifest, allowed)) {
     const found = await manifestOf(folder);
     if (!found) continue;
     const ui = pick(UIS, dependenciesOf(found));
@@ -268,11 +317,11 @@ export async function detect(cwd: string = process.cwd()): Promise<Detection> {
     framework,
     router: first(ROUTERS),
     designSystems,
-    openapi: await findSpecs(root),
+    openapi: await findSpecs(root, allowed),
     agents,
     uitive:
       dependencies['@plurid/uitive-core'] !== undefined ||
-      (await exists(join(root, await folderOf(root), 'contract.ts'))),
+      (await exists(join(root, await folderOf(root).catch(() => FOLDER), 'contract.ts'))),
     workspaces,
     server:
       (framework !== null && FULL_STACK.has(framework.name)) ||

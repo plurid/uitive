@@ -155,6 +155,63 @@ describe('adaptMarkup', () => {
     );
   });
 
+  it('orders a list whose container shows later, and judges it only once it shows', async () => {
+    const onProblem = vi.fn();
+    const style = document.createElement('style');
+    style.textContent =
+      '.later { display: flex } .later.block { display: block } .later.closed { display: none }';
+    document.head.append(style);
+    const shown = toolbar();
+    const plain = toolbar();
+    for (const container of [shown, plain]) {
+      container.removeAttribute('style');
+      container.classList.add('later', 'closed');
+    }
+    plain.classList.add('block');
+    const uitive = client();
+    stops.push(adaptMarkup(uitive, { onProblem }));
+    uitive.move('tools', 'search', 0);
+    shown.classList.remove('closed');
+    await Promise.resolve();
+    expect(order(shown)).toEqual(['logo', 'search', 'sort', 'separator', 'filter', 'uitive-more']);
+    expect(onProblem).not.toHaveBeenCalled();
+    plain.classList.remove('closed');
+    await Promise.resolve();
+    expect(onProblem).toHaveBeenCalledWith(
+      'the list "tools" can\'t be reordered: its container isn\'t a flex or grid box',
+    );
+    style.remove();
+  });
+
+  it('moves focus into the More menu and between its items with the keyboard', () => {
+    const container = toolbar();
+    const uitive = client();
+    stops.push(adaptMarkup(uitive));
+    const more = container.querySelector('uitive-more');
+    if (!more) throw new Error('No uitive-more');
+    more.client = uitive;
+    const content = more.shadowRoot?.querySelector('[part="content"]') as HTMLElement;
+    uitive.hide('tools', 'filter');
+    uitive.hide('tools', 'search');
+    content.querySelector<HTMLElement>('[data-act="toggle"]')?.click();
+    const items = () => [...content.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+    const active = () => more.shadowRoot?.activeElement;
+    expect(active()).toBe(items()[0]);
+    const key = (name: string) =>
+      active()?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: name, bubbles: true, composed: true }),
+      );
+    key('ArrowDown');
+    expect(active()).toBe(items()[1]);
+    key('ArrowDown');
+    expect(active()).toBe(items()[0]);
+    key('End');
+    expect(active()).toBe(items()[1]);
+    key('Escape');
+    expect(content.querySelector('[role="menu"]')).toBeNull();
+    expect(active()).toBe(content.querySelector('[data-act="toggle"]'));
+  });
+
   it('records usage from the application’s own controls', () => {
     const container = menu();
     const uitive = client();

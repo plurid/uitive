@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
+import { createUitive, ui, type Planner } from '@plurid/uitive-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { payments } from '../../core/src/__fixtures__/payments.js';
 import { client, suggesting } from './__fixtures__/notes.js';
 import { defineElements } from './index.js';
 
@@ -21,6 +23,64 @@ const button = (root: ShadowRoot | null, label: string) =>
 afterEach(() => document.body.replaceChildren());
 
 describe('<uitive-banner>', () => {
+  it('says Stop preview while previewing a suggested redesign, in the banner and the panel', async () => {
+    const designer: Planner = {
+      name: 'designer',
+      async plan() {
+        return {
+          origin: 'model',
+          operations: [
+            {
+              change: {
+                kind: 'page',
+                surface: 'home',
+                op: 'set',
+                value: ui.page(
+                  ui.section('', 'stack', [ui.block('note', { title: 'Hi', text: 'Hello' })]),
+                ),
+              },
+              evidence: [{ intent: true }],
+            },
+          ],
+          meta: { planner: 'designer', ms: 0 },
+        };
+      },
+    };
+    const uitive = createUitive({ contract: payments, now: () => 0, planner: designer });
+    uitive.setGoal('I check payments');
+    const { banner } = mount(uitive as never);
+    const yours = document.createElement('uitive-your-interface');
+    document.body.append(yours);
+    yours.client = uitive as never;
+    await uitive.plan();
+    button(banner.shadowRoot, 'Preview')?.click();
+    expect(uitive.getSnapshot().preview).toBeDefined();
+    expect(button(banner.shadowRoot, 'Stop preview')).toBeDefined();
+    expect(button(yours.shadowRoot, 'Stop preview')).toBeDefined();
+    button(banner.shadowRoot, 'Stop preview')?.click();
+    expect(uitive.getSnapshot().preview).toBeUndefined();
+    expect(button(banner.shadowRoot, 'Preview')).toBeDefined();
+  });
+
+  it('says why a suggestion couldn’t be accepted', async () => {
+    const { banner, uitive, text } = mount(client(suggesting('One', 'Two', 'Three', 'Four')));
+    await uitive.plan();
+    const accepts = () =>
+      [...(banner.shadowRoot?.querySelectorAll('button') ?? [])].filter(
+        (entry) => entry.textContent?.trim() === 'Accept',
+      );
+    for (let count = 0; count < 3; count++) accepts()[0]?.click();
+    expect(text()).not.toContain('There is no room');
+    accepts()[0]?.click();
+    expect(text()).toContain('There is no room for another item. Remove one first.');
+  });
+
+  it('styles itself with a constructed stylesheet, which a strict style policy allows', () => {
+    const { banner } = mount();
+    expect(banner.shadowRoot?.querySelector('style')).toBeNull();
+    expect(banner.shadowRoot?.adoptedStyleSheets.length).toBe(1);
+  });
+
   it('stays empty until something changes', () => {
     expect(mount().text().trim()).toBe('');
   });

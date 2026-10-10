@@ -18,7 +18,7 @@ export interface MarkupOptions {
   record?: boolean;
   /**
    * Told once about each list that can't adapt as the person asked, such as a reordered list whose
-   * container isn't a flex or grid box.
+   * container isn't a flex or grid box; a hidden container is checked once it shows.
    * @default console.warn
    */
   onProblem?: (problem: string) => void;
@@ -51,8 +51,9 @@ export function movedOut(client: Pick<Uitive, 'surface' | 'standard'>, list: str
  * Mark each list's container with `data-uitive-list="<list>"` and each item inside it with
  * `data-uitive-item="<action>"`. Items the person moves out are hidden by one stylesheet, so markup
  * rendered later, such as a menu's, adapts too; reordered lists set CSS `order` on their
- * container's children, which needs a flex or grid box. Nothing is moved, so the application's
- * framework keeps its nodes. Clicks on items record usage. Returns a function that undoes it all.
+ * container's children, which needs a flex or grid box, then or once it shows. Nothing is moved,
+ * so the application's framework keeps its nodes, and keyboard focus and screen readers follow the
+ * markup's own order. Clicks on items record usage. Returns a function that undoes it all.
  */
 export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {}): () => void {
   const root = options.root ?? document;
@@ -97,11 +98,24 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
     else if (style) style.textContent = css;
   };
 
-  const mark = (container: Element, order: readonly string[], list: string) => {
-    if (!/flex|grid/.test(view.getComputedStyle(container).display)) {
-      problem(`the list "${list}" can't be reordered: its container isn't a flex or grid box`);
+  // Containers not yet shown, such as a closed menu's: whether they can reorder is known once shown.
+  const unseen = new Set<Element>();
+  const check = (container: Element) => {
+    const display = view.getComputedStyle(container).display;
+    if (display === 'none' && container.isConnected) {
+      unseen.add(container);
       return;
     }
+    unseen.delete(container);
+    if (!/flex|grid/.test(display)) {
+      const list = container.getAttribute('data-uitive-list') ?? '';
+      problem(`the list "${list}" can't be reordered: its container isn't a flex or grid box`);
+    }
+  };
+
+  // Orders are set whatever the container is now, so one that becomes a flex box later reorders.
+  const mark = (container: Element, order: readonly string[]) => {
+    check(container);
     const children = [...container.children];
     const values = orders(
       children.map((child) => {
@@ -122,8 +136,10 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
 
   // Only while a list is reordered: new children, or new containers, need their order.
   const observer = new view.MutationObserver((records) => {
+    for (const container of [...unseen]) check(container);
     const touched = new Set<Element>();
     for (const record of records) {
+      if (record.type === 'attributes') continue;
       const target = record.target as Element;
       if (target.nodeType === 1 && target.matches(LIST)) touched.add(target);
       for (const node of record.addedNodes) {
@@ -139,10 +155,26 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
     for (const container of touched) {
       const list = container.getAttribute('data-uitive-list') ?? '';
       const order = reordered.get(list);
-      if (order) mark(container, order, list);
+      if (order) mark(container, order);
     }
     if (used.size !== before) write();
+    if (attributes !== unseen.size > 0) watch();
   });
+
+  // Showing a container usually changes a class, a style or `hidden` somewhere above it.
+  let attributes = false;
+  const watch = () => {
+    observer.disconnect();
+    attributes = unseen.size > 0;
+    if (reordered.size === 0) return;
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      ...(unseen.size > 0
+        ? { attributes: true, attributeFilter: ['class', 'style', 'hidden', 'open'] }
+        : {}),
+    });
+  };
 
   const render = () => {
     hidden = lists.flatMap(({ id }) =>
@@ -160,11 +192,11 @@ export function adaptMarkup(client: MarkupClientLike, options: MarkupOptions = {
     );
     for (const element of marked) element.removeAttribute('data-uitive-order');
     marked.clear();
+    unseen.clear();
     for (const [list, order] of reordered) {
-      for (const container of containers(list)) mark(container, order, list);
+      for (const container of containers(list)) mark(container, order);
     }
-    observer.disconnect();
-    if (reordered.size > 0) observer.observe(root, { childList: true, subtree: true });
+    watch();
     write();
   };
 

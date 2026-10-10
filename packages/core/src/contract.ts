@@ -2,15 +2,17 @@ import { z } from 'zod';
 import { EFFECTS, rowParam, type Effect } from './action.js';
 import { describeFields, type Field } from './field.js';
 import { hash } from './hash.js';
-import { assertIds, canonicaliser, SURFACE_PATTERN } from './ids.js';
+import { assertIds, canonicalizer, SURFACE_PATTERN } from './ids.js';
 import {
   BUILT_IN,
   PageProblem,
+  standardData,
   validatePage,
   type AnyPage,
   type Layout,
   type PageValue,
   type SectionsPage,
+  type StandardData,
 } from './page.js';
 import type { GenericName } from './generic.js';
 import { checkQuery, type Filter } from './query.js';
@@ -239,7 +241,7 @@ export interface AnyContract {
   readonly routes: Readonly<Record<string, RouteSpec>>;
   /** Every surface, by name. */
   readonly surfaces: Readonly<Record<string, SurfaceSpec>>;
-  /** Changes whenever anything a planner sees changes. */
+  /** Changes whenever anything a planner sees changes, standard pages included. */
   readonly hash: string;
   /** Every action ID, in declaration order. */
   readonly actionIds: readonly string[];
@@ -452,13 +454,19 @@ export function defineApp<
   const routes = spec.routes ?? {};
   const routeIds = Object.keys(routes);
   assertIds('routes', routeIds);
-  const toRoute = canonicaliser(routeIds);
+  const toRoute = canonicalizer(routeIds);
   const sourceIds = Object.keys(sources) as Extract<keyof D, string>[];
   const resolvedSources = resolveSources(sources);
 
   const aliases = new Map<string, ActionId>();
   for (const id of actionIds) {
-    for (const alias of spec.actions[id]?.aliases ?? []) aliases.set(alias, id);
+    for (const alias of spec.actions[id]?.aliases ?? []) {
+      const owner = aliases.get(alias);
+      if (owner !== undefined && owner !== id) {
+        throw new Error(`actions: "${alias}" is an alias of both ${owner} and ${id}`);
+      }
+      aliases.set(alias, id);
+    }
   }
   assertIds('actions', [...actionIds, ...aliases.keys()]);
   assertIds('surfaces', surfaceIds, SURFACE_PATTERN);
@@ -478,10 +486,10 @@ export function defineApp<
   for (const id of surfaceIds)
     validateSurface(id, spec.surfaces[id] as SurfaceSpec, known, contexts);
 
-  const toAction = canonicaliser([...actionIds, ...aliases.keys()]);
-  const toSurface = canonicaliser(surfaceIds);
+  const toAction = canonicalizer([...actionIds, ...aliases.keys()]);
+  const toSurface = canonicalizer(surfaceIds);
   const toContext = new Map(
-    Object.entries(contexts).map(([name, values]) => [name, canonicaliser(values)]),
+    Object.entries(contexts).map(([name, values]) => [name, canonicalizer(values)]),
   );
 
   const items = (surface: string, context?: string): readonly string[] => {
@@ -501,7 +509,8 @@ export function defineApp<
     regions,
     routes,
     surfaces: spec.surfaces,
-    hash: hash(serialize(spec, contexts, resolvedSources, params)),
+    // Set once the standard pages are known, below.
+    hash: '',
     actionIds,
     sourceIds,
     routeIds,
@@ -514,7 +523,10 @@ export function defineApp<
     surface: (name) => toSurface(name) as SurfaceId | undefined,
     contextValue: (context, value) => toContext.get(context)?.(value),
     items,
-    source: (id) => resolvedSources[id.trim().toLowerCase()],
+    source: (id) => {
+      const key = id.trim().toLowerCase();
+      return Object.hasOwn(resolvedSources, key) ? resolvedSources[key] : undefined;
+    },
     path: (name) => resolvePath(resolvedSources, name),
     params: (id) => params.get(id) ?? [],
     route: (name) => toRoute(name),
@@ -527,22 +539,29 @@ export function defineApp<
     }
   }
   validateRoutes(contract);
+  const standards = new Map<string, StandardData>();
   for (const id of surfaceIds) {
     const surface = spec.surfaces[id] as SurfaceSpec;
-    if (surface.kind === 'page') validateStandard(contract, id, surface);
+    if (surface.kind === 'page') standards.set(id, validateStandard(contract, id, surface));
   }
+  (contract as { hash: string }).hash = hash(
+    serialize(spec, contexts, resolvedSources, params, standards),
+  );
   return Object.freeze(contract);
 }
 
-/** Every standard page must pass the rules redesigns pass, for every context value. */
-function validateStandard(contract: AnyContract, id: string, spec: AnyPageSpec): void {
+/**
+ * Every standard page must pass the rules redesigns pass, for every context value. Returns them as
+ * the JSON contract writes them, for the hash.
+ */
+function validateStandard(contract: AnyContract, id: string, spec: AnyPageSpec): StandardData {
   if (spec.entity !== undefined && !contract.source(spec.entity)) {
     throw new Error(`surface ${id}: unknown source "${spec.entity}"`);
   }
   const values = spec.context === undefined ? [undefined] : (contract.contexts[spec.context] ?? []);
-  for (const value of values) {
+  const pages = values.map((value) => {
     try {
-      validatePage(contract, spec, spec.standard(value), value);
+      return validatePage(contract, spec, spec.standard(value), value);
     } catch (error) {
       if (!(error instanceof PageProblem)) throw error;
       throw new Error(
@@ -550,7 +569,8 @@ function validateStandard(contract: AnyContract, id: string, spec: AnyPageSpec):
         { cause: error },
       );
     }
-  }
+  });
+  return standardData(values, pages);
 }
 
 /** Checks what an action runs with and changes, once sources are known. */
@@ -652,6 +672,7 @@ function serialize(
   contexts: Record<string, readonly string[]>,
   sources: Record<string, ResolvedSource>,
   params: ReadonlyMap<string, readonly Field[]>,
+  standards: ReadonlyMap<string, StandardData>,
 ): unknown {
   const surfaces: Record<string, unknown> = {};
   for (const [id, surface] of Object.entries(spec.surfaces)) {
@@ -668,6 +689,7 @@ function serialize(
     } else if (surface.kind === 'page') {
       surfaces[id] = {
         ...surface,
+        standard: standards.get(id),
         blocks: Object.fromEntries(
           Object.entries(surface.blocks).map(([name, entry]) => [
             name,

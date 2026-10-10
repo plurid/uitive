@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { NOW, payments, rows } from './__fixtures__/payments.js';
+import { NOW, payments, rows, sources } from './__fixtures__/payments.js';
 import { createData } from './cache.js';
+import { action, defineApp } from './contract.js';
 import { fromRows, type Fetch, type FetchRequest, type FetchResult } from './data.js';
 import { query } from './query.js';
 
@@ -118,7 +119,75 @@ describe('createData', () => {
     expect(data.read(failed).status).toBe('ready');
   });
 
-  it('keys relative times on the minute, and the page entity apart', async () => {
+  it('keeps an invalidation that lands while a fetch is in flight', async () => {
+    const release: (() => void)[] = [];
+    const inner = fromRows(rows);
+    const { data, calls } = harness(async (request, context) => {
+      await new Promise<void>((resolve) => release.push(resolve));
+      return inner(request, context);
+    });
+    data.read(failed);
+    await settle();
+    // A write lands, and invalidates, while the first read is still on its way.
+    data.invalidate(['payments']);
+    release.shift()?.();
+    await settle();
+    const arrived = data.read(failed);
+    expect(arrived).toMatchObject({ status: 'ready', stale: true });
+    await settle();
+    expect(calls).toHaveLength(2);
+    release.shift()?.();
+    await settle();
+    expect(data.read(failed).stale).toBe(false);
+  });
+
+  it('keeps a result fresh for a second at least, counted from when it arrives', async () => {
+    const zero = defineApp({
+      id: 'zero',
+      description: 'Results never fresh',
+      actions: { open: action({ label: 'Open', description: 'Open' }) },
+      sources: { ...sources, payments: { ...sources.payments, ttl: 0 } },
+      surfaces: {},
+    });
+    let now = NOW * 1000;
+    let calls = 0;
+    const inner = fromRows(rows);
+    const data = createData(
+      zero,
+      async (request, context) => {
+        calls++;
+        // Each fetch takes longer than a ttl of 0.
+        now += 500;
+        return inner(request, context);
+      },
+      { now: () => now },
+    );
+    // What useQueries does: read again after every change.
+    data.subscribe(() => data.read(failed));
+    data.read(failed);
+    for (let index = 0; index < 20; index++) await settle();
+    expect(calls).toBe(1);
+    now += 1_001;
+    data.read(failed);
+    await settle();
+    expect(calls).toBe(2);
+  });
+
+  it('keeps showing a relative result while the next minute refreshes it', async () => {
+    const { data, calls, advance } = harness();
+    const recent = query('payments', {
+      fields: ['payments.id'],
+      filter: [{ field: 'payments.created', op: 'gte', values: ['-7d'] }],
+    });
+    const first = await data.load(recent);
+    advance(61_000);
+    expect(data.peek(recent)?.result).toBe(first);
+    expect(data.read(recent)).toMatchObject({ status: 'ready', stale: true, result: first });
+    await settle();
+    expect(calls).toHaveLength(2);
+  });
+
+  it('refreshes relative times each minute, and keys the page entity apart', async () => {
     const { data, calls, advance } = harness();
     const recent = query('payments', {
       fields: ['payments.id'],

@@ -5,6 +5,10 @@ import { anthropic } from './anthropic.js';
 import { PlannerError, type ModelCall } from './model.js';
 import { modelPlanner } from './plan.js';
 
+/** Named as Anthropic's SDK names its errors, which are read by shape, not by class. */
+class APIError extends Error {}
+class APIConnectionTimeoutError extends Error {}
+
 const reply = (overrides: Partial<{ text: string; stop_reason: string; model: string }> = {}) => ({
   model: overrides.model ?? 'claude-opus-5-5',
   stop_reason: overrides.stop_reason ?? 'end_turn',
@@ -83,6 +87,36 @@ describe('anthropic', () => {
     expect((create.mock.calls[0]?.[0] as Record<string, unknown>).fallbacks).toBeUndefined();
   });
 
+  it('sends effort and the fallback only to models that take them', async () => {
+    const sent = async (model: string) => {
+      const { create, client } = fake({ model });
+      const reply = await anthropic({ client, model }).generate(call());
+      const body = create.mock.calls[0]?.[0] as {
+        output_config: Record<string, unknown>;
+        fallbacks?: unknown;
+        betas?: unknown;
+      };
+      return {
+        effort: 'effort' in body.output_config,
+        fallbacks: body.fallbacks !== undefined && body.betas !== undefined,
+        cost: reply.cost,
+      };
+    };
+    expect(await sent('claude-haiku-4-5')).toMatchObject({ effort: false, fallbacks: false });
+    expect(await sent('claude-haiku-5-5')).toEqual({
+      effort: true,
+      fallbacks: false,
+      cost: 0.0004,
+    });
+    expect(await sent('claude-sonnet-5-5')).toMatchObject({ effort: true, fallbacks: true });
+    expect(await sent('claude-fable-5-1')).toMatchObject({ effort: true, fallbacks: true });
+  });
+
+  it('counts running out of context as a cut answer', async () => {
+    const { client } = fake({ stop_reason: 'model_context_window_exceeded' });
+    expect((await anthropic({ client }).generate(call())).stop).toBe('cut');
+  });
+
   it('streams where the client can', async () => {
     const final = reply({ text: '{"a":1}' });
     const stream = vi.fn(() => {
@@ -127,14 +161,32 @@ describe('anthropic', () => {
         statusError(400, 'Schema is too complex for compilation'),
         { status: 502, reason: 'too-complex' },
       ],
+      [
+        statusError(400, 'output_config.format.schema: too many enum values'),
+        { status: 502, reason: 'too-complex' },
+      ],
       [statusError(500, 'overloaded'), { status: 502, message: 'Anthropic error 500: overloaded' }],
       [new Error('Could not resolve authentication method'), { status: 503 }],
+      [new APIConnectionTimeoutError('Request timed out.'), { status: 502 }],
+      // An error event in the middle of a stream carries no status.
+      [
+        Object.assign(new APIError('Overloaded'), { type: 'overloaded_error' }),
+        { status: 502, message: 'Anthropic failed mid-answer: Overloaded' },
+      ],
+      [Object.assign(new APIError('Slow down'), { type: 'rate_limit_error' }), { status: 429 }],
     ];
     for (const [error, expected] of cases) {
       await expect(
         anthropic({ client: failing(error) as never }).generate(call()),
       ).rejects.toMatchObject(expected);
     }
+    const caller = new AbortController();
+    caller.abort();
+    await expect(
+      anthropic({ client: failing(new APIError('Request was aborted.')) as never }).generate(
+        call({ signal: caller.signal }),
+      ),
+    ).rejects.toMatchObject({ status: 499 });
   });
 
   it('plans through modelPlanner, reported as Anthropic', async () => {

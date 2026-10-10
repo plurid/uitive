@@ -13,7 +13,6 @@ import type {
   ActionSpec,
   ActionView,
   AnyContract,
-  AnyPageSpec,
   PageSpec,
   PageValue,
   SectionPage,
@@ -25,10 +24,10 @@ import type {
   SurfaceValueOf,
 } from './contract.js';
 import {
+  compact,
   emptyDefinition,
   isApplied,
   layerOf,
-  migrateDefinition,
   resolveUserPages,
   USER_PAGES,
   type UserPage,
@@ -39,7 +38,6 @@ import {
   resolveCollection,
   resolveList,
   resolvePage,
-  type AppliedOperation,
   type Change,
   type Definition,
   type Evidence,
@@ -48,7 +46,7 @@ import {
   type Origin,
 } from './definition.js';
 import { describe, type Explanation } from './explain.js';
-import { toPage, ui, userPageSpec, validatePage, type SectionsPage } from './page.js';
+import { toPage, ui, type SectionsPage } from './page.js';
 import { buildPath, matchRoute } from './route.js';
 import { hash, stableStringify } from './hash.js';
 import { heuristicPlanner, keywordCommand } from './heuristic.js';
@@ -62,7 +60,17 @@ import type {
   ProposedOperation,
   StateView,
 } from './planner.js';
-import { canonical, check, type Rejection } from './policy.js';
+import { canonicalKey, check, checkStored, type Rejection } from './policy.js';
+import {
+  cleanGoal,
+  isCount,
+  isRecord,
+  isText,
+  reviveDefinition,
+  reviveEvents,
+  reviveOperation,
+  reviveSessions,
+} from './revive.js';
 import {
   applyOperation,
   DEFAULT_STABILIZER,
@@ -71,6 +79,7 @@ import {
   settle,
   stage,
   strength,
+  type Agreement,
   type Pending,
   type StabilizerOptions,
 } from './stabilizer.js';
@@ -86,9 +95,10 @@ import {
 
 /**
  * How far the system may act on its own. `suggest`: planned changes wait for the person's yes.
- * `mixed`: a planned change applies at a safe moment once a second plan agrees or it clears the
- * margin. `auto`: planned changes apply at the next safe moment, and suggested items join the
- * interface at once. In every mode a redesign stays a suggestion until the person accepts it.
+ * `mixed`: planned changes apply at a safe moment, a model's once a plan in a later session agrees
+ * or it clears the margin. `auto`: planned changes apply at the next safe moment, and suggested
+ * items join the interface at once. In every mode a redesign stays a suggestion until the person
+ * accepts it.
  */
 export type Autonomy = 'suggest' | 'mixed' | 'auto';
 /** `standard` shows the application as shipped; `yours` applies the user's definition. */
@@ -193,7 +203,9 @@ export interface RecordOptions {
    */
   via?: Via;
   /**
-   * The surface it was used from, such as `toolbar`, so learning knows which list it belongs to.
+   * The surface it was used from, such as `toolbar`, so learning knows which list it belongs to:
+   * the use then counts toward that surface alone. Without one, it counts toward every list
+   * holding the action.
    */
   surface?: string;
   /** The page element it came from. */
@@ -235,7 +247,11 @@ export interface UitiveOptions<C extends AnyContract> {
   stabilizer?: Partial<StabilizerOptions>;
   /** The application's code behind the contract: reading sources, running actions, routing. */
   bindings?: Bindings<C>;
-  /** Called when storage or a planner fails; the interface keeps working. */
+  /**
+   * Called when storage or a planner fails, including a remote planner whose fallback answered
+   * instead, and when another tab runs a different version of the application; the interface
+   * keeps working.
+   */
   onError?: (error: unknown) => void;
   /**
    * For pages Uitive adapts from outside, such as in a browser extension: what the page
@@ -321,7 +337,7 @@ export interface Uitive<C extends AnyContract = AnyContract> {
   apply(): Adaptation | undefined;
   /**
    * Asks the planner for changes from usage and any stated goal. What policy accepts waits for a
-   * safe moment, and redesigns stay suggestions.
+   * safe moment, and redesigns stay suggestions. Calls while a plan is on its way share it.
    */
   plan(): Promise<Adaptation>;
   /**
@@ -330,7 +346,10 @@ export interface Uitive<C extends AnyContract = AnyContract> {
    * client was created with `learn: false`.
    */
   learn(): Promise<Adaptation | undefined>;
-  /** A request in the user's own words. With `goal`, the words are kept as their stated goal. */
+  /**
+   * A request in the user's own words, answered at once. With `goal`, the words are kept as their
+   * stated goal; blank words clear it.
+   */
   ask(text: string, options?: { goal?: boolean }): Promise<Adaptation>;
   /** Keeps an action visible in a list, bringing it out of overflow if needed. */
   pin(surface: SurfaceIdOf<C>, action: ActionIdOf<C>, context?: string): Adaptation;
@@ -352,7 +371,10 @@ export interface Uitive<C extends AnyContract = AnyContract> {
   ): Adaptation;
   /** Puts a page back to standard. */
   resetPage(surface: SurfaceIdOf<C>, context?: string): Adaptation;
-  /** Shows a suggested redesign in place without applying it; nothing to stop previewing. */
+  /**
+   * Shows a suggested redesign in place without applying it; nothing to stop previewing. Only a
+   * redesign still suggested can be previewed, and the preview ends when it no longer is.
+   */
   preview(operation: string | undefined): void;
   /** Adds an item to a collection, checked against its schema and validator. */
   addItem(surface: SurfaceIdOf<C>, value: unknown): Adaptation;
@@ -366,25 +388,34 @@ export interface Uitive<C extends AnyContract = AnyContract> {
   revertAdaptation(adaptation: string): void;
   /** Confirms a change; it joins the user's own layer. */
   keep(operation: string): void;
-  /** Accepts a pending change or a suggested item. */
+  /** Accepts a pending change or a suggested item; either joins the user's own layer. */
   accept(operation: string): boolean;
   /** Declines a pending change or a suggested item; it cools down. */
   dismiss(operation: string): void;
   /** Stops or resumes planned changes; the person's own still apply. */
   freeze(frozen: boolean): void;
-  /** Keeps or clears the person's stated goal, such as "I watch costs", which planners read. */
+  /**
+   * Keeps or clears the person's stated goal, such as "I watch costs", which planners read. It is
+   * trimmed and kept to 500 characters; a blank one clears it.
+   */
   setGoal(goal: string | undefined): void;
   /** Shows the person's interface, or the application as shipped. */
   setView(view: View): void;
   /** Sets how far the system may act on its own. */
   setAutonomy(autonomy: Autonomy): void;
-  /** Back to the standard interface. Usage is kept. */
+  /**
+   * Puts the layout back to standard. Usage is kept, and so are freeze, blocked changes,
+   * cooldowns and the stated goal.
+   */
   reset(): void;
   /** Forgets everything: usage, definition and history. */
   clearData(): void;
   /** The person's definition, portable, for a file or another device. */
   export(): DefinitionDocument;
-  /** Takes a definition from `export`, checked against this contract like any change. */
+  /**
+   * Takes a definition from `export`, checked against this contract like any change: what breaks
+   * the contract's rules is skipped with its reason, and a file that isn't a definition is refused.
+   */
   import(document: unknown): Adaptation;
   /** Why a change was made, in plain words, with its evidence. */
   explain(operation: string | Operation): Explanation | undefined;
@@ -404,21 +435,44 @@ interface State {
   lastActivityAt: number;
   sessions: SessionRecord[];
   events: UsageEvent[];
+  /** The first session whose events are all kept: older ones made room for newer. */
+  eventsFrom: number;
   definition: Definition;
   pending: Pending[];
-  seen: Record<string, number>;
+  seen: Record<string, Agreement>;
   adaptations: Adaptation[];
   view: View;
   autonomy: Autonomy;
   counter: number;
   /** The session `learn` last planned. */
   planned?: number;
+  /** Changes when the person resets, imports or forgets everything: plans made before don't fit. */
+  epoch: number;
 }
 
 const MAX_EVENTS = 2000;
 const MAX_SESSIONS = 30;
 const MAX_ADAPTATIONS = 50;
 const MAX_COMMAND = 500;
+/** Operations an imported file may hold. */
+const MAX_IMPORTED = 5000;
+const AUTONOMIES: readonly Autonomy[] = ['suggest', 'mixed', 'auto'];
+const KINDS: readonly Adaptation['kind'][] = [
+  'plan',
+  'apply',
+  'command',
+  'user',
+  'import',
+  'reset',
+];
+const STATUSES: readonly CommandStatus[] = [
+  'done',
+  'partial',
+  'not_allowed',
+  'ambiguous',
+  'unsupported',
+  'unavailable',
+];
 /** Context values per surface a planner hears about, besides the current one. */
 const FOCUS = 5;
 const NOT_ALLOWED = new Set([
@@ -452,6 +506,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     lastActivityAt: now(),
     sessions: [{ index: 0, startedAt: now(), contexts: {} }],
     events: [],
+    eventsFrom: 0,
     definition: emptyDefinition(contract),
     pending: [],
     seen: {},
@@ -459,6 +514,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     view: 'yours',
     autonomy: options.autonomy ?? 'mixed',
     counter: 0,
+    epoch: 0,
   });
 
   let state = load();
@@ -471,6 +527,11 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
   let router: ((href: string) => void) | undefined;
   let ownPages: { version: number; value: readonly UserPage[] } | undefined;
   let confirmers = 0;
+  // Another tab runs a different version of the application: its state is neither adopted nor
+  // overwritten, so the newer version's survives.
+  let stale = false;
+  let inFlight: { epoch: number; session: number; promise: Promise<Adaptation> } | undefined;
+  let compacted: { definition: Definition; session: number } | undefined;
   const bindings = options.bindings;
   const data =
     bindings?.fetch === undefined
@@ -484,7 +545,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
   const surfaces = new Map<string, unknown>();
   let cacheKey = '';
   let ranking: { key: string; value: readonly ActionView[] } | undefined;
-  let summaryCache: { key: string; value: UsageSummary } | undefined;
+  let summaryCache: { inputs: readonly unknown[]; value: UsageSummary } | undefined;
   let snapshot = makeSnapshot();
 
   function load(): State {
@@ -494,34 +555,27 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     } catch (error) {
       report(error);
     }
-    if (!isState(raw)) return fresh();
-    // Version 1 kept pages as sections of blocks; they convert to flat elements.
-    const stored: State = {
-      ...raw,
-      schemaVersion: 2,
-      definition: migrateDefinition(raw.definition),
-    };
-    if (stored.contract === contract.hash) return stored;
-    // The contract changed: keep what still means something, drop the rest.
-    // Pages built from blocks the application no longer has are dropped, not drawn half empty.
-    const operations = stored.definition.operations.flatMap((operation) => {
-      try {
-        const change = canonical(operation.change, contract);
-        if (change.kind === 'page' && change.op === 'set') {
-          validatePage(
-            contract,
-            contract.surfaces[change.surface] as AnyPageSpec,
-            change.value,
-            change.context,
-          );
-        } else if (change.kind === 'userPage' && change.value !== undefined) {
-          validatePage(contract, userPageSpec(), change.value);
-        }
-        return [{ ...operation, change }];
-      } catch {
-        return [];
-      }
-    });
+    return adopt(raw) ?? fresh();
+  }
+
+  /** Stored state, well formed and brought to this contract; nothing when there is none. */
+  function adopt(raw: unknown): State | undefined {
+    let stored: State | undefined;
+    try {
+      stored = reviveState(raw, {
+        now: now(),
+        autonomy: options.autonomy ?? 'mixed',
+        cooldown: tuning.cooldown,
+      });
+    } catch (error) {
+      report(error);
+      return undefined;
+    }
+    if (stored === undefined || stored.contract === contract.hash) return stored;
+    // The contract changed: keep what still means something, drop the rest. Items that no
+    // longer fit their schema, and pages built from blocks the application no longer has, are
+    // dropped, not drawn half broken.
+    const { accepted } = checkStored(stored.definition.operations, contract);
     const events = stored.events.flatMap((event) => {
       const action = contract.action(event.action);
       return action === undefined ? [] : [{ ...event, action }];
@@ -532,7 +586,26 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
       events,
       pending: [],
       seen: {},
-      definition: { ...stored.definition, contract: contract.hash, operations },
+      definition: {
+        ...stored.definition,
+        contract: contract.hash,
+        operations: accepted,
+        ...rekeyed(stored.definition),
+      },
+    };
+  }
+
+  /** Cooldowns and blocks in this contract's spelling; keys that name nothing here are dropped. */
+  function rekeyed(definition: Definition): Pick<Definition, 'cooldowns' | 'blocked'> {
+    const until = new Map<string, number>();
+    for (const entry of definition.cooldowns) {
+      const key = canonicalKey(entry.key, contract);
+      if (key !== undefined) until.set(key, Math.max(until.get(key) ?? 0, entry.until));
+    }
+    const blocked = definition.blocked.flatMap((key) => canonicalKey(key, contract) ?? []);
+    return {
+      cooldowns: [...until].map(([key, session]) => ({ key, until: session })),
+      blocked: [...new Set(blocked)],
     };
   }
 
@@ -553,10 +626,34 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     };
   }
 
-  function changed() {
+  /** Whether an operation is a redesign still waiting for the person's yes, as previews show. */
+  function previewable(operation: string): boolean {
+    return state.definition.operations.some(
+      (entry) =>
+        entry.id === operation && entry.status === 'suggested' && entry.change.kind === 'page',
+    );
+  }
+
+  /** Keeps derived state true to the definition before anyone reads it. */
+  function tidy() {
+    // A preview outlives nothing: once its suggestion is gone, writes must not stay refused.
+    if (preview !== undefined && !previewable(preview)) preview = undefined;
+    if (compacted?.definition !== state.definition || compacted.session !== state.session) {
+      const definition = compact(state.definition, state.session);
+      if (definition !== state.definition) state = { ...state, definition };
+      compacted = { definition, session: state.session };
+    }
     snapshot = makeSnapshot();
-    persist();
+  }
+
+  function notify() {
     for (const listener of [...listeners]) listener();
+  }
+
+  function changed() {
+    tidy();
+    persist();
+    notify();
   }
 
   function persist() {
@@ -567,18 +664,44 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
 
   function flush() {
     scheduled = false;
+    if (stale) return;
     try {
       store.save(state);
     } catch (error) {
       report(error);
-      // Most likely out of quota: keep the newest half of the usage and try once more.
-      state = { ...state, events: state.events.slice(-Math.floor(state.events.length / 2)) };
+      if (!shrink()) return;
       try {
         store.save(state);
       } catch (again) {
         report(again);
       }
     }
+  }
+
+  /**
+   * Most likely out of quota: keeps the newest half of the usage, but only when usage is most of
+   * what is stored, or halving would drain it without making room. Says whether it did.
+   */
+  function shrink(): boolean {
+    const size = (value: unknown) => JSON.stringify(value).length;
+    if (state.events.length < 2 || size(state.events) * 2 < size(state)) return false;
+    keepEvents(state.events, Math.floor(state.events.length / 2));
+    return true;
+  }
+
+  /** Keeps the newest `limit` events, noting from which session on the kept ones are complete. */
+  function keepEvents(events: readonly UsageEvent[], limit: number) {
+    const dropped = events.length - limit;
+    if (dropped <= 0) {
+      state = { ...state, events: [...events] };
+      return;
+    }
+    const last = events[dropped - 1] as UsageEvent;
+    state = {
+      ...state,
+      events: events.slice(dropped),
+      eventsFrom: Math.max(state.eventsFrom, last.session + 1),
+    };
   }
 
   const nextId = (prefix: string) => {
@@ -591,10 +714,14 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     const current = sessions[sessions.length - 1];
     if (!current || current.index !== state.session) return;
     const merged: Record<string, string[]> = { ...current.contexts };
+    let added = false;
     for (const [name, value] of Object.entries(contexts)) {
       const values = merged[name] ?? [];
-      if (!values.includes(value)) merged[name] = [...values, value];
+      if (values.includes(value)) continue;
+      merged[name] = [...values, value];
+      added = true;
     }
+    if (!added) return;
     sessions[sessions.length - 1] = { ...current, contexts: merged };
     state = { ...state, sessions };
   }
@@ -613,14 +740,46 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
   }
 
   function summary(): UsageSummary {
-    const key = `${usage}|${state.definition.version}|${state.session}|${state.events.length}`;
-    if (summaryCache?.key !== key) {
+    // Every input by identity: state changes by replacement, so a new context counts at once.
+    const inputs = [
+      state.events,
+      state.sessions,
+      state.definition,
+      state.session,
+      state.eventsFrom,
+    ];
+    if (summaryCache?.inputs.every((input, index) => input === inputs[index]) !== true) {
       summaryCache = {
-        key,
-        value: summarize(contract, state.definition, state.events, state.sessions, state.session),
+        inputs,
+        value: summarize(
+          contract,
+          state.definition,
+          state.events,
+          state.sessions,
+          state.session,
+          state.eventsFrom,
+        ),
       };
     }
     return summaryCache.value;
+  }
+
+  /** An adaptation for a planner's answer that came too late to apply, kept out of history. */
+  function discarded(
+    kind: 'plan' | 'command',
+    meta: PlanMeta,
+    extra: Partial<Adaptation> = {},
+  ): Adaptation {
+    return {
+      id: nextId('a'),
+      kind,
+      session: state.session,
+      applied: [],
+      rejected: [],
+      pending: state.pending.length,
+      meta,
+      ...extra,
+    };
   }
 
   function remember(adaptation: Adaptation): Adaptation {
@@ -673,12 +832,16 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     };
   }
 
-  /** Applies operations immediately: a user acting, or a command they gave. */
+  /**
+   * Applies operations immediately: a user acting, or a command they gave. `interpreted` says a
+   * model read the command's words.
+   */
   function applyNow(
     operations: readonly Operation[],
     kind: Adaptation['kind'],
     extra: Partial<Adaptation> = {},
     intent?: string,
+    interpreted = false,
   ): Adaptation {
     const id = nextId('a');
     let definition = state.definition;
@@ -691,6 +854,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
         summary: summary(),
         session: state.session,
         ...(intent === undefined ? {} : { intent }),
+        interpreted,
       });
       rejected.push(...result.rejected);
       for (const accepted of result.accepted) {
@@ -847,7 +1011,10 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
   async function callPlanner(chosen: Planner, planRequest: PlanRequest): Promise<PlanResult> {
     const started = Date.now();
     try {
-      return await chosen.plan(planRequest, contract);
+      const result = await chosen.plan(planRequest, contract);
+      // A remote planner's fallback answered: the failure would otherwise stay in `meta` alone.
+      if (result.meta.fellBack !== undefined) report(new Error(result.meta.fellBack));
+      return result;
     } catch (error) {
       report(error);
       const result = await local.plan(planRequest, contract);
@@ -868,7 +1035,71 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     return refusals.some((entry) => NOT_ALLOWED.has(entry.rule)) ? 'partial' : 'done';
   }
 
-  /** Resolves a surface for a view, memoised until the definition or session changes. */
+  async function planNow(): Promise<Adaptation> {
+    const epoch = state.epoch;
+    const planRequest = request('plan');
+    const result = await callPlanner(planner, planRequest);
+    // The person reset, imported or forgot everything while the plan came: it fits what is gone.
+    if (state.epoch !== epoch) return discarded('plan', result.meta);
+    const operations = result.operations.map((proposed) =>
+      toOperation(proposed, result.origin === 'model' ? 'model' : 'heuristic'),
+    );
+    const current = summary();
+    const id = nextId('a');
+    let definition = state.definition;
+    const applied: string[] = [];
+    const rejected: Rejection[] = [];
+    const structural: Operation[] = [];
+    for (const operation of operations) {
+      // Each against the definition the ones before it left, so a collection's cap holds.
+      const checked = check([operation], {
+        contract,
+        definition,
+        summary: current,
+        session: state.session,
+      });
+      rejected.push(...checked.rejected);
+      const accepted = checked.accepted[0];
+      if (accepted === undefined) continue;
+      const kind = accepted.change.kind;
+      if (kind !== 'collection' && kind !== 'page') {
+        structural.push(accepted);
+        continue;
+      }
+      // Suggested items appear at once for the user to accept, or join the interface when they
+      // let it act on its own; a planned redesign is only ever a suggestion to preview, whatever
+      // the autonomy: radical change waits for the user's yes.
+      definition = applyOperation(
+        definition,
+        accepted,
+        { contract, summary: current, session: state.session, adaptation: id },
+        kind === 'collection' && state.autonomy === 'auto' ? 'active' : 'suggested',
+      );
+      applied.push(accepted.id);
+    }
+    const strengths = structural.map((operation) =>
+      strength(operation, contract, definition, current, tuning),
+    );
+    const staged = stage(structural, state.seen, strengths, {
+      ...tuning,
+      hysteresis: state.autonomy !== 'auto',
+      session: state.session,
+    });
+    state = { ...state, definition, pending: staged.pending, seen: staged.seen };
+    const adaptation = remember({
+      id,
+      kind: 'plan',
+      session: state.session,
+      applied,
+      rejected,
+      pending: staged.pending.length,
+      meta: result.meta,
+    });
+    changed();
+    return adaptation;
+  }
+
+  /** Resolves a surface for a view, memoized until the definition or session changes. */
   function resolve(id: string, context: string | undefined, view: View): unknown {
     const key = `${state.definition.version}|${state.session}|${preview ?? ''}`;
     if (key !== cacheKey) {
@@ -906,19 +1137,42 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
 
   // Another tab wrote newer state: adopt it, without writing it back.
   store.watch?.(() => {
-    state = load();
+    let raw: unknown;
+    try {
+      raw = store.load();
+    } catch (error) {
+      report(error);
+      return;
+    }
+    // Another version of the application wrote it, as across a deploy: converting it to this
+    // contract and writing it back would lose what the other version keeps.
+    if (isRecord(raw) && typeof raw.contract === 'string' && raw.contract !== contract.hash) {
+      if (!stale) {
+        report(
+          new Error(`Another tab runs a different version of ${contract.id}; reload this one`),
+        );
+      }
+      stale = true;
+      return;
+    }
+    stale = false;
+    state = adopt(raw) ?? fresh();
     summaryCache = undefined;
     ranking = undefined;
     cacheKey = '';
     usage++;
-    snapshot = makeSnapshot();
-    for (const listener of [...listeners]) listener();
+    tidy();
+    notify();
   });
 
-  // Page start is a safe moment: nothing has been drawn yet.
-  if (now() - state.lastActivityAt > idle) startSession();
-  safeMoment();
-  snapshot = makeSnapshot();
+  // Page start is a safe moment only when a new session starts, before anything is drawn. A page
+  // opened mid-session, such as a second tab, would move the interface under the tab in use,
+  // which adopts what it saves.
+  if (now() - state.lastActivityAt > idle) {
+    startSession();
+    safeMoment();
+  }
+  tidy();
 
   function performerFor(action: string): Perform | undefined {
     const perform = bindings?.perform;
@@ -1008,20 +1262,20 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
       }
       // The first interaction after idle starts a session but is never a safe moment.
       if (now() - state.lastActivityAt > idle) startSession();
+      // A surface the contract doesn't declare, or none, says nothing about where use belongs.
+      const surface =
+        recordOptions.surface === undefined ? undefined : contract.surface(recordOptions.surface);
       const event: UsageEvent = {
         action: id,
         via: recordOptions.via ?? 'region',
         session: state.session,
-        ...(recordOptions.surface === undefined ? {} : { surface: recordOptions.surface }),
+        ...(surface === undefined ? {} : { surface }),
         ...(recordOptions.element === undefined ? {} : { element: recordOptions.element }),
         ...(Object.keys(contexts).length === 0 ? {} : { contexts: { ...contexts } }),
         ...(recordOptions.typed === undefined ? {} : { typed: recordOptions.typed }),
       };
-      state = {
-        ...state,
-        lastActivityAt: now(),
-        events: [...state.events, event].slice(-MAX_EVENTS),
-      };
+      state = { ...state, lastActivityAt: now() };
+      keepEvents([...state.events, event], MAX_EVENTS);
       noteContexts();
       usage++;
       changed();
@@ -1043,12 +1297,12 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
         values = parsed.data as Record<string, unknown>;
       }
       const changes = spec.effect === 'write' || spec.effect === 'destructive';
-      if (changes && preview !== undefined) {
-        return {
-          status: 'refused',
-          message: 'Changes wait until you accept or dismiss the preview',
-        };
-      }
+      const previewing = () => changes && preview !== undefined && previewable(preview);
+      const held: PerformResult = {
+        status: 'refused',
+        message: 'Changes wait until you accept or dismiss the preview',
+      };
+      if (previewing()) return held;
       const generated = (performOptions.origin ?? 'generated') === 'generated';
       const needsYes =
         generated &&
@@ -1071,6 +1325,8 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
           ...(spec.effect === 'destructive' ? { phrase: spec.confirm ?? spec.label } : {}),
         });
         if (!yes) return { status: 'canceled' };
+        // A preview started while the run waited holds it back as well.
+        if (previewing()) return held;
       }
       const run = performerFor(id);
       if (run === undefined && spec.effect !== undefined) {
@@ -1248,59 +1504,19 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
       return adaptation;
     },
 
-    async plan() {
-      const planRequest = request('plan');
-      const result = await callPlanner(planner, planRequest);
-      const operations = result.operations.map((proposed) =>
-        toOperation(proposed, result.origin === 'model' ? 'model' : 'heuristic'),
-      );
-      const current = summary();
-      const { accepted, rejected } = check(operations, {
-        contract,
-        definition: state.definition,
-        summary: current,
-        session: state.session,
-      });
-      const id = nextId('a');
-      let definition = state.definition;
-      const applied: string[] = [];
-      const structural: Operation[] = [];
-      for (const operation of accepted) {
-        const kind = operation.change.kind;
-        if (kind !== 'collection' && kind !== 'page') {
-          structural.push(operation);
-          continue;
-        }
-        // Suggested items appear at once for the user to accept, or join the interface when they
-        // let it act on its own; a planned redesign is only ever a suggestion to preview, whatever
-        // the autonomy: radical change waits for the user's yes.
-        definition = applyOperation(
-          definition,
-          operation,
-          { contract, summary: current, session: state.session, adaptation: id },
-          kind === 'collection' && state.autonomy === 'auto' ? 'active' : 'suggested',
-        );
-        applied.push(operation.id);
+    plan() {
+      // Calls meanwhile in the same session share the plan on its way: two answers to one
+      // request are no agreement.
+      if (inFlight?.epoch === state.epoch && inFlight.session === state.session) {
+        return inFlight.promise;
       }
-      const strengths = structural.map((operation) =>
-        strength(operation, contract, definition, current, tuning),
-      );
-      const staged = stage(structural, state.seen, strengths, {
-        ...tuning,
-        hysteresis: state.autonomy !== 'auto',
-      });
-      state = { ...state, definition, pending: staged.pending, seen: staged.seen };
-      const adaptation = remember({
-        id,
-        kind: 'plan',
-        session: state.session,
-        applied,
-        rejected,
-        pending: staged.pending.length,
-        meta: result.meta,
-      });
-      changed();
-      return adaptation;
+      const entry = { epoch: state.epoch, session: state.session, promise: planNow() };
+      inFlight = entry;
+      const done = () => {
+        if (inFlight === entry) inFlight = undefined;
+      };
+      entry.promise.then(done, done);
+      return entry.promise;
     },
 
     async learn() {
@@ -1308,19 +1524,22 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
         return undefined;
       }
       // Marked before planning starts, so a second call meanwhile, such as from React's
-      // development double effects, doesn't plan twice: two plans would pass for agreement.
+      // development double effects, doesn't plan twice.
       state = { ...state, planned: state.session };
       return client.plan();
     },
 
     async ask(text, askOptions = {}) {
       const words = text.trim().slice(0, MAX_COMMAND);
-      if (askOptions.goal) {
-        state = {
-          ...state,
-          definition: { ...state.definition, goal: words, version: state.definition.version + 1 },
-        };
+      if (askOptions.goal) state = { ...state, definition: withGoal(state.definition, words) };
+      if (words === '') {
+        // Nothing to answer, and nothing for a planner: a blank goal only clears the one kept.
+        return applyNow([], 'command', {
+          text: '',
+          status: askOptions.goal ? 'done' : 'unsupported',
+        });
       }
+      const epoch = state.epoch;
       const planRequest = request('command', words);
       const started = Date.now();
       const keyword = askOptions.goal ? undefined : keywordCommand(planRequest, contract);
@@ -1331,17 +1550,29 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
             meta: { planner: 'keywords', ms: Date.now() - started },
           }
         : await callPlanner(planner, planRequest);
+      // What a model says the person named outright joins their own layer, within what policy
+      // holds for everyone; what it adds for their goal joins the model's. Both apply at once.
+      const interpreted = result.origin === 'model';
       const operations = result.operations.map((proposed) =>
         toOperation(
           proposed,
-          proposed.scope === 'explicit'
-            ? 'user'
-            : result.origin === 'model'
-              ? 'model'
-              : 'heuristic',
+          proposed.scope === 'explicit' ? 'user' : interpreted ? 'model' : 'heuristic',
           words,
         ),
       );
+      // The person reset, imported or forgot everything while the answer came: it fits what is
+      // gone.
+      if (state.epoch !== epoch) {
+        return discarded('command', result.meta, {
+          text: words,
+          status: 'not_allowed',
+          rejected: operations.map((operation) => ({
+            operation,
+            rule: 'precedence' as const,
+            message: 'Your interface changed while this was answered; ask again',
+          })),
+        });
+      }
       const adaptation = applyNow(
         operations,
         'command',
@@ -1351,6 +1582,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
           ...(result.candidates === undefined ? {} : { candidates: result.candidates }),
         },
         words,
+        interpreted,
       );
       const answered = status(result, adaptation.applied.length, adaptation.rejected);
       // The model planner was unreachable and the local one couldn't help: say so plainly.
@@ -1387,32 +1619,12 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
       userChange({ kind: 'page', surface, op: 'reset', ...pageContext(surface, context) }),
 
     preview(operation) {
-      preview = operation;
+      preview = operation !== undefined && previewable(operation) ? operation : undefined;
       changed();
     },
 
-    addItem(surface, value) {
-      const item = hash(value);
-      const spec = contract.surfaces[surface] as CollectionSpec | undefined;
-      if (spec?.kind === 'collection') {
-        const current = resolveCollection(contract, state.definition, surface);
-        if (current.items.length >= spec.max) {
-          return applyNow([], 'user', {
-            rejected: [
-              {
-                operation: toOperation(
-                  { change: { kind: 'collection', surface, op: 'add', item, value }, evidence: [] },
-                  'user',
-                ),
-                rule: 'capacity',
-                message: `${spec.label} holds at most ${spec.max}`,
-              },
-            ],
-          });
-        }
-      }
-      return userChange({ kind: 'collection', surface, op: 'add', item, value });
-    },
+    addItem: (surface, value) =>
+      userChange({ kind: 'collection', surface, op: 'add', item: hash(value), value }),
     updateItem: (surface, item, value) =>
       userChange({ kind: 'collection', surface, op: 'update', item, value }),
     removeItem: (surface, item) => userChange({ kind: 'collection', surface, op: 'remove', item }),
@@ -1445,7 +1657,14 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
       const waiting = state.pending.find((entry) => entry.id === operation);
       if (waiting) {
         state = { ...state, pending: state.pending.filter((entry) => entry.id !== operation) };
-        return applyNow([waiting], 'user').applied.length > 0;
+        if (applyNow([waiting], 'user').applied.length === 0) return false;
+        // Saying yes makes a change the user's own, as with a redesign or an item.
+        state = {
+          ...state,
+          definition: setStatus(state.definition, operation, 'kept', ['active']),
+        };
+        changed();
+        return true;
       }
       const suggested = state.definition.operations.find(
         (entry) => entry.id === operation && entry.status === 'suggested',
@@ -1470,7 +1689,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
       }
       state = {
         ...state,
-        definition: setStatus(state.definition, operation, 'active', ['suggested']),
+        definition: setStatus(state.definition, operation, 'kept', ['suggested']),
       };
       changed();
       return true;
@@ -1509,11 +1728,7 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     },
 
     setGoal(goal) {
-      const { goal: _previous, ...rest } = state.definition;
-      state = {
-        ...state,
-        definition: { ...rest, ...(goal === undefined ? {} : { goal }), version: rest.version + 1 },
-      };
+      state = { ...state, definition: withGoal(state.definition, goal) };
       changed();
     },
 
@@ -1528,9 +1743,19 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     },
 
     reset() {
+      // The layout goes back to standard; what the person decided about planners stays theirs.
+      const { frozen, blocked, cooldowns, goal, version } = state.definition;
       state = {
         ...state,
-        definition: { ...emptyDefinition(contract), version: state.definition.version + 1 },
+        epoch: state.epoch + 1,
+        definition: {
+          ...emptyDefinition(contract),
+          version: version + 1,
+          frozen,
+          blocked,
+          cooldowns,
+          ...(goal === undefined ? {} : { goal }),
+        },
         pending: [],
         seen: {},
       };
@@ -1547,7 +1772,8 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
 
     clearData() {
       store.clear();
-      state = fresh();
+      stale = false;
+      state = { ...fresh(), epoch: state.epoch + 1 };
       usage++;
       changed();
     },
@@ -1560,48 +1786,63 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
     }),
 
     import(document) {
-      const id = nextId('a');
-      if (!isDocument(document) || document.contract.id !== contract.id) {
-        return applyNow([], 'import', {
+      const refuse = () =>
+        applyNow([], 'import', {
           rejected: [],
           status: 'not_allowed',
           text: `Not a definition for ${contract.id}`,
         });
+      if (!isDocument(document) || document.contract.id !== contract.id) return refuse();
+      if (document.definition.operations.length > MAX_IMPORTED) return refuse();
+      let revived: ReturnType<typeof reviveDefinition>;
+      try {
+        revived = reviveDefinition(document.definition, {
+          session: state.session,
+          cooldown: tuning.cooldown,
+        });
+      } catch (error) {
+        report(error);
+        return refuse();
       }
-      const rejected: Rejection[] = [];
-      const operations: AppliedOperation[] = [];
-      const incoming = migrateDefinition(document.definition);
-      for (const operation of incoming.operations) {
-        try {
-          operations.push({
-            ...operation,
-            change: canonical(operation.change, contract),
-            adaptation: id,
-          });
-        } catch (error) {
-          rejected.push({
-            operation,
-            rule: 'unknown',
-            message: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
+      // A file with entries that aren't changes at all was never an export.
+      if (revived === undefined || revived.malformed > 0) return refuse();
+      const incoming = revived.definition;
+      const id = nextId('a');
+      // Imported changes apply now, in this session's count: another device counts its own.
+      const { accepted, rejected } = checkStored(
+        incoming.operations.map((operation) => ({
+          ...operation,
+          session: state.session,
+          adaptation: id,
+          basedOn: {
+            ...operation.basedOn,
+            session: Math.min(operation.basedOn.session, state.session),
+          },
+        })),
+        contract,
+      );
       state = {
         ...state,
+        epoch: state.epoch + 1,
+        // IDs made from here on never repeat an imported one.
+        counter: Math.max(state.counter, highestCounter(accepted.map((operation) => operation.id))),
         pending: [],
         seen: {},
         definition: {
-          ...incoming,
+          schemaVersion: 2,
           contract: contract.hash,
           version: state.definition.version + 1,
-          operations,
+          operations: accepted,
+          ...rekeyed(incoming),
+          frozen: incoming.frozen,
+          ...(incoming.goal === undefined ? {} : { goal: incoming.goal }),
         },
       };
       const adaptation = remember({
         id,
         kind: 'import',
         session: state.session,
-        applied: operations.filter(isApplied).map((operation) => operation.id),
+        applied: accepted.filter(isApplied).map((operation) => operation.id),
         rejected,
         pending: 0,
       });
@@ -1649,30 +1890,150 @@ export function createUitive<C extends AnyContract>(options: UitiveOptions<C>): 
   }
 }
 
-function isState(value: unknown): value is Omit<State, 'schemaVersion'> & { schemaVersion: 1 | 2 } {
-  if (value === null || typeof value !== 'object') return false;
-  const candidate = value as Partial<Omit<State, 'schemaVersion'> & { schemaVersion: number }>;
-  return (
-    (candidate.schemaVersion === 1 || candidate.schemaVersion === 2) &&
-    typeof candidate.contract === 'string' &&
-    typeof candidate.session === 'number' &&
-    Array.isArray(candidate.events) &&
-    Array.isArray(candidate.sessions) &&
-    Array.isArray(candidate.pending) &&
-    Array.isArray(candidate.adaptations) &&
-    typeof candidate.definition === 'object' &&
-    candidate.definition !== null &&
-    Array.isArray(candidate.definition.operations)
+/** Stored state, each field well formed; nothing when it isn't state at all. */
+function reviveState(
+  raw: unknown,
+  defaults: { now: number; autonomy: Autonomy; cooldown: number },
+): State | undefined {
+  if (!isRecord(raw) || (raw.schemaVersion !== 1 && raw.schemaVersion !== 2)) return undefined;
+  if (!isText(raw.contract, 200) || !isCount(raw.session)) return undefined;
+  const session = raw.session;
+  const revived = reviveDefinition(raw.definition, { session, cooldown: defaults.cooldown });
+  if (revived === undefined) return undefined;
+  const sessions = reviveSessions(raw.sessions);
+  if (sessions[sessions.length - 1]?.index !== session) {
+    sessions.push({ index: session, startedAt: defaults.now, contexts: {} });
+  }
+  const pending = (Array.isArray(raw.pending) ? raw.pending : []).flatMap((entry: unknown) => {
+    const operation = reviveOperation(entry);
+    if (operation === undefined || !isRecord(entry)) return [];
+    const power = typeof entry.strength === 'number' && Number.isFinite(entry.strength);
+    return [
+      {
+        ...operation,
+        key: operationKey(operation.change),
+        strength: power ? (entry.strength as number) : 0,
+        held: entry.held === true,
+      },
+    ];
+  });
+  const adaptations = (Array.isArray(raw.adaptations) ? raw.adaptations : []).flatMap(
+    (entry: unknown) => {
+      const adaptation = reviveAdaptation(entry);
+      return adaptation === undefined ? [] : [adaptation];
+    },
   );
+  const definition = revived.definition;
+  const autonomy = AUTONOMIES.find((entry) => entry === raw.autonomy) ?? defaults.autonomy;
+  return {
+    schemaVersion: 2,
+    contract: raw.contract,
+    session,
+    lastActivityAt:
+      typeof raw.lastActivityAt === 'number' && Number.isFinite(raw.lastActivityAt)
+        ? raw.lastActivityAt
+        : defaults.now,
+    sessions: sessions.slice(-MAX_SESSIONS),
+    events: reviveEvents(raw.events).slice(-MAX_EVENTS),
+    eventsFrom: isCount(raw.eventsFrom) ? raw.eventsFrom : 0,
+    definition,
+    pending,
+    seen: reviveSeen(raw.seen),
+    adaptations: adaptations.slice(-MAX_ADAPTATIONS),
+    view: raw.view === 'standard' ? 'standard' : 'yours',
+    autonomy,
+    counter: isCount(raw.counter)
+      ? raw.counter
+      : highestCounter([
+          ...definition.operations.map((operation) => operation.id),
+          ...pending.map((operation) => operation.id),
+          ...adaptations.map((adaptation) => adaptation.id),
+        ]),
+    ...(isCount(raw.planned) ? { planned: raw.planned } : {}),
+    epoch: isCount(raw.epoch) ? raw.epoch : 0,
+  };
 }
 
-function isDocument(value: unknown): value is DefinitionDocument {
-  if (value === null || typeof value !== 'object') return false;
-  const candidate = value as Partial<DefinitionDocument>;
+/** Agreement between plans, as stored; a bare count, kept before sessions were, is an earlier one. */
+function reviveSeen(raw: unknown): Record<string, Agreement> {
+  const seen: Record<string, Agreement> = {};
+  if (!isRecord(raw)) return seen;
+  for (const [key, value] of Object.entries(raw)) {
+    if (isCount(value)) seen[key] = { count: value, session: -1 };
+    else if (isRecord(value) && isCount(value.count) && Number.isInteger(value.session)) {
+      seen[key] = { count: value.count, session: value.session as number };
+    }
+  }
+  return seen;
+}
+
+/** An adaptation, as stored for banners and history; nothing when it isn't one. */
+function reviveAdaptation(raw: unknown): Adaptation | undefined {
+  if (!isRecord(raw) || !isText(raw.id, 200) || !isCount(raw.session)) return undefined;
+  const kind = KINDS.find((entry) => entry === raw.kind);
+  if (kind === undefined || !Array.isArray(raw.applied) || !Array.isArray(raw.rejected)) {
+    return undefined;
+  }
+  const rejected = raw.rejected.flatMap((entry: unknown) => {
+    if (!isRecord(entry) || typeof entry.rule !== 'string' || typeof entry.message !== 'string') {
+      return [];
+    }
+    const operation = reviveOperation(entry.operation);
+    return operation === undefined
+      ? []
+      : [{ operation, rule: entry.rule as Rejection['rule'], message: entry.message }];
+  });
+  const status = STATUSES.find((entry) => entry === raw.status);
+  const meta =
+    isRecord(raw.meta) && typeof raw.meta.planner === 'string' && typeof raw.meta.ms === 'number'
+      ? (raw.meta as unknown as PlanMeta)
+      : undefined;
+  return {
+    id: raw.id,
+    kind,
+    session: raw.session,
+    applied: raw.applied.filter((id): id is string => typeof id === 'string'),
+    rejected,
+    pending: isCount(raw.pending) ? raw.pending : 0,
+    ...(status === undefined ? {} : { status }),
+    ...(Array.isArray(raw.candidates)
+      ? {
+          candidates: raw.candidates.filter(
+            (candidate): candidate is string => typeof candidate === 'string',
+          ),
+        }
+      : {}),
+    ...(typeof raw.text === 'string' ? { text: raw.text } : {}),
+    ...(meta === undefined ? {} : { meta }),
+  };
+}
+
+/** The highest counter IDs were made with, such as `a1f` or `3kq9x.1f`. */
+function highestCounter(ids: readonly string[]): number {
+  let highest = 0;
+  for (const id of ids) {
+    const suffix = id.includes('.') ? id.slice(id.lastIndexOf('.') + 1) : id.slice(1);
+    const value = Number.parseInt(suffix, 36);
+    if (Number.isFinite(value)) highest = Math.max(highest, value);
+  }
+  return highest;
+}
+
+/** A definition with the goal kept as the person may state one, or with none. */
+function withGoal(definition: Definition, goal: string | undefined): Definition {
+  const { goal: _previous, ...rest } = definition;
+  const kept = cleanGoal(goal);
+  return { ...rest, ...(kept === undefined ? {} : { goal: kept }), version: rest.version + 1 };
+}
+
+function isDocument(
+  value: unknown,
+): value is DefinitionDocument & { definition: { operations: unknown[] } } {
+  if (!isRecord(value) || !isRecord(value.contract) || !isRecord(value.definition)) return false;
   return (
-    candidate.format === 'uitive.definition' &&
-    candidate.version === 1 &&
-    typeof candidate.contract?.id === 'string' &&
-    Array.isArray(candidate.definition?.operations)
+    value.format === 'uitive.definition' &&
+    value.version === 1 &&
+    typeof value.contract.id === 'string' &&
+    Array.isArray(value.definition.operations)
   );
 }

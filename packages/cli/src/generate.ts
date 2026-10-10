@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, relative, resolve } from 'node:path';
+import { syntaxErrors } from './code.js';
 import { curate, parseCuration, picksOf } from './curation.js';
 import type { Curation } from './curation.js';
 import { emit } from './emit.js';
@@ -139,13 +140,20 @@ export async function generateSources(
         ]
       : []),
   ];
-  const code =
+  // The header names the curation as the project sees it, never by an absolute path.
+  const shown = relative(cwd, resolve(cwd, curationName)).replace(/\\/g, '/') || curationName;
+  let code =
     problems.length === 0
       ? emit(curated, {
           from: /^https?:\/\//.test(options.spec) ? options.spec : basename(options.spec),
-          curation: curationName,
+          curation: shown,
         })
       : '';
+  const broken = code === '' ? [] : syntaxErrors(code, file);
+  if (broken.length > 0) {
+    problems.push(`The generated code doesn't parse (${broken.join('; ')}); please report this.`);
+    code = '';
+  }
   const written = problems.length === 0 && options.dryRun !== true;
   if (written) {
     await mkdir(dirname(file), { recursive: true });

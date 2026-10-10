@@ -70,6 +70,21 @@ export function candidates(scope: ParentNode, strategy: Strategy, base: string):
   return [...scope.querySelectorAll(strategy.css)];
 }
 
+/** The adapter's anchors, with each repair made on this device tried first. */
+export function withRepairs(
+  adapter: Pick<Adapter, 'anchors'>,
+  repairs: Readonly<Record<string, Strategy>>,
+): Pick<Adapter, 'anchors'> {
+  return {
+    anchors: Object.fromEntries(
+      Object.entries(adapter.anchors).map(([name, anchor]) => {
+        const repaired = repairs[name];
+        return [name, repaired ? { ...anchor, match: [repaired, ...anchor.match] } : anchor];
+      }),
+    ),
+  };
+}
+
 /**
  * Finds each anchor in the page: within its parent anchor, the first strategy with exactly one
  * match wins. Several matches make it ambiguous; never a guess.

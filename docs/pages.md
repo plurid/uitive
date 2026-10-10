@@ -88,8 +88,12 @@ Generic blocks are drawn by Uitive from the contract's sources and actions, with
 | `links`    | Links to routes                                    | `items`                                                            |
 
 - A table's `lookups` join figures from other queries to each row, such as each customer's lifetime value from a summary grouped by customer.
-- Row actions fill a `ref` param naming the table's source with the row's key; `set` fills others, with literals, `$current` or `$row.<field>`.
+- Row actions fill a `ref` param naming the table's source with the row's key; `set` fills others, with literals, `$current` or `$row.<field>`. A row action shows only on rows its action's `when` allows, judged as queries filter.
+- Literals are parsed as policy checks them: `yes` is true, `$5` and `1,000` are numbers, and money is written in major units. A form shows them as it will send them; one that shows every value counts as the yes, and anything else waits for [`<Confirmations />`](react.md#confirmations).
 - `link: 'entity'` opens each row's own page, through the route about that source.
+- A metric with `compare: 'previous'` compares with the period of the same length just before its time filter: `-30d` with the 30 days before, `start:month` (this month so far) with the same part of last month, a fixed range with the range just before it. It never compares sums in different currencies.
+- A pie by currency, or bars stacked by currency, would add amounts in different currencies, so a chart of money refuses them; bars side by side show each currency apart.
+- A link with an empty label reads as its route: the route's `label`, else its page's label, else its ID. A link to one row names it by key, or as `$current` on a page about that source; a planner, who never sees rows, may name it only as `$current`.
 
 The API reference has every prop: [table](api/core.md#tableprops), [list](api/core.md#listprops), [detail](api/core.md#detailprops), [metric](api/core.md#metricprops), [chart](api/core.md#chartprops), [timeline](api/core.md#timelineprops), [board](api/core.md#boardprops), [form](api/core.md#formprops), [actions](api/core.md#actionsprops), [note](api/core.md#noteprops) and [links](api/core.md#linksprops). A page offers every generic block the contract can feed, unless its `generic` option narrows that.
 
@@ -127,6 +131,8 @@ export function OrderPage() {
   return <Page value={value} blocks={blocks} regions={{ order: OrderDetail }} />;
 }
 ```
+
+A block's props are what a model writes, so keep them to objects, strings, numbers, booleans, enums and arrays: structured outputs take no records, unions or nullable values, and `uitive check` names any prop that holds one. Use an enum, an empty string or `'none'` for no value, and an array of objects for a record. Bounds such as `.max(3)` aren't sent to models; policy enforces them when it checks the page.
 
 `uitive generate blocks src/fulfillment.tsx#Fulfillment` writes block specs from components' TypeScript props: literal unions become enums, optional props become required with their defaults described, and props that can't be data, such as callbacks, are reported.
 

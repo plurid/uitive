@@ -5,12 +5,14 @@ import { dirname, join, resolve } from 'node:path';
 import {
   areasOf,
   fromJson,
+  MAX_ACTIONS,
   MAX_SOURCES,
+  qualifiedFields,
   rankAreas,
   selectSubset,
   toJson,
 } from '@plurid/uitive-core';
-import type { AnyContract } from '@plurid/uitive-core';
+import type { AnyContract, ResolvedSource, Subset } from '@plurid/uitive-core';
 import { limits, outputSchema, size } from '@plurid/uitive-planner/schema';
 import { createJiti } from 'jiti';
 import { folderOf } from './folder.js';
@@ -152,9 +154,35 @@ export function contractIn(module: Record<string, unknown>): AnyContract | undef
 }
 
 /**
+ * The largest subset a request can plan over: the sources with the most fields a query can name,
+ * as many as one request takes, with the actions that take the most params, as many as fit.
+ */
+function largest(contract: AnyContract): Subset {
+  const resolved = Object.fromEntries(
+    contract.sourceIds.map((id) => [id, contract.source(id) as ResolvedSource]),
+  );
+  const areas = areasOf(contract);
+  const weight = (id: string) => qualifiedFields(resolved, [id]).length;
+  const sources = [...contract.sourceIds]
+    .sort((a, b) => weight(b) - weight(a))
+    .slice(0, MAX_SOURCES);
+  const chosen = areas.filter((area) => sources.includes(area.source));
+  const tied = new Set(areas.flatMap((area) => area.actions));
+  const actions = [
+    ...new Set([
+      ...chosen.flatMap((area) => area.actions),
+      ...contract.actionIds.filter((id) => !tied.has(id)),
+    ]),
+  ]
+    .sort((a, b) => contract.params(b).length - contract.params(a).length)
+    .slice(0, MAX_ACTIONS);
+  return { sources, actions, routes: [...new Set(chosen.flatMap((area) => area.routes))] };
+}
+
+/**
  * Checks an integration: the contract loads and validates, its JSON round-trips, every schema a
- * request can need fits structured outputs, labels find what they name, and bindings exist for
- * what the contract declares.
+ * request can need fits structured outputs, and bindings exist for what the contract declares.
+ * Labels that two actions share, or that don't find their source, are warnings.
  */
 export async function check(options: CheckOptions = {}): Promise<CheckResult> {
   const cwd = resolve(options.cwd ?? process.cwd());
@@ -210,22 +238,26 @@ export async function check(options: CheckOptions = {}): Promise<CheckResult> {
     fail('json', (error as Error).message);
   }
 
-  // Each request plans over a subset; check the schema of every subset a page can start from.
-  const subsets =
+  // Each request plans over a subset; check the schema of every subset a page can start from, and
+  // the largest a request can reach: the biggest sources together, with as many actions as fit.
+  const subsets: { name: string; subset: Subset | undefined }[] =
     contract.sourceIds.length <= MAX_SOURCES
       ? [{ name: 'whole contract', subset: undefined }]
-      : contract.sourceIds.map((id) => ({
-          name: id,
-          subset: selectSubset(contract, { inView: [id] }),
-        }));
+      : [
+          ...contract.sourceIds.map((id) => ({
+            name: id,
+            subset: selectSubset(contract, { inView: [id] }),
+          })),
+          { name: `the ${MAX_SOURCES} largest sources together`, subset: largest(contract) },
+        ];
   const over: string[] = [];
-  let largest = 0;
+  let biggest = 0;
   for (const { name, subset } of subsets) {
     try {
       const schema = outputSchema(contract, subset ? { subset } : {});
       const counted = limits(schema);
       const measured = size(schema);
-      largest = Math.max(largest, measured.bytes);
+      biggest = Math.max(biggest, measured.bytes);
       const problems = [
         counted.optional > SCHEMA_LIMITS.optional ? `${counted.optional} optional fields` : '',
         counted.unions > SCHEMA_LIMITS.unions ? `${counted.unions} unions` : '',
@@ -238,7 +270,7 @@ export async function check(options: CheckOptions = {}): Promise<CheckResult> {
     }
   }
   if (over.length === 0) {
-    pass('schemas', `${subsets.length} request schemas fit; the largest is ${largest} bytes`);
+    pass('schemas', `${subsets.length} request schemas fit; the largest is ${biggest} bytes`);
   } else {
     fail('schemas', over.join('; '));
   }
@@ -344,9 +376,10 @@ export function checkText(result: CheckResult): string {
   for (const warning of result.warnings) lines.push(`warn  ${warning}`);
   if (result.coverage) {
     const c = result.coverage;
+    const count = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
     lines.push(
       '',
-      `Coverage: ${c.sources} sources; ${c.actions} actions, ${c.runnable} with effects${c.performs ? ', all able to run through perform' : ''}; ${c.routes} routes, ${c.pages} pages, ${c.regions} regions, ${c.lists} lists, ${c.choices} choices.`,
+      `Coverage: ${count(c.sources, 'source')}; ${count(c.actions, 'action')}, ${c.runnable} with effects${c.performs ? ', all able to run through perform' : ''}; ${count(c.routes, 'route')}, ${count(c.pages, 'page')}, ${count(c.regions, 'region')}, ${count(c.lists, 'list')}, ${count(c.choices, 'choice')}.`,
     );
   }
   lines.push('', result.ok ? 'All checks pass.' : 'Some checks fail.');

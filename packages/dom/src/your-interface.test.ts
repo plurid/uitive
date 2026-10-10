@@ -44,6 +44,42 @@ describe('<uitive-your-interface>', () => {
     expect(text()).toContain('Nothing has changed yet.');
   });
 
+  it('says in policy’s words why a waiting change couldn’t apply', () => {
+    const { uitive, text, button } = mount();
+    const accept = vi.spyOn(uitive, 'accept').mockImplementation(() => false);
+    const latest = vi.spyOn(uitive, 'getSnapshot');
+    uitive.hide('toolbar', 'bold');
+    const snapshot = uitive.getSnapshot();
+    latest.mockImplementation(() => snapshot);
+    accept.mockImplementation(() => {
+      latest.mockImplementation(() => ({
+        ...snapshot,
+        latest: {
+          id: 'refused',
+          kind: 'user',
+          session: 0,
+          applied: [],
+          rejected: [
+            {
+              operation: snapshot.definition.operations[0]!,
+              rule: 'required',
+              message: 'Share must stay in Toolbar',
+            },
+          ],
+          pending: 0,
+        },
+      }));
+      return false;
+    });
+    const waiting = document.createElement('button');
+    waiting.dataset.act = 'accept';
+    waiting.dataset.arg = 'op_waiting';
+    waiting.textContent = 'Accept now';
+    (button('Revert')?.parentElement as HTMLElement).append(waiting);
+    waiting.click();
+    expect(text()).toContain('Share must stay in Toolbar');
+  });
+
   it('edits the stated goal', () => {
     const { uitive, root, button } = mount();
     const setGoal = vi.spyOn(uitive, 'setGoal');

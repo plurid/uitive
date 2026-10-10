@@ -181,13 +181,13 @@ export {
   FIELD_TYPES,
   humanize,
 } from './field.js';
-export type { Field, FieldMeta, FieldOptions, FieldType, TimeUnit } from './field.js';
+export type { Field, FieldMeta, FieldOptions, FieldType, MoneyOptions, TimeUnit } from './field.js';
 export type { Explanation } from './explain.js';
 
 export { hash, stableStringify } from './hash.js';
 export { command, heuristicPlanner, keywordCommand, MARGIN, MIN_PROMOTE } from './heuristic.js';
 export type { CommandResult } from './heuristic.js';
-export { assertIds, canonicaliser, ID_PATTERN, SURFACE_PATTERN } from './ids.js';
+export { assertIds, canonicalizer, ID_PATTERN, SURFACE_PATTERN } from './ids.js';
 
 export {
   BUILT_IN,
@@ -301,7 +301,15 @@ export type {
   RestPerformConfig,
   RestSource,
 } from './rest.js';
-export { buildPath, entityRoute, matchRoute, route, segments, validateRoutes } from './route.js';
+export {
+  buildPath,
+  entityRoute,
+  matchRoute,
+  route,
+  routeLabel,
+  segments,
+  validateRoutes,
+} from './route.js';
 export type { RouteSegment, RouteSpec } from './route.js';
 
 export { random, simulate, visibleLists } from './simulate.js';

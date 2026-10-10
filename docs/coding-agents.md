@@ -29,7 +29,7 @@ Then ask the agent to integrate Uitive. `init` installs the playbook, a skill na
 
 `init --dir app/uitive` puts the folder elsewhere, such as inside the only folder the build compiles; package.json records it as `uitive.dir`, where every command finds it. With Next.js, `init` also writes `api/uitive/[kind]/route.ts` in `app`, or in `src/app` when there is one.
 
-At the repository's root, it configures the coding agents it finds: Claude Code (`.mcp.json` and the skill), Cursor (`.cursor/mcp.json`) and VS Code (`.vscode/mcp.json`). It adds its MCP server to a configuration that exists, keeping everything else in it; one it can't parse, such as JSON with comments, it leaves as it is and says what to add by hand. With none of these found, it configures Claude Code and says so: Codex, which it recognizes by an `AGENTS.md`, has nothing it can configure. `--no-agents` leaves them all alone.
+At the repository's root, it configures the coding agents it finds: Claude Code (`.mcp.json` and the skill), Cursor (`.cursor/mcp.json`) and VS Code (`.vscode/mcp.json`). It adds its MCP server to a configuration that exists, keeping everything else in it and its indentation; a `uitive` server already there, perhaps written by hand, it keeps as it is. One it can't parse, such as JSON with comments, it leaves alone and says what to add by hand. With none of these found, it configures Claude Code and says so: Codex, which it recognizes by an `AGENTS.md`, has nothing it can configure. `--mcp` takes the server's command quoted as in a shell, such as `--mcp 'node "/My Projects/uitive/packages/mcp/dist/bin.js"'`, or as a JSON array of words. `--no-agents` leaves them all alone.
 
 ## The commands
 
@@ -42,8 +42,8 @@ Every command takes `--json` for agents, `--cwd <dir>` for the project's root, a
 | `survey --openapi <spec>`           | One line per source an OpenAPI 2.0, 3.0 or 3.1 description yields, to curate from. `--curation`                                        | the description has problems                 |
 | `generate sources --openapi <spec>` | Writes `api.generated.ts` from the description and `curation.json`. `--curation`, `--out`, `--dry-run`                                 | generating failed                            |
 | `generate blocks <file#Component>…` | Writes `blocks.generated.ts` from components' props. `--out`, `--check`                                                                | there are problems, or with `--check`, drift |
-| `discover --url <url>`              | Crawls the running application and writes `discovery.json`. `--pages`, `--per-route`, `--storage-state`, `--chrome`, `--out`           |                                              |
-| `check`                             | The gate: contract, JSON, request schemas, labels and bindings, with coverage. `--contract`, `--bindings`                              | anything fails                               |
+| `discover --url <url>`              | Crawls the running application and writes `discovery.json`. `--pages`, `--per-route`, `--storage-state`, `--chrome`, `--out`           | no page could be read                        |
+| `check`                             | The gate: contract, JSON, request schemas and bindings, with warnings about labels and coverage. `--contract`, `--bindings`            | any check fails; warnings don't              |
 
 ## Curation
 
@@ -89,10 +89,11 @@ Choices survive every regeneration. An action's effect can be raised freely, and
 
 ## Discovery
 
-`uitive discover --url http://localhost:5173/` crawls the running application with Playwright, following same-origin links and never pressing anything. It proposes routes, with row keys turned into parameters, a region per route, lists from navigation and toolbars, which buttons match the contract's actions, and the buttons that open menus it doesn't open. Buttons in dialogs and sort buttons are never actions, and a generic verb or a dismissal alone, such as "Create" or "Cancel", never matches a longer action.
+`uitive discover --url http://localhost:5173/` crawls the running application with Playwright, following same-origin links and never pressing anything. It proposes routes, with row keys turned into parameters, a region per route, lists from navigation and toolbars, which buttons match the contract's actions, and the buttons that open menus it doesn't open, which it asks the page for (`aria-haspopup`, `aria-expanded`), since a snapshot marks a menu's button only while the menu is open. Buttons in dialogs, their toolbars and tables included, and sort buttons are never actions, and a generic verb or a dismissal alone, such as "Create" or "Cancel", never matches a longer action. A table's row buttons count only when their names repeat from row to row, so a button that shows a row's data, such as a customer's name, is never read.
 
 - It needs `playwright`, or `playwright-core` with `--chrome` to use the installed Chrome.
 - `--storage-state <file>` gives it a signed-in session, saved with Playwright.
+- It never navigates to another origin, not even through a redirect, and says which pages it skipped and why. A page that keeps polling gets a moment to settle instead of waiting for quiet.
 - It writes `discovery.json` in the Uitive folder, for the agent to turn into routes, regions and lists.
 
 ## Native blocks
@@ -101,7 +102,7 @@ Choices survive every regeneration. An action's effect can be raised freely, and
 
 ## The check
 
-`uitive check` loads the contract and the bindings in Node, through the project's tsconfig paths, and checks that they hold: see [Contracts](contracts.md#what-check-checks). It prints what the integration covers, such as "10 actions, 1 route, 1 page, 1 region, 2 lists", so an agent can report it. Keep the contract importable on its own: aliases only the bundler knows don't resolve in Node.
+`uitive check` loads the contract and the bindings in Node, through the project's tsconfig paths, and checks that they hold: see [Contracts](contracts.md#what-check-checks). Labels two actions share, or that don't find their source, are warnings, worth fixing but not failures. It prints what the integration covers, such as "Coverage: 0 sources; 10 actions, 0 with effects; 1 route, 1 page, 1 region, 2 lists, 0 choices.", so an agent can report it. Keep the contract importable on its own: aliases only the bundler knows don't resolve in Node.
 
 ## MCP
 
@@ -122,7 +123,7 @@ Choices survive every regeneration. An action's effect can be raised freely, and
 | `uitive_check`            | The gate, with coverage                                                                                                 |
 | `uitive_preview_plan`     | Which sources and actions a request would plan over, and how large its schema and prompt are, without calling the model |
 
-No tool reads or writes outside the project's root. API descriptions come from files, and discovery crawls only local hosts, unless the server starts with `--allow-network`.
+No tool reads or writes outside the project's root, symbolic links resolved: a tool's paths are relative to its `cwd`, the application's package, and `init` configures the coding agents at the nearest repository root inside the project's root, else at the root itself, never above it. Generating writes only `*.generated.ts` files in the Uitive folder, and discovery only a `.json` file there. API descriptions come from files, and discovery crawls only this machine's hosts (`localhost`, `*.localhost`, `127.0.0.1`, `[::1]`), unless the server starts with `--allow-network`. The packages the project's own code imports, such as its contract's, resolve as Node resolves them for the project.
 
 ## Claude Code
 

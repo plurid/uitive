@@ -7,7 +7,7 @@ What pages Uitive doesn't own need: accessibility trees, discovery, and adapters
 Install: `pnpm add @plurid/uitive-adapter`, with `zod` ^4.2.0 as a peer. Guides: [Coding agents](../coding-agents.md).
 
 - [Accessibility trees](#accessibility-trees): [`parseAriaSnapshot`](#parseariasnapshot), [`textOf`](#textof), [`walk`](#walk), [`RoleNode`](#rolenode)
-- [Discovering pages](#discovering-pages): [`discoverApp`](#discoverapp), [`discoveryText`](#discoverytext), [`factsOf`](#factsof), [`matchAction`](#matchaction), [`pathOf`](#pathof), [`templateOf`](#templateof), [`Discovery`](#discovery), [`PageFacts`](#pagefacts)
+- [Discovering pages](#discovering-pages): [`discoverApp`](#discoverapp), [`discoveryText`](#discoverytext), [`factsOf`](#factsof), [`matchAction`](#matchaction), [`pathOf`](#pathof), [`templateOf`](#templateof), [`Discovery`](#discovery), [`FactsOptions`](#factsoptions), [`PageFacts`](#pagefacts)
 - [Adapters](#adapters): [`ADAPTER_FORMAT`](#adapter_format), [`ADAPTER_VERSION`](#adapter_version), [`adapterSchema`](#adapterschema), [`checkAdapter`](#checkadapter), [`compileEffects`](#compileeffects), [`routeOf`](#routeof), [`Adapter`](#adapter), [`AdapterInput`](#adapterinput), [`Anchor`](#anchor), [`Checked`](#checked), [`Connector`](#connector), [`Effect`](#effect), [`Strategy`](#strategy), [`Values`](#values)
 
 ## Accessibility trees
@@ -98,10 +98,10 @@ Uses: [`Discovery`](#discovery).
 What a page offers, read from its accessibility tree. Structure only: rows are never read.
 
 ```ts
-function factsOf(tree: readonly RoleNode[], url: string): PageFacts;
+function factsOf(tree: readonly RoleNode[], url: string, options?: FactsOptions): PageFacts;
 ```
 
-Uses: [`PageFacts`](#pagefacts), [`RoleNode`](#rolenode).
+Uses: [`FactsOptions`](#factsoptions), [`PageFacts`](#pagefacts), [`RoleNode`](#rolenode).
 
 ### matchAction
 
@@ -191,23 +191,31 @@ interface Discovery {
 | `unmapped` | Buttons no action matches.                                                              |
 | `menus`    | Buttons that open menus or panels, which discovery doesn't open: look inside for lists. |
 
+### FactsOptions
+
+What the page itself says, besides its accessibility tree.
+
+| Property | Type                | Default | Description                                                                                                                                                                     |
+| -------- | ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `menus?` | `readonly string[]` | `[]`    | Names of the controls that open a menu or a panel, read from the page (`aria-haspopup` and `aria-expanded`): an ARIA snapshot marks one only while it is open, as `[expanded]`. |
+
 ### PageFacts
 
 What one page offers, read from its accessibility tree: its title, landmarks, headings, buttons,
 links, tables, toolbars, navigation and menu triggers. Structure only, never rows.
 
-| Property     | Type                                                          | Description                                                                          |
-| ------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `url`        | `string`                                                      | The page's URL.                                                                      |
-| `path`       | `string`                                                      | Its path, without origin, query or fragment.                                         |
-| `title`      | `string`                                                      | The page's main heading.                                                             |
-| `landmarks`  | `{ role: string; name: string }[]`                            | Its landmarks, such as the main region and named navigation.                         |
-| `headings`   | `{ level: number; text: string }[]`                           | Its headings, with their levels.                                                     |
-| `buttons`    | `{ name: string; landmark: string; opens?: boolean }[]`       | Buttons outside navigation, tables, toolbars and dialogs; `opens` for menu triggers. |
-| `links`      | `{ name: string; url: string; landmark: string }[]`           | Its links, with where they go and the landmark they sit in.                          |
-| `tables`     | `{ name: string; columns: string[]; rowActions: string[] }[]` | Its tables: their columns and the buttons on each row, never the rows.               |
-| `toolbars`   | `{ name: string; landmark: string; items: string[] }[]`       | Explicit toolbars, and runs of three or more buttons side by side.                   |
-| `navigation` | `{ name: string; items: { name: string; url?: string }[] }[]` | Its navigation, with each item's name and where it goes.                             |
+| Property     | Type                                                          | Description                                                                             |
+| ------------ | ------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `url`        | `string`                                                      | The page's URL.                                                                         |
+| `path`       | `string`                                                      | Its path, without origin, query or fragment.                                            |
+| `title`      | `string`                                                      | The page's main heading.                                                                |
+| `landmarks`  | `{ role: string; name: string }[]`                            | Its landmarks, such as the main region and named navigation.                            |
+| `headings`   | `{ level: number; text: string }[]`                           | Its headings, with their levels.                                                        |
+| `buttons`    | `{ name: string; landmark: string; opens?: boolean }[]`       | Buttons outside navigation, tables, toolbars and dialogs; `opens` for menu triggers.    |
+| `links`      | `{ name: string; url: string; landmark: string }[]`           | Its links, with where they go and the landmark they sit in.                             |
+| `tables`     | `{ name: string; columns: string[]; rowActions: string[] }[]` | Its tables: their columns and the buttons repeated on their rows, never the rows' data. |
+| `toolbars`   | `{ name: string; landmark: string; items: string[] }[]`       | Explicit toolbars, and runs of three or more buttons side by side.                      |
+| `navigation` | `{ name: string; items: { name: string; url?: string }[] }[]` | Its navigation, with each item's name and where it goes.                                |
 
 ## Adapters
 

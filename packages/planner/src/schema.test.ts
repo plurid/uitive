@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { selectSubset } from '@plurid/uitive-core';
+import { z } from 'zod';
+import { action, block, defineApp, page, selectSubset } from '@plurid/uitive-core';
 import { payments } from '../../core/src/__fixtures__/payments.js';
 import { scale } from '../../core/src/__fixtures__/scale.js';
 import { ops } from './__fixtures__/ops.js';
@@ -61,6 +62,57 @@ describe('outputSchema', () => {
       'limit',
     ]);
     expect(at(variants[3], 'properties', 'props', 'additionalProperties')).toBe(false);
+  });
+
+  describe("an application's block props", () => {
+    const app = (props: z.ZodObject) =>
+      defineApp({
+        id: 'cards',
+        description: 'Cards',
+        actions: { open: action({ label: 'Open', description: 'Opens' }) },
+        surfaces: {
+          home: page({ card: block({ label: 'Card', description: 'A card', props }) })({
+            label: 'Home',
+            description: 'Home',
+            standard: () => ({ sections: [] }),
+          }),
+        },
+      });
+
+    it('drop the bounds structured outputs can’t take, which policy enforces instead', () => {
+      const schema = outputSchema(
+        app(
+          z.object({
+            tags: z.array(z.string()).min(1).max(3),
+            code: z.string().regex(/^[A-Z]{3}$/),
+            count: z.number().int().min(0).max(9),
+            pattern: z.string().max(5),
+          }),
+        ),
+      );
+      expect(JSON.stringify(schema)).not.toMatch(
+        /"(minItems|maxItems|pattern|minimum|maximum|maxLength)":[^{]/,
+      );
+      expect(JSON.stringify(schema)).toContain('"pattern":{"type":"string"}');
+      expect(limits(schema)).toEqual({ optional: 0, unions: 1 });
+    });
+
+    it('fail clearly when they hold a record, a union or a nullable value', () => {
+      expect(() =>
+        outputSchema(
+          app(
+            z.object({
+              subtitle: z.string().nullable(),
+              extra: z.record(z.string(), z.string()),
+              size: z.union([z.literal('s'), z.number()]),
+              rows: z.array(z.object({ note: z.string().nullable() })),
+            }),
+          ),
+        ),
+      ).toThrow(
+        "Block card has props models can't be given: subtitle is nullable or of several types; extra is a record; size is a union; rows[].note is nullable or of several types",
+      );
+    });
   });
 
   describe('with sources', () => {
@@ -174,6 +226,35 @@ describe('outputSchema', () => {
       expect(
         defs.param?.enum?.every((name) => subset.actions.includes(name.split(':')[0] as string)),
       ).toBe(true);
+    });
+
+    it('leaves out a generic block that would name nothing, such as a form with no action', () => {
+      // A plan from use with nothing on screen: no area's actions are in scope.
+      const subset = selectSubset(scale, { text: '', inView: [] });
+      const schema = outputSchema(scale, { subset });
+      const variants = at(
+        schema,
+        'properties',
+        'pages',
+        'items',
+        'properties',
+        'elements',
+        'items',
+        'anyOf',
+      ) as unknown[];
+      expect(variants.map((entry) => at(entry, 'properties', 'block', 'const'))).not.toContain(
+        'form',
+      );
+      expect(JSON.stringify(schema)).not.toContain('"enum":[]');
+    });
+
+    it('runs only the actions a subset names', () => {
+      const subset = selectSubset(scale, { text: 'refund the disputed charges' });
+      const scoped = JSON.stringify(outputSchema(scale, { subset }));
+      const runnable = scale.actionIds.filter((id) => scale.actions[id]?.effect !== undefined);
+      const outside = runnable.filter((id) => !subset.actions.includes(id));
+      expect(outside.length).toBeGreaterThan(0);
+      for (const id of outside) expect(scoped).not.toContain(`"${id}:`);
     });
 
     it('drops native blocks when asked, for grammars that would not compile', () => {

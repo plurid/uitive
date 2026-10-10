@@ -51,6 +51,8 @@ export interface PackageInfo {
   name: string;
   description: string;
   peers: Readonly<Record<string, string>>;
+  /** Peers the package works without, such as a provider's SDK it loads only when used. */
+  optional: readonly string[];
   specifiers: string[];
 }
 
@@ -102,6 +104,7 @@ function entryPoints(): { points: Point[]; packages: Map<string, PackageInfo> } 
       name: string;
       description?: string;
       peerDependencies?: Record<string, string>;
+      peerDependenciesMeta?: Record<string, { optional?: boolean }>;
       exports: Record<string, string | { types: string }>;
     };
     const specifiers: string[] = [];
@@ -121,6 +124,9 @@ function entryPoints(): { points: Point[]; packages: Map<string, PackageInfo> } 
       name: manifest.name,
       description: manifest.description ?? '',
       peers: manifest.peerDependencies ?? {},
+      optional: Object.entries(manifest.peerDependenciesMeta ?? {})
+        .filter(([, meta]) => meta.optional === true)
+        .map(([name]) => name),
       specifiers,
     });
   }
@@ -698,10 +704,12 @@ function describe(
 }
 
 const VALUES: readonly Kind[] = ['function', 'class', 'object', 'constant'];
+// One collation whatever the machine's locale, so the pages come out the same everywhere.
+const collator = new Intl.Collator('en');
 const order = (a: Entry, b: Entry) =>
   Number(!VALUES.includes(a.kind)) - Number(!VALUES.includes(b.kind)) ||
-  a.name.toLowerCase().localeCompare(b.name.toLowerCase()) ||
-  a.name.localeCompare(b.name);
+  collator.compare(a.name.toLowerCase(), b.name.toLowerCase()) ||
+  collator.compare(a.name, b.name);
 
 const KIND_WORD: Readonly<Record<Kind, string>> = {
   function: 'function',
@@ -767,11 +775,13 @@ export async function renderApiPages(model: Model): Promise<Map<string, string>>
       config.intro,
       '',
     ];
-    const peers = Object.entries(info.peers)
-      .map(([name, range]) => `${inlineCode(name)} ${range}`)
-      .join(', ');
+    const listed = (peers: [string, string][]) =>
+      peers.map(([name, range]) => `${inlineCode(name)} ${range}`).join(', ');
+    const required = Object.entries(info.peers).filter(([name]) => !info.optional.includes(name));
+    const optional = Object.entries(info.peers).filter(([name]) => info.optional.includes(name));
+    const peers = `${required.length > 0 ? `, with ${listed(required)} as ${required.length === 1 ? 'a peer' : 'peers'}` : ''}${optional.length > 0 ? `, and optionally ${listed(optional)}` : ''}`;
     lines.push(
-      `Install: ${inlineCode(`pnpm add ${info.name}`)}${peers ? `, with ${peers} as ${Object.keys(info.peers).length === 1 ? 'a peer' : 'peers'}` : ''}. Guides: ${config.guides
+      `Install: ${inlineCode(`pnpm add ${info.name}`)}${peers}. Guides: ${config.guides
         .map((guide) => `[${guide.title}](../${guide.path})`)
         .join(', ')}.`,
       '',

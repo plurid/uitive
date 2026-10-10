@@ -1,14 +1,32 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { pattern } from '../../manifest.ts';
 import type { PageReport } from '../messages.ts';
 
+interface Site {
+  origin: string;
+  label: string;
+  enabled: boolean;
+  /** What enabling asks the browser for: the site and the APIs its adapter reads. */
+  access: string[];
+}
+
 interface Status {
+  /** The tab's origin, when the browser shows it to Uitive. */
   origin: string | null;
   adapter: { id: string; label: string } | null;
   allowed: boolean;
   enabled: boolean;
+  access: string[];
+  /** Every site Uitive has an adapter for. */
+  sites: Site[];
   connectors: { name: string; label: string; secret: { test: string; live: string } }[];
+}
+
+interface Usage {
+  reads: number;
+  tokens: number;
+  budget: number;
+  tokenBudget: number;
 }
 type Reply<T> = { ok: true; value: T } | { ok: false; problem: string };
 
@@ -91,7 +109,7 @@ function Panel() {
     PageReport & { failed?: { target: string; reason: string }[] }
   >();
   const [secrets, setSecrets] = useState<string[]>([]);
-  const [usage, setUsage] = useState<{ reads: number; tokens: number; budget: number }>();
+  const [usage, setUsage] = useState<Usage>();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [answer, setAnswer] = useState('');
@@ -127,15 +145,30 @@ function Panel() {
     };
   }, [refresh]);
 
-  const enableSite = async () => {
-    if (!status?.origin || tabId === undefined) return;
+  const enableSite = async (origin: string, access: string[]) => {
+    if (tabId === undefined) return;
     setProblem('');
-    // The browser asks the person, for this one site only.
-    const granted = await chrome.permissions.request({ origins: [pattern(status.origin)] });
-    if (!granted) return;
-    await worker({ kind: 'site.enable', origin: status.origin });
-    await chrome.tabs.reload(tabId);
-    setTimeout(() => void refresh(), 800);
+    try {
+      // The browser asks the person, for this one site and the API its data comes from.
+      const granted = await chrome.permissions.request({ origins: access });
+      if (!granted) return;
+      await worker({ kind: 'site.enable', origin });
+      await chrome.tabs.reload(tabId);
+      setTimeout(() => void refresh(), 800);
+    } catch (error) {
+      setProblem((error as Error).message);
+    }
+  };
+
+  const disableSite = async (origin: string) => {
+    setProblem('');
+    try {
+      await worker({ kind: 'site.disable', origin });
+      if (tabId !== undefined && status?.origin === origin) await chrome.tabs.reload(tabId);
+      setTimeout(() => void refresh(), 800);
+    } catch (error) {
+      setProblem((error as Error).message);
+    }
   };
 
   const ask = async () => {
@@ -185,8 +218,14 @@ function Panel() {
   const [forgetting, setForgetting] = useState(false);
   const forget = async () => {
     setForgetting(false);
-    await worker({ kind: 'forget' });
-    if (tabId !== undefined) await chrome.tabs.reload(tabId);
+    setProblem('');
+    try {
+      await worker({ kind: 'forget' });
+      setReport(undefined);
+      if (tabId !== undefined && status?.enabled) await chrome.tabs.reload(tabId);
+    } catch (error) {
+      setProblem((error as Error).message);
+    }
     setTimeout(() => void refresh(), 800);
   };
 
@@ -216,21 +255,53 @@ function Panel() {
       <header className="row">
         <h1>Uitive</h1>
         <span className="muted">
-          {status.adapter ? status.adapter.label : (status.origin ?? 'No page')}
+          {status.adapter ? status.adapter.label : (status.origin ?? 'This tab')}
         </span>
       </header>
       {problem ? <p className="bad">{problem}</p> : null}
 
-      {!status.adapter ? (
+      {status.origin === null ? (
+        <section>
+          <p className="muted">
+            Uitive sees a tab&apos;s address only on sites you enabled, or after you click its
+            toolbar button on the page. It has adapters for:
+          </p>
+          <ul>
+            {status.sites.map((site) => (
+              <li key={site.origin}>
+                <span>
+                  {site.label}
+                  <br />
+                  <span className="muted">{site.origin}</span>
+                </span>
+                {site.enabled ? (
+                  <button type="button" onClick={() => void disableSite(site.origin)}>
+                    Disable on {new URL(site.origin).host}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => void enableSite(site.origin, site.access)}>
+                    Enable on {new URL(site.origin).host}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : !status.adapter ? (
         <p className="muted">There is no adapter for this site yet.</p>
       ) : !status.enabled ? (
         <section>
           <p>
-            Uitive can reshape {status.adapter.label} on {status.origin}. It reads the page&apos;s
-            structure, never its text, and changes nothing until you ask.
+            Uitive can reshape {status.adapter.label} on {status.origin}. It finds the parts it
+            knows by their links, roles and names, here in your browser; a model is told only which
+            parts were found, never the page&apos;s text. Nothing changes until you ask.
           </p>
           <div className="row">
-            <button type="button" className="primary" onClick={() => void enableSite()}>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => void enableSite(status.origin ?? '', status.access)}
+            >
               Enable on this site
             </button>
           </div>
@@ -393,34 +464,9 @@ function Panel() {
             {usage ? (
               <p className="muted">
                 This month: {usage.reads.toLocaleString()} of {usage.budget.toLocaleString()} reads,{' '}
-                {usage.tokens.toLocaleString()} tokens.
+                {usage.tokens.toLocaleString()} of {usage.tokenBudget.toLocaleString()} tokens.
               </p>
             ) : null}
-          </section>
-
-          <section>
-            <h2>Your data</h2>
-            <p className="muted">
-              Your interfaces, repairs and usage counts stay in this browser; rows read from APIs
-              stay in memory only.
-            </p>
-            {forgetting ? (
-              <div className="row">
-                <span>Erase everything Uitive keeps here, keys included?</span>
-                <button type="button" className="primary" onClick={() => void forget()}>
-                  Erase
-                </button>
-                <button type="button" onClick={() => setForgetting(false)}>
-                  Keep it
-                </button>
-              </div>
-            ) : (
-              <div className="row">
-                <button type="button" onClick={() => setForgetting(true)}>
-                  Forget everything
-                </button>
-              </div>
-            )}
           </section>
 
           <section>
@@ -431,8 +477,48 @@ function Panel() {
               </pre>
             </details>
           </section>
+
+          <section>
+            <h2>This site</h2>
+            <p className="muted">
+              Disabling stops Uitive here and gives back its access; your interface stays until you
+              forget it.
+            </p>
+            <div className="row">
+              <button type="button" onClick={() => void disableSite(status.origin ?? '')}>
+                Disable on this site
+              </button>
+            </div>
+          </section>
         </>
       )}
+
+      <section>
+        <h2>Your data</h2>
+        <p className="muted">
+          Your interfaces, repairs and usage counts stay in this browser, and the parts a page
+          showed last stay in its tab until it closes; rows read from APIs stay in memory only.
+        </p>
+        {forgetting ? (
+          <div className="row">
+            <span>
+              Erase everything Uitive keeps here, keys included, and stop it on every site?
+            </span>
+            <button type="button" className="primary" onClick={() => void forget()}>
+              Erase
+            </button>
+            <button type="button" onClick={() => setForgetting(false)}>
+              Keep it
+            </button>
+          </div>
+        ) : (
+          <div className="row">
+            <button type="button" onClick={() => setForgetting(true)}>
+              Forget everything
+            </button>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

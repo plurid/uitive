@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 
 You curate an API description for Uitive, so the planner sees what this application's interface shows, named the way its people name it, and nothing else.
 
-1. Run `uitive survey --openapi <spec>`. Note each source's fields, filters, paging and actions, and what was skipped and why.
+1. Run `npx uitive survey --openapi <spec>`. Note each source's fields, filters, paging and actions, and what was skipped and why.
 2. Find what the frontend uses: search the application for its API calls (paths such as `/v1/charges` or `/admin/orders`), its routes and its page components. Keep a source only if the frontend reads it.
 3. Write `curation.json` in the Uitive folder (`src/uitive/` by default; package.json's `uitive.dir` says where):
    - `"default": "exclude"`, and `"include": true` for each source kept.
@@ -15,7 +15,7 @@ You curate an API description for Uitive, so the planner sees what this applicat
    - `pick` for nested values people look at, with `query` for any parameter the API needs to return them.
    - Actions follow their source: exclude the ones the interface doesn't offer.
    - Lower an action's effect only with a `reason` grounded in the backend's code. When in doubt, it stays destructive.
-4. Run `uitive generate sources --openapi <spec>`, then `uitive check`. Repeat until there are no problems and no warnings about shared labels.
+4. Run `npx uitive generate sources --openapi <spec>`, then `npx uitive check`. Repeat until there are no problems and no warnings about shared labels.
 5. Report what you kept and why, in a short table, and any guesses the survey's notes asked you to check.
 
 Never edit `api.generated.ts`: regenerating replaces it.

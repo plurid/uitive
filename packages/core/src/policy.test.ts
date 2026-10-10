@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { editor } from './__fixtures__/editor.js';
 import { emptyEditor, operation, summaryOf, type Use } from './__fixtures__/usage.js';
-import { resolveList, type Change, type Definition, type Operation } from './definition.js';
-import { check } from './policy.js';
+import {
+  resolveList,
+  type AppliedOperation,
+  type Change,
+  type Definition,
+  type Operation,
+} from './definition.js';
+import { canonical, canonicalKey, check, checkStored } from './policy.js';
 import { random } from './simulate.js';
 import { applyOperation } from './stabilizer.js';
 
@@ -308,5 +314,155 @@ describe('check', () => {
         expect(state.visible.size).toBeLessThanOrEqual(6);
       }
     }
+  });
+
+  it('caps a collection at its max, whoever adds to it', () => {
+    const add = (label: string) =>
+      operation(
+        {
+          kind: 'collection',
+          surface: 'macros',
+          op: 'add',
+          item: label,
+          value: { label, steps: ['bold', 'italic'] },
+        },
+        { origin: 'user' },
+      );
+    let definition = emptyEditor();
+    for (const label of ['One', 'Two']) {
+      definition = applyOperation(definition, add(label), {
+        contract: editor,
+        summary: summaryOf([]),
+        session: 5,
+        adaptation: 'a',
+      });
+    }
+    expect(run([add('Three')], definition).rejected[0]).toMatchObject({
+      rule: 'capacity',
+      message: 'Macros holds at most 2',
+    });
+  });
+
+  it('never takes the item that makes room from a proposal', () => {
+    const change = canonical({ ...promoteTable, evict: 'share' }, editor);
+    expect(change).toEqual(promoteTable);
+  });
+
+  it('keeps a model’s reading of words from deleting pages or bringing back blocked changes', () => {
+    const named = (change: Change) => operation(change, { origin: 'user' });
+    const blocked = { ...emptyEditor(), blocked: ['toolbar||promote|table'] };
+    const read = check([named(promoteTable)], {
+      contract: editor,
+      definition: blocked,
+      summary: summaryOf(tableUse),
+      session: 5,
+      interpreted: true,
+    });
+    expect(read.rejected[0]).toMatchObject({ rule: 'blocked' });
+    const typed = check([named({ kind: 'list', surface: 'toolbar', op: 'pin', target: 'table' })], {
+      contract: editor,
+      definition: blocked,
+      summary: summaryOf(tableUse),
+      session: 5,
+      interpreted: true,
+    });
+    expect(typed.accepted).toHaveLength(1);
+
+    const created = applyOperation(
+      emptyEditor(),
+      operation(
+        {
+          kind: 'userPage',
+          surface: 'userPages',
+          op: 'create',
+          slug: 'morning',
+          title: 'Morning',
+          value: {
+            root: 'root',
+            elements: [
+              { id: 'root', block: 'section', props: { title: '', layout: 'stack' }, children: [] },
+            ],
+            data: [],
+          } as never,
+        },
+        { origin: 'user' },
+      ),
+      { contract: editor, summary: summaryOf([]), session: 5, adaptation: 'a' },
+    );
+    const remove = named({ kind: 'userPage', surface: 'userPages', op: 'delete', slug: 'morning' });
+    const context = { contract: editor, definition: created, summary: summaryOf([]), session: 5 };
+    expect(check([remove], { ...context, interpreted: true }).rejected[0]).toMatchObject({
+      rule: 'kind',
+      message: 'Delete your page morning yourself, from Your interface',
+    });
+    expect(check([remove], context).accepted).toHaveLength(1);
+  });
+
+  it('takes a blank goal for no goal at all', () => {
+    const set: Change = { kind: 'choice', surface: 'density', op: 'set', value: 'compact' };
+    const claim = operation(set, { evidence: [{ intent: '' }] });
+    expect(run([claim], { ...emptyEditor(), goal: '   ' }).rejected[0]?.rule).toBe('evidence');
+  });
+});
+
+describe('checkStored', () => {
+  let counter = 0;
+  const stored = (
+    change: Change,
+    options: Partial<Pick<AppliedOperation, 'origin' | 'status'>> = {},
+  ): AppliedOperation => ({
+    ...operation(change, { origin: options.origin ?? 'user' }),
+    id: `s${++counter}`,
+    status: options.status ?? 'active',
+    session: 0,
+    adaptation: 'a',
+  });
+  const macro = (item: string, steps = ['bold', 'italic']): Change => ({
+    kind: 'collection',
+    surface: 'macros',
+    op: 'add',
+    item,
+    value: { label: item, steps },
+  });
+
+  it('holds stored changes to every rule that needs no state, in order', () => {
+    const result = checkStored(
+      [
+        stored(macro('one')),
+        stored(macro('bad', ['bold'])),
+        stored(macro('two')),
+        stored(macro('three')),
+        stored({ ...macro('nope'), op: 'update' } as Change),
+        stored({ kind: 'list', surface: 'toolbar', op: 'hide', target: 'share' }),
+        stored({ kind: 'list', surface: 'TOOLBAR', op: 'pin', target: 'Table', evict: 'BOLD' }),
+        stored(
+          { kind: 'list', surface: 'toolbar', op: 'pin', target: 'table' },
+          { origin: 'model' },
+        ),
+        stored(promoteTable, { status: 'suggested', origin: 'model' }),
+      ],
+      editor,
+    );
+    expect(result.rejected.map((entry) => entry.rule)).toEqual([
+      'validator',
+      'capacity',
+      'noop',
+      'required',
+      'kind',
+      'kind',
+    ]);
+    expect(result.accepted.map((entry) => entry.change)).toEqual([
+      macro('one'),
+      macro('two'),
+      { kind: 'list', surface: 'toolbar', op: 'pin', target: 'table', evict: 'bold' },
+    ]);
+  });
+
+  it('spells operation keys the contract’s way, and drops ones naming nothing', () => {
+    expect(canonicalKey('TOOLBAR||promote|Table', editor)).toBe('toolbar||promote|table');
+    expect(canonicalKey('density||set|COMPACT', editor)).toBe('density||set|compact');
+    expect(canonicalKey('toolbar||promote|teleport', editor)).toBeUndefined();
+    expect(canonicalKey('sidebar||promote|table', editor)).toBeUndefined();
+    expect(canonicalKey('toolbar||launch|table', editor)).toBeUndefined();
   });
 });

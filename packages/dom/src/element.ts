@@ -9,6 +9,31 @@ const Base: typeof HTMLElement =
 /** How long a two-step button stays armed, in milliseconds. */
 const ARMED_FOR = 4000;
 
+/** One constructed sheet per stylesheet, shared by every element that uses it. */
+const sheets = new Map<string, CSSStyleSheet>();
+
+/**
+ * Styles a shadow root with a constructed stylesheet, which a strict `style-src` policy allows;
+ * with a style element where constructed sheets aren't supported.
+ */
+function adopt(root: ShadowRoot, css: string): void {
+  try {
+    let sheet = sheets.get(css);
+    if (!sheet) {
+      sheet = new CSSStyleSheet();
+      sheet.replaceSync(css);
+      sheets.set(css, sheet);
+    }
+    root.adoptedStyleSheets = [sheet];
+    return;
+  } catch {
+    // Older browsers, or a document other than the one the sheet was made in.
+  }
+  const style = root.ownerDocument.createElement('style');
+  style.textContent = css;
+  root.prepend(style);
+}
+
 type Trigger = 'click' | 'change' | 'submit';
 
 /**
@@ -47,11 +72,10 @@ export abstract class UitiveElement<Client extends ClientLike = ClientLike> exte
   constructor() {
     super();
     this.#root = this.attachShadow({ mode: 'open' });
-    const style = document.createElement('style');
-    style.textContent = base + this.styles();
     this.content = document.createElement('div');
     this.content.setAttribute('part', 'content');
-    this.#root.append(style, this.content);
+    this.#root.append(this.content);
+    adopt(this.#root, base + this.styles());
     for (const trigger of ['click', 'change', 'submit'] as const) {
       this.#root.addEventListener(trigger, (event) => this.#delegate(event, trigger));
     }

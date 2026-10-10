@@ -219,7 +219,7 @@ function canonicalQuery(contract: AnyContract, raw: unknown, scope: QueryScope):
     return { field: path.name, op, values };
   });
 
-  const aggregate = checkAggregate(input.aggregate, optional, filter, source);
+  const aggregate = checkAggregate(contract, input.aggregate, optional, filter);
 
   if (input.sort.length > MAX_SORTS) fail(`At most ${MAX_SORTS} sort orders`);
   const sort = input.sort.map((entry): Sort => {
@@ -289,7 +289,7 @@ function hint(entry: Field): string {
       return ': use a date such as 2026-10-01, or now, today, -7d, start:month';
     case 'number':
     case 'money':
-      return ': use a number';
+      return ': use a number, with a point for decimals, such as 25.50';
     case 'bool':
       return ': use true or false';
     default:
@@ -298,10 +298,10 @@ function hint(entry: Field): string {
 }
 
 function checkAggregate(
+  contract: AnyContract,
   raw: z.infer<typeof rawQuery>['aggregate'],
   optional: (name: string) => FieldPath | undefined,
   filter: readonly Filter[],
-  source: ResolvedSource,
 ): Aggregate {
   const measure = MEASURES.find((value) => value === raw.measure.trim().toLowerCase());
   if (!measure) return fail(`No measure "${raw.measure}"`);
@@ -344,19 +344,20 @@ function checkAggregate(
     if (split.name === by?.name) fail('Split by something other than the grouping');
   }
 
-  // Summing amounts in several currencies would add dollars to yen.
-  if (
-    of?.field.type === 'money' &&
-    of.field.currency !== undefined &&
-    measure !== 'count' &&
-    measure !== 'distinct'
-  ) {
-    const currency = `${source.id}.${of.field.currency}`;
+  // Summing amounts in several currencies would add dollars to yen, through a hop too.
+  const currency = of === undefined ? undefined : currencyField(of);
+  if (currency !== undefined && measure !== 'count' && measure !== 'distinct') {
+    if (!contract.path(currency)) {
+      const target = contract.source((of as FieldPath).target ?? '');
+      fail(
+        `Amounts reached through ${(of as FieldPath).via} are in several currencies: summarize ${target?.label ?? 'them'} instead`,
+      );
+    }
     const fixed = filter.some(
       (entry) => entry.field === currency && entry.op === 'eq' && entry.values.length === 1,
     );
     if (!fixed && by?.name !== currency && split?.name !== currency) {
-      fail('Amounts are in several currencies: filter by one, or group by currency');
+      fail(`Amounts are in several currencies: filter by one, or group by ${currency}`);
     }
   }
 
@@ -370,3 +371,17 @@ function checkAggregate(
 }
 
 const numeric = (entry: Field) => entry.type === 'number' || entry.type === 'money';
+
+/**
+ * The qualified name of the field holding a money field's currency, row by row: the source's own
+ * for its own amounts, the related row's for amounts one hop away. Undefined when the amounts have
+ * one currency, or say none.
+ */
+export function currencyField(path: FieldPath): string | undefined {
+  if (path.field.type !== 'money' || path.field.code !== undefined) return undefined;
+  const currency = path.field.currency;
+  if (currency === undefined) return undefined;
+  return path.via === undefined
+    ? `${path.source}.${currency}`
+    : `${path.source}.${path.via}.${currency}`;
+}

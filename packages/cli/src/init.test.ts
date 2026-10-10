@@ -1,11 +1,12 @@
-import { copyFile, mkdir, mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { check } from './check.js';
 import { detect } from './detect.js';
-import { init, withOverrides } from './init.js';
+import { folderOf } from './folder.js';
+import { commandWords, init, withOverrides } from './init.js';
 import { SKILL } from './templates.js';
 
 const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
@@ -194,8 +195,88 @@ export const contract = defineApp({
     expect(checked.coverage).toMatchObject({ sources: 4, routes: 1, pages: 1, regions: 1 });
 
     const again = await init({ cwd, install: false });
-    expect(again.written).toEqual(['.mcp.json', '.cursor/mcp.json']);
-    expect(again.kept).toContain('uitive/contract.ts');
+    expect(again.written).toEqual([]);
+    expect(again.kept).toEqual(expect.arrayContaining(['uitive/contract.ts', '.mcp.json']));
+  });
+
+  it('keeps an MCP entry already there, and the indentation of what it adds to', async () => {
+    const mine = { command: 'node', args: ['/opt/uitive/packages/mcp/dist/bin.js', '--root', '.'] };
+    const cwd = await project(
+      {
+        name: 'app',
+        dependencies: { react: '^19.0.0', zod: '^4.6.5' },
+        uitive: { dir: 'web/uitive' },
+      },
+      {
+        '.mcp.json': JSON.stringify({ mcpServers: { uitive: mine } }, null, 4),
+        '.cursor/mcp.json': `${JSON.stringify({ mcpServers: { docs: { command: 'docs' } } }, null, '\t')}\n`,
+      },
+    );
+    const manifest = await readFile(join(cwd, 'package.json'), 'utf8');
+    const result = await init({ cwd, install: false });
+    expect(await readFile(join(cwd, '.mcp.json'), 'utf8')).toBe(
+      JSON.stringify({ mcpServers: { uitive: mine } }, null, 4),
+    );
+    expect(await readFile(join(cwd, '.cursor/mcp.json'), 'utf8')).toBe(
+      `${JSON.stringify(
+        {
+          mcpServers: {
+            docs: { command: 'docs' },
+            uitive: { command: 'npx', args: ['-y', '@plurid/uitive-mcp'] },
+          },
+        },
+        null,
+        '\t',
+      )}\n`,
+    );
+    expect(result.kept).toContain('.mcp.json');
+    expect(result.written).toContain('.cursor/mcp.json');
+    // The recorded folder was already there, so package.json is unchanged and not reported.
+    expect(await readFile(join(cwd, 'package.json'), 'utf8')).toBe(manifest);
+    expect(result.written).not.toContain('package.json');
+  });
+
+  it('reads the MCP command as a shell would, or as a JSON array', async () => {
+    expect(commandWords('node "/Users/me/My Projects/mcp/bin.js" --root \'a b\' c\\ d')).toEqual([
+      'node',
+      '/Users/me/My Projects/mcp/bin.js',
+      '--root',
+      'a b',
+      'c d',
+    ]);
+    expect(commandWords('["node", "/My Projects/bin.js"]')).toEqual([
+      'node',
+      '/My Projects/bin.js',
+    ]);
+    expect(() => commandWords('node "unclosed')).toThrow(/unclosed "/);
+    const cwd = await project({ name: 'app', dependencies: { zod: '^4.6.5' } });
+    await init({ cwd, install: false, mcp: 'node "/My Projects/uitive/mcp/bin.js"' });
+    expect(JSON.parse(await readFile(join(cwd, '.mcp.json'), 'utf8')).mcpServers.uitive).toEqual({
+      command: 'node',
+      args: ['/My Projects/uitive/mcp/bin.js'],
+    });
+  });
+
+  it('reads zod’s version only from specifiers that name one', async () => {
+    for (const zod of ['catalog:', 'workspace:*', 'npm:zod@latest']) {
+      const cwd = await project({ name: 'app', dependencies: { zod } });
+      const result = await init({ cwd, install: false, agents: false });
+      // The installed zod, found through node_modules, is new enough.
+      expect(
+        result.next.filter((step) => step.includes('zod')),
+        zod,
+      ).toEqual([]);
+    }
+  });
+
+  it('refuses a recorded folder outside the project', async () => {
+    const cwd = await project({ name: 'app', uitive: { dir: '../escaped' } });
+    await expect(folderOf(cwd)).rejects.toThrow(
+      /uitive\.dir in package\.json must be a folder inside/,
+    );
+    await expect(init({ cwd, install: false, dir: '/tmp/elsewhere' })).rejects.toThrow(
+      /must be inside the project/,
+    );
   });
 
   it("leaves an agent's configuration it can't parse as it was, and says what to add", async () => {
@@ -274,6 +355,76 @@ export const contract = defineApp({
     expect(curation.default).toBe('exclude');
     expect(Object.keys(curation.sources)).toHaveLength(45);
     expect((await check({ cwd })).ok).toBe(true);
+  });
+});
+
+describe('init within a boundary', () => {
+  it('never reads or writes above it: agents are configured at the boundary instead', async () => {
+    const repository = await mkdtemp(join(tmpdir(), 'uitive-'));
+    await mkdir(join(repository, '.git'));
+    await writeFile(join(repository, 'pnpm-lock.yaml'), '');
+    await writeFile(
+      join(repository, 'package.json'),
+      JSON.stringify({ private: true, packageManager: 'pnpm@11.3.0', workspaces: ['app'] }),
+    );
+    const app = join(repository, 'app');
+    await mkdir(app);
+    await writeFile(
+      join(app, 'package.json'),
+      JSON.stringify({ name: 'app', dependencies: { react: '^19.0.0' } }),
+    );
+    const tarballs = join(app, 'tarballs');
+    await mkdir(tarballs);
+    await writeFile(join(tarballs, 'plurid-uitive-core-0.1.0.tgz'), '');
+    await writeFile(join(tarballs, 'uitive-0.1.0.tgz'), '');
+
+    const found = await detect(app, { boundary: app });
+    expect(found).toMatchObject({
+      repository: app,
+      packageManager: 'npm',
+      packageManagerPin: null,
+    });
+    const before = await readFile(join(repository, 'package.json'), 'utf8');
+    const result = await init({ cwd: app, boundary: app, install: false, packages: tarballs });
+    // With local packages, only the skill: the MCP server waits for --mcp.
+    expect(result.written).toEqual(
+      expect.arrayContaining(['package.json', '.claude/skills/integrate-uitive/SKILL.md']),
+    );
+    expect(result.written.some((path) => path.startsWith('..'))).toBe(false);
+    expect(await readFile(join(repository, 'package.json'), 'utf8')).toBe(before);
+    for (const path of ['.mcp.json', '.claude', 'pnpm-workspace.yaml']) {
+      await expect(access(join(repository, path))).rejects.toThrow();
+    }
+    expect(result.next).toContain(
+      `No repository root inside ${app}, so the coding agents' configuration goes there, where the MCP server works; nothing above it is read or written.`,
+    );
+  });
+
+  it('writes nothing through a link that leads outside it', async () => {
+    const outside = await mkdtemp(join(tmpdir(), 'uitive-'));
+    const cwd = await project({ name: 'app', dependencies: { zod: '^4.6.5' } });
+    await mkdir(join(cwd, '.git'));
+    await symlink(outside, join(cwd, '.claude'));
+    const result = await init({ cwd, boundary: cwd, install: false });
+    expect(result.written).not.toContain('.claude/skills/integrate-uitive/SKILL.md');
+    expect(result.next).toContain(
+      `Not written: .claude/skills/integrate-uitive/SKILL.md is outside ${cwd}.`,
+    );
+    await expect(access(join(outside, 'skills'))).rejects.toThrow();
+  });
+});
+
+describe('detect', () => {
+  it('trusts only a plain pinned package manager, which may run through npx', async () => {
+    for (const [pin, trusted] of [
+      ['pnpm@9.15.0+sha512.abc', 'pnpm@9.15.0'],
+      ['yarn@1.22.22', 'yarn@1.22.22'],
+      ['pnpm@9 & calc.exe', null],
+      ['evil-package@1.0.0', null],
+    ] as const) {
+      const cwd = await project({ name: 'app', packageManager: pin });
+      expect((await detect(cwd)).packageManagerPin, pin).toBe(trusted);
+    }
   });
 });
 

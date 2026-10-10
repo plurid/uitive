@@ -1,13 +1,14 @@
 import '../zod.ts';
 import { pattern } from '../../manifest.ts';
-import { adapterById, adapterFor } from '../adapters.ts';
+import { adapterById, adapterFor, adapters } from '../adapters.ts';
+import type { Loaded } from '../adapters.ts';
 import { toWorker } from '../messages.ts';
 import type { ToWorker } from '../messages.ts';
-import { connectorFetch, ConnectorError, secretName } from './connector.ts';
-import { meter, READ_BUDGET } from './limits.ts';
-import { servePlanner } from './planner.ts';
+import { connectorFetch, ConnectorError, forgetReads, secretName } from './connector.ts';
+import { meter, READ_BUDGET, TOKEN_BUDGET } from './limits.ts';
+import { forgetPlans, servePlanner } from './planner.ts';
 import { clearSecret, clearSecrets, secretNames, setSecret } from './secrets.ts';
-import { disable, enable, enabled } from './sites.ts';
+import { disable, disableAll, enable, enabled, enabledOrigins } from './sites.ts';
 
 chrome.runtime.onInstalled.addListener(() => {
   void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
@@ -33,30 +34,75 @@ function secretRule(name: string): { pattern: RegExp; label: string } | undefine
   };
 }
 
+/** What enabling a site asks the browser for: the site, and the APIs its adapter reads. */
+const accessFor = (origin: string): string[] => [
+  ...new Set([
+    pattern(origin),
+    ...Object.values(adapterFor(origin)?.adapter.connectors ?? {}).map((connector) =>
+      pattern(connector.base),
+    ),
+  ]),
+];
+
+/** Gives back host permissions no enabled site still needs; those granted at install stay. */
+async function release(origins: readonly string[]): Promise<void> {
+  const fixed = new Set(chrome.runtime.getManifest().host_permissions ?? []);
+  const needed = new Set((await enabledOrigins()).flatMap(accessFor));
+  const spare = [...new Set(origins)].filter((origin) => !fixed.has(origin) && !needed.has(origin));
+  if (spare.length > 0) await chrome.permissions.remove({ origins: spare });
+}
+
+/** The page asking is one this adapter serves. */
+function served(id: string, sender: chrome.runtime.MessageSender): Loaded {
+  const loaded = adapterById(id);
+  if (!loaded || !sender.tab || !sender.origin || !loaded.adapter.origins.includes(sender.origin)) {
+    throw new Error('Not a page this extension serves');
+  }
+  return loaded;
+}
+
 async function handle(message: ToWorker, sender: chrome.runtime.MessageSender): Promise<unknown> {
   if (message.kind === 'fetch') {
-    const loaded = adapterById(message.adapter);
-    if (
-      !loaded ||
-      !sender.tab ||
-      !sender.origin ||
-      !loaded.adapter.origins.includes(sender.origin)
-    ) {
-      throw new Error('Not a page this extension serves');
-    }
-    return connectorFetch(loaded.adapter, message.mode, message.request);
+    const loaded = served(message.adapter, sender);
+    return connectorFetch(loaded.adapter, loaded.contract, message.mode, message.request);
+  }
+  if (message.kind === 'keys') {
+    const loaded = served(message.adapter, sender);
+    const stored = new Set(await secretNames());
+    return Object.fromEntries(
+      Object.keys(loaded.adapter.connectors).map((name) => [
+        name,
+        {
+          test: stored.has(secretName(loaded.adapter.id, name, 'test')),
+          live: stored.has(secretName(loaded.adapter.id, name, 'live')),
+        },
+      ]),
+    );
   }
   if (!fromPanel(sender)) throw new Error('Only the side panel may ask that');
   switch (message.kind) {
     case 'site.status': {
       const tab = await chrome.tabs.get(message.tabId);
+      // The address shows only where Uitive has access, or just after its button was clicked.
       const origin = tab.url ? new URL(tab.url).origin : null;
       const found = origin ? adapterFor(origin) : undefined;
+      const sites = await Promise.all(
+        adapters().flatMap(({ adapter }) =>
+          adapter.origins.map(async (site) => ({
+            origin: site,
+            label: adapter.label,
+            enabled: await enabled(site),
+            access: accessFor(site),
+          })),
+        ),
+      );
       return {
         origin,
         adapter: found ? { id: found.adapter.id, label: found.adapter.label } : null,
         allowed: origin ? await chrome.permissions.contains({ origins: [pattern(origin)] }) : false,
         enabled: origin ? await enabled(origin) : false,
+        access: origin && found ? accessFor(origin) : [],
+        sites,
         connectors: found
           ? Object.entries(found.adapter.connectors).map(([name, connector]) => ({
               name,
@@ -75,6 +121,7 @@ async function handle(message: ToWorker, sender: chrome.runtime.MessageSender): 
       return true;
     case 'site.disable':
       await disable(message.origin);
+      await release(accessFor(message.origin));
       return true;
     case 'secret.set': {
       const rule = secretRule(message.name);
@@ -94,14 +141,25 @@ async function handle(message: ToWorker, sender: chrome.runtime.MessageSender): 
     case 'secret.status':
       return secretNames();
     case 'usage':
-      return { reads: await meter('reads'), tokens: await meter('tokens'), budget: READ_BUDGET };
-    case 'forget':
+      return {
+        reads: await meter('reads'),
+        tokens: await meter('tokens'),
+        budget: READ_BUDGET,
+        tokenBudget: TOKEN_BUDGET,
+      };
+    case 'forget': {
+      forgetReads();
+      forgetPlans();
+      const granted = (await chrome.permissions.getAll()).origins ?? [];
+      await disableAll();
       await Promise.all([
         chrome.storage.local.clear(),
         chrome.storage.session.clear(),
         clearSecrets(),
+        release(granted),
       ]);
       return true;
+    }
   }
 }
 

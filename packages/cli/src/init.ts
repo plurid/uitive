@@ -1,11 +1,13 @@
 import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import ts from 'typescript';
 import { detect } from './detect.js';
 import type { Detection } from './detect.js';
 import { formatLikeProject } from './format.js';
-import { FOLDER, folderOf } from './folder.js';
+import { FOLDER, folderOf, normalizeFolder, within } from './folder.js';
 import { generateSources, surveySpec } from './generate.js';
 import { kebab } from './openapi.js';
 import { CURATE_ACTIONS, CURATE_SOURCES } from './survey.js';
@@ -29,7 +31,11 @@ export interface InitOptions {
   install?: boolean;
   /** Configures the coding agents found: MCP servers and the integration skill. @default true */
   agents?: boolean;
-  /** How agents start the MCP server. @default 'npx -y @plurid/uitive-mcp' */
+  /**
+   * How agents start the MCP server: a command quoted as a shell would read it, or a JSON array
+   * of its words.
+   * @default 'npx -y @plurid/uitive-mcp'
+   */
   mcp?: string;
   /** A folder of package tarballs (`pnpm pack`) to install from, such as a local build. */
   packages?: string;
@@ -39,6 +45,13 @@ export interface InitOptions {
    * @default the recorded folder, else 'src/uitive' when there is a src folder, else 'uitive'
    */
   dir?: string;
+  /**
+   * A folder init never reads or writes above or outside, such as the root an MCP server is
+   * confined to. The coding agents' configuration goes at the nearest repository root inside
+   * it, else at the boundary itself; anything that would land outside is reported in `next`
+   * instead of written.
+   */
+  boundary?: string;
 }
 
 /**
@@ -112,8 +125,10 @@ function wanted(detection: Detection, existing: ReadonlySet<string>) {
   };
 }
 
+// One collation everywhere, so dependencies sort the same on every machine, whatever its locale.
+const collator = new Intl.Collator('en');
 const sorted = (record: Record<string, string>) =>
-  Object.fromEntries(Object.entries(record).sort(([a], [b]) => a.localeCompare(b)));
+  Object.fromEntries(Object.entries(record).sort(([a], [b]) => collator.compare(a, b)));
 
 interface Manifest {
   dependencies?: Record<string, string>;
@@ -126,8 +141,13 @@ interface Manifest {
 }
 
 /** The folder whose package.json the package manager reads overrides from: the workspace root. */
-async function workspaceRoot(root: string, repository: string): Promise<string> {
+async function workspaceRoot(
+  root: string,
+  repository: string,
+  boundary: string | undefined,
+): Promise<string> {
   for (let directory = root; ; directory = dirname(directory)) {
+    if (boundary !== undefined && !(await within(boundary, directory))) return root;
     const manifest = await readFile(join(directory, 'package.json'), 'utf8').then(
       (text) => JSON.parse(text) as Manifest,
       () => undefined,
@@ -149,6 +169,8 @@ async function useTarballs(
   detection: Detection,
   folder: string,
   packages: ReturnType<typeof wanted>,
+  save: (file: string, content: string) => Promise<boolean>,
+  boundary: string | undefined,
 ): Promise<string[]> {
   const files = (await readdir(folder)).filter((name) => packed(name)).sort();
   if (files.length === 0) throw new Error(`No Uitive tarballs in ${folder}`);
@@ -176,26 +198,27 @@ async function useTarballs(
   own.devDependencies = sorted(devDependencies);
   // Every tarball, not just what is installed: the packages depend on each other, and any one
   // left to the registry would install another build, or none.
-  const top = await workspaceRoot(root, detection.repository);
+  const top = await workspaceRoot(root, detection.repository, boundary);
   const overrides = Object.fromEntries(from(top));
-  const written = ['package.json'];
+  const written: string[] = [];
   const shared = top === root ? own : await read(join(top, 'package.json'));
   if (detection.packageManager === 'yarn') {
     shared.resolutions = { ...shared.resolutions, ...overrides };
   } else if (detection.packageManager === 'pnpm' && (await pnpmMajor(detection, root)) >= 10) {
     const file = join(top, 'pnpm-workspace.yaml');
     const yaml = await readFile(file, 'utf8').catch(() => '');
-    await writeFile(file, withOverrides(yaml, overrides));
-    written.push(relative(root, file));
+    if (await save(file, withOverrides(yaml, overrides))) written.push(relative(root, file));
   } else if (detection.packageManager === 'pnpm') {
     shared.pnpm = { ...shared.pnpm, overrides: { ...shared.pnpm?.overrides, ...overrides } };
   } else {
     shared.overrides = { ...shared.overrides, ...overrides };
   }
-  await writeFile(join(root, 'package.json'), `${JSON.stringify(own, null, 2)}\n`);
-  if (top !== root) {
-    await writeFile(join(top, 'package.json'), `${JSON.stringify(shared, null, 2)}\n`);
-    written.push(relative(root, join(top, 'package.json')));
+  if (await save(join(root, 'package.json'), `${JSON.stringify(own, null, 2)}\n`)) {
+    written.push('package.json');
+  }
+  const sharedFile = join(top, 'package.json');
+  if (top !== root && (await save(sharedFile, `${JSON.stringify(shared, null, 2)}\n`))) {
+    written.push(relative(root, sharedFile));
   }
   return written;
 }
@@ -208,6 +231,9 @@ async function pnpmMajor(detection: Detection, cwd: string): Promise<number> {
   return Number(/^(\d+)\./.exec(installed.output.trim())?.[1] ?? 11);
 }
 
+/** A word a shell reads as itself: a package name, a version or a flag. */
+const SAFE_WORD = /^[\w@./+-]+$/;
+
 /** Runs the package manager the project uses; when it isn't installed, the pinned one through npx. */
 async function runPackageManager(
   detection: Detection,
@@ -216,10 +242,22 @@ async function runPackageManager(
 ): Promise<{ ok: boolean; output: string }> {
   const attempt = (command: string, list: readonly string[]) =>
     new Promise<{ ok: boolean; output: string; missing: boolean }>((done) => {
+      // Windows runs package managers' .cmd shims only through its shell, which reads the words
+      // as one command line: refuse any word a shell could read as more than a word.
+      const windows = process.platform === 'win32';
+      const unsafe = [command, ...list].find((word) => !SAFE_WORD.test(word));
+      if (windows && unsafe !== undefined) {
+        done({
+          ok: false,
+          output: `Refused to run ${JSON.stringify(unsafe)} through the shell`,
+          missing: false,
+        });
+        return;
+      }
       const child = spawn(command, list, {
         cwd,
         stdio: ['ignore', 'pipe', 'pipe'],
-        shell: process.platform === 'win32',
+        shell: windows,
       });
       let output = '';
       // Warnings and errors often come first, so they are kept apart from the tail.
@@ -277,73 +315,170 @@ function importExtension(root: string): '.js' | '' {
 }
 
 /**
- * Merges an MCP server into a JSON config, keeping everything else in it, and says whether it did.
- * A file that isn't a plain JSON object, such as one with comments, which VS Code allows, is left
- * as it is: writing it back would drop whatever the parser couldn't read.
+ * Adds an MCP server to a JSON config, keeping everything else in it and its indentation. `add`
+ * adds the entry and says whether it did, so one already there, perhaps written by hand, stays as
+ * it is. A file that isn't a plain JSON object, such as one with comments, which VS Code allows,
+ * is left alone too: writing it back would drop whatever the parser couldn't read.
  */
 async function mergeJson(
   path: string,
-  update: (value: Record<string, unknown>) => void,
-): Promise<boolean> {
-  let value: Record<string, unknown> = {};
+  add: (value: Record<string, unknown>) => boolean,
+  save: (file: string, content: string) => Promise<boolean>,
+): Promise<'added' | 'present' | 'unreadable' | 'outside'> {
   const text = await readFile(path, 'utf8').catch(() => undefined);
-  if (text !== undefined) {
+  if (text === undefined) {
+    const value: Record<string, unknown> = {};
+    add(value);
+    const content = await formatLikeProject(
+      `${JSON.stringify(value, null, 2)}\n`,
+      path,
+      dirname(path),
+    );
+    return (await save(path, content)) ? 'added' : 'outside';
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return 'unreadable';
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return 'unreadable';
+  const value = parsed as Record<string, unknown>;
+  if (!add(value)) return 'present';
+  const indent = /^([ \t]+)\S/m.exec(text)?.[1] ?? '  ';
+  const content = `${JSON.stringify(value, null, indent)}${text.endsWith('\n') ? '\n' : ''}`;
+  return (await save(path, content)) ? 'added' : 'outside';
+}
+
+/** Adds the uitive server under a config's key, unless a server by that name is there already. */
+const addServer =
+  (key: string, server: Record<string, unknown>) => (value: Record<string, unknown>) => {
+    const servers = value[key];
+    if (typeof servers === 'object' && servers !== null && 'uitive' in servers) return false;
+    value[key] = { ...(servers as object | undefined), uitive: server };
+    return true;
+  };
+
+/**
+ * The words of a command: a JSON array of strings, or a line quoted as a POSIX shell reads it, so
+ * a path with spaces can be given in quotes.
+ */
+export function commandWords(command: string): string[] {
+  const text = command.trim();
+  if (text.startsWith('[')) {
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);
     } catch {
-      return false;
+      parsed = undefined;
     }
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return false;
-    value = parsed as Record<string, unknown>;
+    if (
+      !Array.isArray(parsed) ||
+      parsed.length === 0 ||
+      !parsed.every((word): word is string => typeof word === 'string')
+    ) {
+      throw new Error(`The MCP command isn't a JSON array of strings: ${command}`);
+    }
+    return parsed;
   }
-  update(value);
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(
-    path,
-    await formatLikeProject(`${JSON.stringify(value, null, 2)}\n`, path, dirname(path)),
-  );
-  return true;
+  const words: string[] = [];
+  // A word starts with its first character or quote, so "" is a word, and empty.
+  let word = '';
+  let started = false;
+  let quote: "'" | '"' | undefined;
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index] ?? '';
+    if (quote === "'") {
+      if (char === "'") quote = undefined;
+      else word += char;
+    } else if (quote === '"') {
+      if (char === '"') quote = undefined;
+      else if (char === '\\' && /["\\$`]/.test(text[index + 1] ?? '')) word += text[++index];
+      else word += char;
+    } else if (/\s/.test(char)) {
+      if (started) words.push(word);
+      word = '';
+      started = false;
+    } else {
+      started = true;
+      if (char === "'" || char === '"') quote = char;
+      else if (char === '\\') word += text[++index] ?? '';
+      else word += char;
+    }
+  }
+  if (quote !== undefined) throw new Error(`The MCP command has an unclosed ${quote}: ${command}`);
+  if (started) words.push(word);
+  if (words.length === 0) throw new Error('The MCP command is empty');
+  return words;
 }
 
-/** Records where Uitive's files go in the project's package.json, and returns it. */
-async function recordFolder(root: string, dir: string): Promise<string> {
-  const folder = dir.trim().replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+/** The lowest zod version a dependency allows, such as 4.2 for `^4.2.0`, when anything says. */
+function zodVersion(specifier: string, root: string): [number, number] | undefined {
+  const range = /^[\s^~>=v]*(\d+)(?:\.(\d+))?/.exec(specifier);
+  if (range) return [Number(range[1]), Number(range[2] ?? 0)];
+  // `catalog:`, `workspace:*` and `npm:` aliases name no version here: ask the installed one.
+  try {
+    const manifest = createRequire(join(root, 'package.json')).resolve('zod/package.json');
+    const { version = '' } = JSON.parse(readFileSync(manifest, 'utf8')) as {
+      version?: string;
+    };
+    const installed = /^(\d+)\.(\d+)/.exec(version);
+    return installed ? [Number(installed[1]), Number(installed[2])] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Records where Uitive's files go in the project's package.json; says whether it changed it. */
+async function recordFolder(
+  root: string,
+  dir: string,
+  save: (file: string, content: string) => Promise<boolean>,
+): Promise<{ folder: string; changed: boolean }> {
+  const folder = normalizeFolder(dir);
   const path = join(root, 'package.json');
   const manifest = JSON.parse(await readFile(path, 'utf8')) as Manifest & {
     uitive?: { dir?: string };
   };
-  if (manifest.uitive?.dir !== folder) {
-    manifest.uitive = { ...manifest.uitive, dir: folder };
-    await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`);
-  }
-  return folder;
+  if (manifest.uitive?.dir === folder) return { folder, changed: false };
+  manifest.uitive = { ...manifest.uitive, dir: folder };
+  return { folder, changed: await save(path, `${JSON.stringify(manifest, null, 2)}\n`) };
 }
 
 /**
  * Sets Uitive up in a project: packages, a folder (`src/uitive/` or `uitive/`)
  * whose contract starts with every page as a region, sources generated from an API description
  * when one is small enough, and the coding agents' MCP servers and skill, at the repository's
- * root. Never overwrites a file.
+ * root. Never overwrites a file. With a boundary, nothing above or outside it is read or written.
  */
 export async function init(options: InitOptions = {}): Promise<InitResult> {
-  const detection = await detect(options.cwd);
+  const boundary = options.boundary === undefined ? undefined : resolve(options.boundary);
+  // Read before anything is written, so a command that doesn't parse changes nothing.
+  const mcp = options.mcp === undefined ? undefined : commandWords(options.mcp);
+  const detection = await detect(options.cwd, boundary === undefined ? {} : { boundary });
   const root = detection.root;
   const written: string[] = [];
   const kept: string[] = [];
   const next: string[] = [];
+  const save = async (file: string, content: string) => {
+    if (boundary !== undefined && !(await within(boundary, file))) {
+      next.push(`Not written: ${relative(root, file)} is outside ${boundary}.`);
+      return false;
+    }
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, content);
+    return true;
+  };
   const put = async (path: string, content: string) => {
     const file = join(root, path);
     if (await exists(file)) {
       kept.push(path);
       return;
     }
-    await mkdir(dirname(file), { recursive: true });
     const formatted = ['.ts', '.tsx', '.json'].includes(extname(file))
       ? await formatLikeProject(content, file, root)
       : content;
-    await writeFile(file, formatted);
-    written.push(path);
+    if (await save(file, formatted)) written.push(path);
   };
   if (detection.workspaces.length > 0) {
     next.push(
@@ -351,16 +486,21 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     );
   }
   // Inside src when there is one, so the build, its typecheck and tools such as Tailwind see it.
-  let folder = options.dir ? await recordFolder(root, options.dir) : await folderOf(root);
+  let folder = options.dir ? normalizeFolder(options.dir) : await folderOf(root);
   if (
     !options.dir &&
     folder === FOLDER &&
     !(await exists(join(root, FOLDER, 'contract.ts'))) &&
     (await exists(join(root, 'src')))
   ) {
-    folder = await recordFolder(root, 'src/uitive');
+    folder = 'src/uitive';
   }
-  if (folder !== FOLDER) written.push('package.json');
+  if (boundary !== undefined && !(await within(boundary, join(root, folder)))) {
+    throw new Error(`The folder for Uitive's files, ${folder}, is outside ${boundary}`);
+  }
+  if (options.dir || folder !== FOLDER) {
+    if ((await recordFolder(root, folder, save)).changed) written.push('package.json');
+  }
   const curation = `${folder}/curation.json`;
 
   const spec = options.openapi ?? detection.openapi[0];
@@ -389,9 +529,12 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
         `Choose what the frontend shows in ${curation} (set "include": true), then run \`uitive generate sources --openapi ${spec}\` and spread \`sources\` and \`actions\` into the contract.`,
       );
     } else {
-      const result = await generateSources({ spec, cwd: root });
+      const out = join(root, folder, 'api.generated.ts');
+      const allowed = boundary === undefined || (await within(boundary, out));
+      const result = await generateSources({ spec, cwd: root, out, dryRun: !allowed });
       generated = result.written;
       if (result.written) written.push(result.file);
+      else if (!allowed) next.push(`Not written: ${result.file} is outside ${boundary}.`);
       else next.push(...result.problems);
     }
   } else if (!spec) {
@@ -443,6 +586,11 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     // AGENTS.md, has nothing init can write; with none of the agents it can configure, Claude Code
     // is set up, as the default.
     const top = detection.repository;
+    if (boundary !== undefined && top === boundary && !(await exists(join(top, '.git')))) {
+      next.push(
+        `No repository root inside ${boundary}, so the coding agents' configuration goes there, where the MCP server works; nothing above it is read or written.`,
+      );
+    }
     const configurable = detection.agents.filter((agent) => agent !== 'codex');
     const claude = configurable.includes('claude-code') || configurable.length === 0;
     const deferred = options.packages !== undefined && !options.mcp;
@@ -463,35 +611,24 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
         'With local packages, the MCP server is left unconfigured: pass --mcp "node <repository>/packages/mcp/dist/bin.js" to configure it.',
       );
     } else {
-      const [command = 'npx', ...args] = (options.mcp ?? 'npx -y @plurid/uitive-mcp').split(' ');
+      const [command = 'npx', ...args] = mcp ?? ['npx', '-y', '@plurid/uitive-mcp'];
       const stdio = { command, args };
-      const merge = async (path: string, update: (value: Record<string, unknown>) => void) => {
-        if (await mergeJson(join(top, path), update)) {
-          written.push(shown(path));
-        } else {
-          kept.push(shown(path));
+      const merge = async (path: string, add: (value: Record<string, unknown>) => boolean) => {
+        const outcome = await mergeJson(join(top, path), add, save);
+        if (outcome === 'added') written.push(shown(path));
+        if (outcome === 'present' || outcome === 'unreadable') kept.push(shown(path));
+        if (outcome === 'unreadable') {
           next.push(
             `Add the uitive MCP server to ${shown(path)} by hand: it isn't plain JSON, so init left it as it was.`,
           );
         }
       };
-      if (claude) {
-        await merge('.mcp.json', (value) => {
-          value.mcpServers = { ...(value.mcpServers as object | undefined), uitive: stdio };
-        });
-      }
+      if (claude) await merge('.mcp.json', addServer('mcpServers', stdio));
       if (detection.agents.includes('cursor')) {
-        await merge('.cursor/mcp.json', (value) => {
-          value.mcpServers = { ...(value.mcpServers as object | undefined), uitive: stdio };
-        });
+        await merge('.cursor/mcp.json', addServer('mcpServers', stdio));
       }
       if (detection.agents.includes('vscode')) {
-        await merge('.vscode/mcp.json', (value) => {
-          value.servers = {
-            ...(value.servers as object | undefined),
-            uitive: { type: 'stdio', ...stdio },
-          };
-        });
+        await merge('.vscode/mcp.json', addServer('servers', { type: 'stdio', ...stdio }));
       }
     }
     if (claude)
@@ -505,8 +642,8 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
   ]);
   const packages = wanted(detection, existing);
   const zod = manifest.dependencies?.zod ?? manifest.devDependencies?.zod;
-  const [major = 0, minor = 0] = (/(\d+)(?:\.(\d+))?/.exec(zod ?? '') ?? []).slice(1).map(Number);
-  if (zod !== undefined && (major < 4 || (major === 4 && minor < 2))) {
+  const [major, minor] = (zod === undefined ? undefined : zodVersion(zod, root)) ?? [4, 2];
+  if (major < 4 || (major === 4 && minor < 2)) {
     next.push(
       `Uitive shares zod with the application and needs 4.2 or later; this project has ${zod}, so upgrade it first.`,
     );
@@ -518,9 +655,8 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     [add, dev, ...packages.dev],
   ];
   if (options.packages && !detection.uitive) {
-    written.push(
-      ...(await useTarballs(root, detection, resolve(root, options.packages), packages)),
-    );
+    const tarballs = resolve(root, options.packages);
+    written.push(...(await useTarballs(root, detection, tarballs, packages, save, boundary)));
     steps = [['install']];
   }
   const pm = detection.packageManagerPin ?? detection.packageManager;

@@ -9,12 +9,12 @@ npx uitive survey --openapi openapi.yaml  # one line per source, to curate from
 npx uitive generate sources --openapi openapi.yaml
 npx uitive generate blocks src/order-summary.tsx#OrderSummary
 npx uitive discover --url http://localhost:5173/
-npx uitive check                          # the gate: contract, JSON, schemas, labels, bindings
+npx uitive check                          # the gate: contract, JSON, schemas, bindings; warns about labels
 ```
 
 [`uitive`](https://www.npmjs.com/package/uitive) on npm is this package under its short name, so `npx uitive` runs it.
 
-The files go in `src/uitive/` when the project has a `src` folder, else in `uitive/`; `init --dir app/uitive` puts them elsewhere, for a build that compiles only `app`. The folder is recorded in package.json as `uitive.dir`, where every command finds it. The playbook for agents is the `integrate-uitive` skill that `init` installs.
+The files go in `src/uitive/` when the project has a `src` folder, else in `uitive/`; `init --dir app/uitive` puts them elsewhere, for a build that compiles only `app`. The folder, always inside the project, is recorded in package.json as `uitive.dir`, where every command finds it. The playbook for agents is the `integrate-uitive` skill that `init` installs.
 
 ## Curation
 

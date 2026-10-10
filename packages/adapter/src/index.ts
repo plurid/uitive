@@ -10,7 +10,7 @@ export {
   pathOf,
   templateOf,
 } from './discover.js';
-export type { Discovery, PageFacts } from './discover.js';
+export type { Discovery, FactsOptions, PageFacts } from './discover.js';
 export { compileEffects } from './effects.js';
 export type { Effect, Values } from './effects.js';
 export { ADAPTER_FORMAT, ADAPTER_VERSION, adapterSchema } from './format.js';

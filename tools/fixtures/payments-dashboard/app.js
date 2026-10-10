@@ -128,7 +128,7 @@ function render() {
   const found = PAGES.map(([pattern, page]) => [pattern.exec(path), page]).find(([match]) => match);
   const content = found ? found[1](...found[0].slice(1)) : '<h1>Not found</h1>';
   document.querySelector('#app').innerHTML = `
-    <header class="top"><strong>Acme Payments</strong> <span class="badge">fictional</span></header>
+    <header class="top"><strong>Acme Payments</strong> <span class="badge">fictional</span> <input type="search" aria-label="Search" placeholder="Search" /></header>
     ${test() ? '<div role="alert" class="notice">You are viewing test data. CANARY-notice switch to live data in the corner.</div>' : ''}
     <div class="layout">${sidebar()}<main>${content}</main></div>`;
 }

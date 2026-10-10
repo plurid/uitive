@@ -6,9 +6,35 @@ import { createUitive } from './client.js';
 import { action, defineApp } from './contract.js';
 import { fromRows } from './data.js';
 import { field } from './field.js';
+import { ui } from './page.js';
+import type { Planner } from './planner.js';
 import { query } from './query.js';
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+/** Suggests a calmer customer page whenever it plans. */
+const designer: Planner = {
+  name: 'designer',
+  async plan() {
+    const value = ui.page(ui.section('Calm', 'stack', [ui.region('original')]));
+    return {
+      origin: 'model',
+      operations: [
+        {
+          change: { kind: 'page', surface: 'customer', op: 'set', value },
+          evidence: [{ intent: true }],
+        },
+      ],
+      meta: { planner: 'designer', ms: 0 },
+    };
+  },
+};
+
+/** A suggested redesign of the customer page, for previews. */
+async function suggestion(client: ReturnType<typeof setup>['client']): Promise<string> {
+  client.setGoal('I watch customers');
+  return (await client.plan()).applied[0] as string;
+}
 
 function setup(options: { perform?: Record<string, Perform>; withUi?: boolean } = {}) {
   const runs: { action: string; params: unknown; context: PerformContext }[] = [];
@@ -23,6 +49,7 @@ function setup(options: { perform?: Record<string, Perform>; withUi?: boolean } 
   const client = createUitive({
     contract: payments,
     now: () => NOW * 1000,
+    planner: designer,
     onError,
     bindings: {
       fetch: fromRows(rows),
@@ -139,7 +166,7 @@ describe('perform', () => {
     client.cancel(client.getSnapshot().confirmation!.id);
     await first;
 
-    client.preview('some-suggestion');
+    client.preview(await suggestion(client));
     expect((await client.perform('refund', refund)).message).toMatch(/wait until you accept/);
     expect((await client.perform('export', {})).status).toBe('done');
     client.preview(undefined);
@@ -151,6 +178,41 @@ describe('perform', () => {
       status: 'refused',
       message: 'No action "nope"',
     });
+  });
+
+  it('refuses writes only while a live suggestion is previewed', async () => {
+    const { client, runs } = setup();
+    client.preview('no-such-suggestion');
+    expect(client.getSnapshot().preview).toBeUndefined();
+
+    const id = await suggestion(client);
+    client.preview(id);
+    expect(client.getSnapshot().preview).toBe(id);
+    // Reverting the suggestion ends its preview, so writes don't stay refused for good.
+    client.revert(id);
+    expect(client.getSnapshot().preview).toBeUndefined();
+    expect(
+      await client.perform('note.add', { payment: 'ch_001', text: 'x' }, { confirmed: true }),
+    ).toMatchObject({ status: 'done' });
+
+    client.preview(await suggestion(client));
+    client.reset();
+    expect(client.getSnapshot().preview).toBeUndefined();
+    expect(
+      await client.perform('note.add', { payment: 'ch_001', text: 'y' }, { confirmed: true }),
+    ).toMatchObject({ status: 'done' });
+    expect(runs).toHaveLength(2);
+  });
+
+  it('holds back a write when a preview starts while it waits for a yes', async () => {
+    const { client, runs } = setup();
+    const id = await suggestion(client);
+    const pending = client.perform('refund', refund);
+    await settle();
+    client.preview(id);
+    client.confirm(client.getSnapshot().confirmation!.id, 'Refund payment');
+    expect((await pending).message).toMatch(/wait until you accept/);
+    expect(runs).toHaveLength(0);
   });
 
   it('cancels a waiting run when the last confirming interface goes', async () => {

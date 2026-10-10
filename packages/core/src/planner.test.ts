@@ -82,6 +82,80 @@ describe('remotePlanner', () => {
     ]).plan(request(), payments, { onProgress: () => {} });
     expect(cut.meta.fellBack).toBe('the server ended without a plan');
   });
+
+  it('keeps its time limit when the caller passes a signal of its own', async () => {
+    const planner = remotePlanner({
+      url: '/api',
+      timeoutMs: 30,
+      fallback: heuristicPlanner(),
+      fetch: (_url, init) =>
+        new Promise((_resolve, reject) => {
+          const signal = init.signal as AbortSignal;
+          signal.addEventListener('abort', () => reject(signal.reason as Error));
+        }),
+    });
+    const answer = await planner.plan(request(), payments, {
+      signal: new AbortController().signal,
+    });
+    expect(answer.meta.fellBack).toBe('no answer from the server within 30 ms');
+  });
+
+  it('waits as long as progress keeps coming, and no longer than the limit between lines', async () => {
+    const lines = [
+      ...Array.from({ length: 4 }, () => ({
+        type: 'progress',
+        progress: { stage: 'planning', elements: 1 },
+      })),
+      { type: 'result', result },
+    ].map((line) => `${JSON.stringify(line)}\n`);
+    /** Sends a line every `gap` milliseconds until its signal aborts. */
+    const slow =
+      (gap: number): FetchLike =>
+      async (_url, init) => {
+        const signal = init.signal as AbortSignal;
+        const encoder = new TextEncoder();
+        let index = 0;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({}),
+          headers: { get: (name) => (name === 'content-type' ? 'application/x-ndjson' : null) },
+          body: {
+            getReader: () => ({
+              read: () =>
+                new Promise((resolve, reject) => {
+                  const timer = setTimeout(
+                    () =>
+                      resolve(
+                        index < lines.length
+                          ? { done: false, value: encoder.encode(lines[index++]) }
+                          : { done: true },
+                      ),
+                    gap,
+                  );
+                  signal.addEventListener('abort', () => {
+                    clearTimeout(timer);
+                    reject(signal.reason as Error);
+                  });
+                }),
+            }),
+          },
+        };
+      };
+    const steady = await remotePlanner({ url: '/api', timeoutMs: 60, fetch: slow(25) }).plan(
+      request(),
+      payments,
+      { onProgress: () => {} },
+    );
+    expect(steady.meta.fellBack).toBeUndefined();
+    const stalled = await remotePlanner({
+      url: '/api',
+      timeoutMs: 60,
+      fallback: heuristicPlanner(),
+      fetch: slow(120),
+    }).plan(request(), payments, { onProgress: () => {} });
+    expect(stalled.meta.fellBack).toBe('no answer from the server within 60 ms');
+  });
 });
 
 describe('validateOutput', () => {

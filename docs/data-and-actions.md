@@ -39,28 +39,31 @@ export const sources = {
     row: z.object({ id: z.string(), name: z.string(), email: z.string() }),
     key: 'id',
     title: 'name',
-    capabilities: { search: true },
+    // Orders show their customer's name, read by key rather than by scanning every customer.
+    capabilities: { search: true, filter: { id: ['in'] }, pagination: 'offset' },
   }),
 };
 ```
 
 Field helpers say what a value means, so it shows and filters correctly. Plain zod types work too, with their meaning inferred: a string is text, a number is a number, a boolean is yes or no, an enum is an enum.
 
-| Helper                                   | What it holds                                                                                         |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `field.text()`                           | Text, such as a name                                                                                  |
-| `field.number()`                         | A number that isn't money, such as a count                                                            |
-| `field.money({ currency, code, minor })` | An amount: `currency` names the field with each row's currency, `code` fixes one, `minor` means cents |
-| `field.time({ unit })`                   | A moment: an ISO string, or seconds or milliseconds with `unit: 's'` or `'ms'`                        |
-| `field.enum([...])`                      | One of a fixed set, such as a status                                                                  |
-| `field.ref('customers')`                 | Another source's key, which makes a relation queries can follow one hop                               |
-| `field.bool()`                           | Yes or no                                                                                             |
+| Helper                                   | What it holds                                                                                             |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `field.text()`                           | Text, such as a name                                                                                      |
+| `field.number()`                         | A number that isn't money, such as a count                                                                |
+| `field.money({ currency, code, minor })` | An amount: `currency` names the field with each row's currency, `code` fixes one, `minor` means cents     |
+| `field.time({ unit })`                   | A moment: an ISO string, an ISO date with `unit: 'date'`, or seconds or milliseconds with `'s'` or `'ms'` |
+| `field.enum([...])`                      | One of a fixed set, such as a status                                                                      |
+| `field.ref('customers')`                 | Another source's key, which makes a relation queries can follow one hop                                   |
+| `field.bool()`                           | Yes or no                                                                                                 |
 
 Every helper takes a `label`, shown as a column's header, and a `description`.
 
+Minor units follow ISO 4217: two decimal places for most currencies, none for JPY or KRW, three for KWD. Where an API counts differently, `digits` says so per currency: Stripe, for one, keeps ISK in hundredths and MGA in whole units, so its amounts take `field.money({ currency: 'currency', minor: true, digits: { ISK: 2, MGA: 0 } })`. A `z.iso.date()` field is a day, read in the person's time zone.
+
 - `title` names a row, and `summary` lists the fields that sum it up; a relation one hop away can show only those.
-- `capabilities` declares what the binding does itself: which filters, which sorts, text search and paging. Uitive pushes those down and does the rest on the client, over at most `scan` rows (500 by default). A result cut short by the cap says it is partial.
-- `maxLimit` caps the rows one query may ask for (100 by default), and `ttl` how many seconds a result stays fresh (30 by default).
+- `capabilities` declares what the binding does itself: which filters, which sorts, text search and paging. Uitive pushes those down and does the rest on the client, over at most `scan` rows (500 by default). A result cut short says it is partial: when the cap stops it, when a source without `pagination` fills its one page, or when related rows were left unread.
+- `maxLimit` caps the rows one query may ask for (100 by default), and `ttl` how many seconds a result stays fresh once it arrives (30 by default, and at least one).
 
 ## Sources from an API description
 
@@ -68,7 +71,7 @@ With an OpenAPI description, sources and actions are generated rather than writt
 
 ## Bindings
 
-Bindings are the application's code behind the contract: `fetch` reads sources, `perform` runs actions, and `navigate` follows links. For REST APIs, `restFetch` and `restPerform` take each endpoint as data, and read and write with the application's own session.
+Bindings are the application's code behind the contract: `fetch` reads sources, `perform` runs actions, `navigate` follows links, and `context` says who and where the person is. For REST APIs, `restFetch` and `restPerform` take each endpoint as data, and read and write with the application's own session.
 
 <!-- example: docs/examples/shop/bindings.ts#bindings -->
 
@@ -93,7 +96,13 @@ export const bindings: Bindings<typeof shop> = {
         pagination: { kind: 'offset', param: 'offset' },
         item: { path: '/orders/{id}', row: '/order' },
       },
-      customers: { path: '/customers', rows: '/customers', search: 'q' },
+      customers: {
+        path: '/customers',
+        rows: '/customers',
+        search: 'q',
+        filters: { 'id:in': 'id' },
+        pagination: { kind: 'offset', param: 'offset' },
+      },
     },
   }),
   perform: restPerform({
@@ -104,15 +113,22 @@ export const bindings: Bindings<typeof shop> = {
       'orders.cancel': { method: 'POST', path: '/orders/{order}/cancel' },
     },
   }),
+  // Who is signed in, for `$me`, and where they are, for "today" and time buckets.
+  context: () => ({
+    me: signedIn(),
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  }),
 };
 ```
 
-- `filters` maps a field and operator to a query parameter, such as `placed:gte` to `placed_after`. Declare only what the endpoint applies, and declare the same in the source's `capabilities`.
+- `filters` maps a field and operator to a query parameter, such as `placed:gte` to `placed_after`; `between` maps to its own parameter, or to the field's `gte` and `lte`. Declare only what the endpoint applies, and declare the same in the source's `capabilities`: a filter, sort or search pushed to an endpoint that can't apply it fails rather than being dropped.
 - `rows` is a JSON pointer to the rows in a response; `pick` lifts nested values into fields, and `query` adds parameters every request needs.
-- `pagination` is `cursor`, `offset`, `page` or `none`, and `item` reads one row by key.
+- `pagination` is `cursor`, `offset`, `page` or `none`. An API may cap its pages below the limit asked for, so point `more` at its has-more flag, or a cursor's `next` at its next token; without either, a short page is the last.
+- `item` reads one row by key; a row it answers 404 for is missing, not an error.
+- `context()` returns `me`, the signed-in person that `$me` names, `timeZone`, where "today" and time buckets fall, and `locale`. Each read passes it to `fetch`.
 - In `restPerform`, params fill the `{placeholders}` of the path and the rest go in the body, as JSON or a form.
 
-For anything else, write the binding: a `Fetch` takes a request (the source, fields, filters, sort, limit, cursor and search it may apply) and returns rows; a `Perform` takes params and returns a message or where to go next. `fromRows` serves rows held in memory, for demonstrations and tests.
+For anything else, write the binding: a `Fetch` takes a request (the source, fields, filters, sort, limit, cursor and search it may apply) and returns rows; a `Perform` takes params and returns a message or where to go next. Params never fill a path with `.` or `..`. `fromRows` serves rows held in memory, for demonstrations and tests, comparing values exactly as an API would, and ignoring case only for `contains` and `prefix`.
 
 ## Queries
 
@@ -143,10 +159,10 @@ Fields are qualified by source (`orders.total`) and may follow one relation (`or
 | enum, ref  | `eq`, `ne`, `in`, `nin`, `empty`, `present`                                      |
 | bool       | `eq`, `empty`, `present`                                                         |
 
-- **Times** take ISO dates and times, or values relative to now: `now`, `today`, `yesterday`, `tomorrow`, `-7d` or `+3h` (with `m`, `h`, `d`, `w`, `mo`, `q` and `y`), and `start:month` or `start:week-1w`, in the person's time zone.
-- **Money** is in major units, such as `25.50`, and enums ignore case.
-- **Tokens**: `$current` is the row the page is about, and `$me` the signed-in person.
-- **Summaries** count, sum, average, take the minimum or maximum, or count distinct values, grouped by a field or a time bucket and optionally split by another. Money in different currencies is never added together.
+- **Times** take ISO dates and times, or values relative to now: `now`, `today`, `yesterday`, `tomorrow`, `-7d` or `+3h` (with `m`, `h`, `d`, `w`, `mo`, `q` and `y`), and `start:month` or `start:week-1w`, in the person's time zone. Days and longer move along the calendar, so `-1d` keeps the time of day across a daylight-saving change, and a time without an offset is the person's wall-clock time.
+- **Money** is in major units, with a point for decimals, such as `25.50`: `25,50` is refused, since its comma may be a decimal comma. Text and enums ignore case; keys and references compare exactly.
+- **Tokens**: `$current` is the row the page is about, and `$me` the signed-in person, as `context()` names them. A query with `$me` fails while no one is signed in.
+- **Summaries** count, sum, average, take the minimum or maximum, or count distinct values, grouped by a field or a time bucket and optionally split by another. Money in different currencies is never added together: an amount one relation away is summed in its related row's currency, so its summary filters or groups by that currency, such as `orders.customer.currency`. Time buckets follow the person's wall clock, and rows without a time come last.
 - A query reads at most 12 fields, with 8 filters and 3 sorts; a page runs at most 8 queries.
 
 `useQuery` reads a query's result in a component, shared and cached with every other reader:
@@ -170,17 +186,17 @@ export function Unshipped() {
 }
 ```
 
-Outside React, `client.data.load(query)` returns the result.
+Outside React, `client.data?.load(query)` returns the result; `client.data` exists when the bindings can fetch.
 
 ## Running actions
 
 An action with an `effect` runs through `perform`.
 
-| Effect        | What happens                                                                      |
-| ------------- | --------------------------------------------------------------------------------- |
-| `read`        | It runs at once, such as an export.                                               |
-| `write`       | From a generated page, it waits for one yes, shown with its params.               |
-| `destructive` | It waits for a typed phrase: the action's label, unless `confirm` says otherwise. |
+| Effect        | What happens                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `read`        | It runs at once, such as an export.                                                                                |
+| `write`       | From a generated page, it waits for one yes, shown with its params: a confirmation, or a form showing every value. |
+| `destructive` | It waits for a typed phrase: the action's label, unless `confirm` says otherwise.                                  |
 
 A run ends `done`, `canceled` by the person, `failed` in the binding or for want of one, or `refused` before it starts: when its params don't fit the action's schema, when no interface can ask for confirmation, when another run is already waiting, or while a redesign is being previewed. A run that succeeds is recorded as use, without its params, and `invalidates` refreshes results that read the sources it changed. Each run carries an idempotency key the binding may use to refuse doing it twice; `restPerform` sends it in the header its `idempotency` option names.
 

@@ -1,4 +1,4 @@
-import { currencyDigits, humanize, type Field } from './field.js';
+import { humanize, minorDigits, type Field } from './field.js';
 
 /** When a query runs, and where: "today" and "this month" depend on the user's time zone. */
 export interface Clock {
@@ -30,7 +30,7 @@ export const isToken = (value: string): value is Token =>
 /** Longest text a filter value may hold. */
 export const VALUE_LENGTH = 200;
 
-const UNITS = { m: 60_000, h: 3_600_000, d: 86_400_000, w: 604_800_000 } as const;
+const UNITS = { m: 60_000, h: 3_600_000 } as const;
 /** Every calendar period relative times may name. */
 export const PERIODS = ['day', 'week', 'month', 'quarter', 'year'] as const;
 /** A calendar period that `start:` tokens and time buckets refer to. */
@@ -39,6 +39,7 @@ export type Period = (typeof PERIODS)[number];
 const RELATIVE = /^([+-])(\d{1,4})(mo|m|h|d|w|q|y)$/;
 const START = /^start:(day|week|month|quarter|year)(?:([+-])(\d{1,4})(mo|m|h|d|w|q|y))?$/;
 const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const LOCAL_TIME = /^(\d{4})-(\d{2})-(\d{2})t(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?$/;
 
 /**
  * Parses one filter value for a field. Relative times such as `-7d`, `today` and
@@ -59,6 +60,8 @@ export function parseValue(field: Field, raw: string, clock: Clock): Parsed | un
     case 'money': {
       const cleaned = field.type === 'money' ? text.replace(/^[$€£¥]/, '') : text;
       if (!/^-?[\d,_ ]*\.?\d+$/.test(cleaned)) return undefined;
+      // "25,50" may be a decimal comma; thousands separators always take three digits.
+      if (/,\d{1,2}$/.test(cleaned)) return undefined;
       const value = Number(cleaned.replace(/[,_ ]/g, ''));
       return Number.isFinite(value) ? { kind: 'number', value } : undefined;
     }
@@ -98,8 +101,18 @@ export function parseTime(raw: string, clock: Clock): number | undefined {
   const date = DATE.exec(text);
   if (date) {
     const [year, month, day] = [Number(date[1]), Number(date[2]), Number(date[3])];
-    if (month < 1 || month > 12 || day < 1 || day > 31) return undefined;
+    if (month < 1 || month > 12 || day < 1 || day > daysIn(year, month)) return undefined;
     return zoned(year, month, day, 0, 0, 0, zone);
+  }
+  // Without an offset, a date-time is a wall-clock time where the person is.
+  const local = LOCAL_TIME.exec(text);
+  if (local) {
+    const [year, month, day, hour, minute, second] = local
+      .slice(1, 7)
+      .map((part) => Number(part ?? 0)) as [number, number, number, number, number, number];
+    if (month < 1 || month > 12 || day < 1 || day > daysIn(year, month)) return undefined;
+    if (hour > 23 || minute > 59 || second > 59) return undefined;
+    return zoned(year, month, day, hour, minute, second, zone);
   }
   if (!/^\d{4}-\d{2}-\d{2}t\d{2}:\d{2}/.test(text)) return undefined;
   const parsed = Date.parse(raw.trim());
@@ -108,10 +121,26 @@ export function parseTime(raw: string, clock: Clock): number | undefined {
 
 type Unit = 'm' | 'h' | 'd' | 'w' | 'mo' | 'q' | 'y';
 
+// Minutes and hours are elapsed time; days, weeks and longer move along the calendar, so a day
+// across a daylight-saving change keeps its wall-clock time.
 function shift(ms: number, amount: number, unit: Unit, zone: string): number {
-  if (unit in UNITS) return ms + amount * UNITS[unit as keyof typeof UNITS];
-  const months = amount * (unit === 'y' ? 12 : unit === 'q' ? 3 : 1);
+  if (unit === 'm' || unit === 'h') return ms + amount * UNITS[unit];
   const local = partsIn(ms, zone);
+  if (unit === 'd' || unit === 'w') {
+    const day = new Date(
+      Date.UTC(local.year, local.month - 1, local.day + amount * (unit === 'w' ? 7 : 1)),
+    );
+    return zoned(
+      day.getUTCFullYear(),
+      day.getUTCMonth() + 1,
+      day.getUTCDate(),
+      local.hour,
+      local.minute,
+      local.second,
+      zone,
+    );
+  }
+  const months = amount * (unit === 'y' ? 12 : unit === 'q' ? 3 : 1);
   const index = local.year * 12 + (local.month - 1) + months;
   const year = Math.floor(index / 12);
   const month = (index % 12) + 1;
@@ -213,7 +242,10 @@ export function partsIn(ms: number, zone = 'UTC'): LocalParts {
   };
 }
 
-/** The instant a wall-clock time in a zone names, settling daylight-saving shifts. */
+/**
+ * The instant a wall-clock time in a zone names. A time that happens twice, as clocks fall back,
+ * is its first; one that never happens, as clocks spring forward, moves forward past the gap.
+ */
 function zoned(
   year: number,
   month: number,
@@ -237,20 +269,36 @@ function zoned(
     );
     return asUtc - Math.floor(at / 1000) * 1000;
   };
-  const first = wall - offset(wall);
-  return wall - offset(first);
+  // The offsets before and after any change near this time; at most one change is that close.
+  const candidates = [wall - offset(wall - DAY), wall - offset(wall + DAY)];
+  const valid = candidates.filter((at) => at + offset(at) === wall);
+  return valid.length > 0 ? Math.min(...valid) : Math.max(...candidates);
 }
 
-/** A stored time as milliseconds since the epoch, whatever the field's unit. */
-export function timeOf(field: Field, value: unknown): number | undefined {
+const DAY = 86_400_000;
+
+/**
+ * A stored time as milliseconds since the epoch, whatever the field's unit. A date without a time
+ * is the start of that day in `zone`.
+ */
+export function timeOf(field: Field, value: unknown, zone = 'UTC'): number | undefined {
   if (value === null || value === undefined) return undefined;
   if (field.unit === 's' && typeof value === 'number') return value * 1000;
   if (field.unit === 'ms' && typeof value === 'number') return value;
   if (typeof value === 'string') {
+    const date = DATE.exec(value.trim());
+    if (date) return zoned(Number(date[1]), Number(date[2]), Number(date[3]), 0, 0, 0, zone);
     const parsed = Date.parse(value);
     return Number.isNaN(parsed) ? undefined : parsed;
   }
   return undefined;
+}
+
+/** A day as an ISO date, `2026-10-03`, for an instant in a zone. */
+export function dateIn(ms: number, zone = 'UTC'): string {
+  const local = partsIn(ms, zone);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${String(local.year).padStart(4, '0')}-${pad(local.month)}-${pad(local.day)}`;
 }
 
 /** Formats a stored value for people, by its field's type. */
@@ -265,7 +313,7 @@ export function formatValue(
     case 'money': {
       if (typeof value !== 'number') return String(value);
       const code = (currency ?? field.code)?.toUpperCase();
-      const major = field.minor ? value / 10 ** currencyDigits(code ?? 'USD') : value;
+      const major = field.minor ? value / 10 ** minorDigits(field, code) : value;
       if (!code) return new Intl.NumberFormat(locale).format(major);
       try {
         return new Intl.NumberFormat(locale, { style: 'currency', currency: code }).format(major);
@@ -274,6 +322,13 @@ export function formatValue(
       }
     }
     case 'time': {
+      if (field.unit === 'date' && typeof value === 'string' && DATE.test(value.trim())) {
+        // A day is the same day wherever it is read.
+        const ms = timeOf(field, value);
+        return ms === undefined
+          ? value
+          : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(ms);
+      }
       const ms = timeOf(field, value);
       return ms === undefined
         ? String(value)

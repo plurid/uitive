@@ -1,10 +1,11 @@
 import type { FetchLike } from '@plurid/uitive-core';
 import { withoutConst } from './answer.js';
-import { failure, readEvents } from './events.js';
+import { failure, parseEvent, readEvents, streamFailure } from './events.js';
 import {
   costOf,
   deadline,
   environment,
+  interrupted,
   PlannerError,
   type Model,
   type ModelPrices,
@@ -44,6 +45,7 @@ export interface OpenAIOptions {
 
 interface Chunk {
   model?: string;
+  error?: unknown;
   choices?: {
     delta?: { content?: string | null; refusal?: string | null };
     message?: { content?: string | null; refusal?: string | null };
@@ -117,7 +119,7 @@ export function openai(options: OpenAIOptions): Model {
           signal: deadline(call.signal, options.timeoutMs ?? 60_000),
         });
       } catch (error) {
-        throw new PlannerError(`${provider} couldn't be reached: ${(error as Error).message}`, 502);
+        throw interrupted(error, call.signal, provider);
       }
       if (!response.ok) throw await failure(response, provider);
 
@@ -127,6 +129,7 @@ export function openai(options: OpenAIOptions): Model {
       let model = options.model;
       let usage: Chunk['usage'];
       const take = (chunk: Chunk) => {
+        if (chunk.error !== undefined) throw streamFailure(chunk.error, provider);
         model = chunk.model ?? model;
         const choice = chunk.choices?.[0];
         const part = choice?.delta ?? choice?.message;
@@ -139,13 +142,17 @@ export function openai(options: OpenAIOptions): Model {
         if (chunk.usage) usage = chunk.usage;
       };
       const streamed = response.headers?.get('content-type')?.includes('event-stream');
-      if (streamed && response.body) {
-        await readEvents(response.body, (data) => {
-          if (data !== '[DONE]') take(JSON.parse(data) as Chunk);
-        });
-      } else {
-        // A server that ignored `stream` answers in one piece.
-        take((await response.json()) as Chunk);
+      try {
+        if (streamed && response.body) {
+          await readEvents(response.body, (data) => {
+            if (data !== '[DONE]') take(parseEvent(data, provider) as Chunk);
+          });
+        } else {
+          // A server that ignored `stream` answers in one piece.
+          take((await response.json()) as Chunk);
+        }
+      } catch (error) {
+        throw interrupted(error, call.signal, provider);
       }
 
       const cached = usage?.prompt_tokens_details?.cached_tokens ?? 0;

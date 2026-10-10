@@ -39,5 +39,11 @@
   },
   "devDependencies": {
     "zod": "^4.6.5"
+  },
+  "bugs": {
+    "url": "https://github.com/plurid/uitive/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

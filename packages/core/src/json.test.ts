@@ -4,6 +4,7 @@ import { editor } from './__fixtures__/editor.js';
 import { payments } from './__fixtures__/payments.js';
 import { action, block, collection, defineApp, page, type AnyPageSpec } from './contract.js';
 import { emptyDefinition } from './definition.js';
+import { field } from './field.js';
 import { fromJson, toJson } from './json.js';
 import { ui, validatePage } from './page.js';
 import { check } from './policy.js';
@@ -128,13 +129,13 @@ describe('JSON contracts', () => {
         notes: collection({
           label: 'Notes',
           description: 'Notes',
-          item: z.object({ body: z.string() }),
+          item: z.object({ body: z.string(), tag: z.string() }),
           max: 3,
-          title: (item) => item.body,
+          title: (item) => `${item.tag}: ${item.body}`,
         }),
       },
     });
-    expect(() => toJson(odd)).toThrow(/items need a label, title or name/);
+    expect(() => toJson(odd)).toThrow(/items need a title that is one of their text properties/);
     const transformed = defineApp({
       id: 'transformed',
       description: 'Transformed',
@@ -158,5 +159,92 @@ describe('JSON contracts', () => {
     const json = JSON.parse(JSON.stringify(toJson(payments)));
     json.routes.payment.page = 'refunds';
     expect(() => fromJson(json)).toThrow(/route payment: "refunds" is not a page/);
+  });
+
+  it("keep the property a collection's title reads", () => {
+    const views = defineApp({
+      id: 'views',
+      description: 'Views',
+      actions: { open: action({ label: 'Open', description: 'Open' }) },
+      surfaces: {
+        views: collection({
+          label: 'Views',
+          description: 'Saved views',
+          item: z.object({ label: z.string(), title: z.string() }),
+          max: 4,
+          title: (item) => item.title,
+        }),
+      },
+    });
+    const { json, back } = roundTrip(views);
+    expect(json.surfaces.views).toMatchObject({ title: 'title' });
+    const spec = back.surfaces.views as { title(item: unknown): string };
+    expect(spec.title({ label: 'internal', title: 'Paid this week' })).toBe('Paid this week');
+    expect(back.hash).toBe(views.hash);
+  });
+
+  it('carry no patterns, either way', () => {
+    const named = (item: z.ZodType) =>
+      defineApp({
+        id: 'views',
+        description: 'Views',
+        actions: { open: action({ label: 'Open', description: 'Open' }) },
+        surfaces: {
+          views: collection({
+            label: 'Views',
+            description: 'Saved views',
+            item,
+            max: 4,
+            title: (value) => (value as { label: string }).label,
+          }),
+        },
+      });
+    expect(() => toJson(named(z.object({ label: z.string().regex(/^[a-z]+$/) })))).toThrow(
+      /patterns stay out of JSON contracts/,
+    );
+    // A property may be called pattern without being one.
+    const plain = named(z.object({ label: z.string(), pattern: z.string() }));
+    expect(roundTrip(plain).back.hash).toBe(plain.hash);
+    const json = JSON.parse(JSON.stringify(toJson(named(z.object({ label: z.string() })))));
+    json.surfaces.views.item.properties.label.pattern = '^(a+)+$';
+    expect(() => fromJson(json)).toThrow(/surface views items: patterns stay out/);
+  });
+
+  it('refuse IDs that every object inherits, rather than lose them', () => {
+    const json = JSON.parse(
+      JSON.stringify(toJson(ops)).replace(
+        '"actions":{',
+        '"actions":{"__proto__":{"label":"X","description":"Y"},',
+      ),
+    );
+    expect(() => fromJson(json)).toThrow(/actions: "__proto__" must match/);
+    expect(({} as Record<string, unknown>).label).toBeUndefined();
+  });
+
+  it('keep money digits and date-only times', () => {
+    const ledger = defineApp({
+      id: 'ledger',
+      description: 'A ledger',
+      actions: { open: action({ label: 'Open', description: 'Open' }) },
+      sources: {
+        entries: {
+          label: 'Entries',
+          description: 'Entries',
+          row: z.object({
+            id: z.string(),
+            amount: field.money({ currency: 'currency', minor: true, digits: { isk: 2 } }),
+            currency: z.string(),
+            day: z.iso.date(),
+          }),
+          key: 'id',
+        },
+      },
+      surfaces: {},
+    });
+    const { json, back } = roundTrip(ledger);
+    expect(json.sources.entries?.row.properties.day?.type).toBe('string');
+    expect(back.source('entries')?.fields.find((entry) => entry.name === 'day')?.unit).toBe('date');
+    expect(back.path('entries.amount')?.field.digits).toEqual({ ISK: 2 });
+    expect(back.hash).toBe(ledger.hash);
   });
 });

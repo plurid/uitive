@@ -1,6 +1,6 @@
 # Planning
 
-A planner turns use and requests into proposed operations, which policy then checks. Uitive has two. The **deterministic planner** in core needs no model, no key and no network: it answers plain commands and learns from use. **A language model**, from any provider, through the model planner on your server, answers requests in plain words, works towards a person's stated goal and redesigns pages. Whoever pays holds the key: the model planner runs on your server, and the browser only ever talks to your server.
+A planner turns use and requests into proposed operations, which policy then checks. Uitive has two. The **deterministic planner** in core needs no model, no key and no network: it answers plain commands and learns from use. **A language model**, from any provider, through the model planner on your server, answers requests in plain words, works toward a person's stated goal and redesigns pages. Whoever pays holds the key: the model planner runs on your server, and the browser only ever talks to your server.
 
 ## Without a model
 
@@ -38,23 +38,27 @@ export const handler = createUitiveHandler({
   contract: shop,
   // Without a key, as in development, the deterministic planner answers plain commands.
   planner: model ? modelPlanner({ model }) : heuristicPlanner(),
-  // Planning spends money: only signed-in people may ask. The default allows localhost only.
-  authorize: (request) => /(^|;\s*)session=/.test(request.headers.get('cookie') ?? ''),
+  // Planning spends money: only signed-in people may ask. Use the application's own session
+  // check, the one its API makes; there is no default.
+  authorize: async (request) => (await getSession(request)) !== undefined,
 });
 ```
 
-`environmentModel()` picks whichever provider the server has a key for: `ANTHROPIC_API_KEY`, else `OPENAI_API_KEY`, else `GEMINI_API_KEY`, with `UITIVE_MODEL` naming the model. To choose one yourself, see [Choosing a model](#choosing-a-model).
+`environmentModel()` picks whichever provider the server has a key for: `ANTHROPIC_API_KEY`, else `OPENAI_API_KEY`, else `GEMINI_API_KEY`. `UITIVE_MODEL` names the model, with its provider first when the name doesn't tell it (`openai:my-finetune`); a model whose name does (`claude-…`, `gpt-…`, `gemini-…`) plans only with its own provider's key. To choose one yourself, see [Choosing a model](#choosing-a-model).
 
-| Option      | What it does                                                                                                                                                                       |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contract`  | The contract the application's clients use. Clients send only its hash; another hash answers 409.                                                                                  |
-| `planner`   | Who plans, such as `modelPlanner({ model })`.                                                                                                                                      |
-| `authorize` | Whether a request may plan. Planning spends money, so the default only allows requests to localhost: in production, check the session.                                             |
-| `maxBody`   | The largest request body, in bytes. The default is 131072 (128 KiB).                                                                                                               |
-| `perMinute` | Requests per minute per client, told apart by `X-Forwarded-For`, so serve it behind a proxy that sets that header; without it, every request shares one budget. The default is 20. |
-| `onError`   | Hears of failures, never request bodies. The default logs the message.                                                                                                             |
+`authorize` has no default: say who may plan, with the application's own check of the person's session. `getSession` above stands for that check; a cookie's name alone proves nothing. Until the application has one, `() => process.env.NODE_ENV !== 'production'`, as `init` writes it, keeps local development working and refuses everyone once deployed.
 
-The handler answers `POST <base>/plan` and `POST <base>/command`: it takes a Fetch `Request` and returns a `Response`, so it runs wherever those exist.
+| Option      | What it does                                                                                                                                                                                                                                                                                                    |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contract`  | The contract the application's clients use. Clients send only its hash; another hash answers 409.                                                                                                                                                                                                               |
+| `planner`   | Who plans, such as `modelPlanner({ model })`.                                                                                                                                                                                                                                                                   |
+| `authorize` | Required. Whether a request may plan: the application's check of the person's session. Planning spends money, so there is no default.                                                                                                                                                                           |
+| `maxBody`   | The largest request body, in bytes. The default is 131072 (128 KiB).                                                                                                                                                                                                                                            |
+| `perMinute` | Requests per minute per client. The default is 20.                                                                                                                                                                                                                                                              |
+| `client`    | Tells clients apart for `perMinute`. The default is the right-most `X-Forwarded-For` entry, the one the proxy in front of the server wrote, so serve it behind a proxy that sets that header; without one, every request shares one budget. Behind several proxies, return the address your own proxy recorded. |
+| `onError`   | Hears of failures, with their details, never request bodies. The default logs the message.                                                                                                                                                                                                                      |
+
+The handler answers `POST <base>/plan` and `POST <base>/command`: it takes a Fetch `Request` and returns a `Response`, so it runs wherever those exist. It takes only JSON (`content-type: application/json`, which makes a browser ask the server before sending one from another origin) and refuses requests a browser marks as cross-site. Every request's shape is checked before a planner sees it: types, lengths and list sizes, the request and the goal at most 500 characters. The browser is told only what failed, such as "The model couldn't make a plan"; what a provider said, and the address of a model's server, go to `onError`.
 
 **Next.js**: one dynamic route serves both.
 
@@ -67,7 +71,7 @@ import { handler } from './handler.js';
 export const POST = handler;
 ```
 
-**Node, Express and Fastify**: `toNodeListener` from `@plurid/uitive-server/node` turns the handler into a `(request, response)` listener, in CommonJS or ES modules. A body that `express.json()` already parsed is used as it is, and progress streams as it is written.
+**Node, Express and Fastify**: `toNodeListener` from `@plurid/uitive-server/node` turns the handler into a `(request, response)` listener, in CommonJS or ES modules. A body that `express.json()` already parsed is used as it is, and progress streams as it is written. It refuses bodies over its own `maxBody`, 128 KiB by default, before the handler reads them, so raise both together. The handler sees the request's path and query under a fixed origin, never the Host header, which the client writes. A request it can't read answers 400, and a handler that throws, 500: the listener never rejects, so the server never stops on one.
 
 <!-- example: docs/examples/server/node-server.ts#node -->
 
@@ -96,9 +100,9 @@ export const uitive = createUitive({
 
 - `url` is the handler's base: requests go to `<url>/plan` and `<url>/command`.
 - `headers` go with every request, such as a token your `authorize` reads. Cookies go to a handler on the same origin.
-- `timeoutMs` is 60 seconds for plans and 20 for commands.
+- `timeoutMs` is how long it waits for the server: 60 seconds for plans and 20 for commands. While progress streams, each line starts the wait again, so a long redesign that keeps reporting isn't cut short. A `signal` of the caller's own stops it too.
 - Simple commands never reach the server: "hide Bold" is answered in the browser, at no cost.
-- When the server fails, the fallback answers, and the reason, such as "server answered 401: Not allowed", is kept in the adaptation's `meta.fellBack`. A request only a model could answer then says so: `unavailable`.
+- When the server fails, the fallback answers, and the reason, such as "server answered 401: Not allowed", is kept in the adaptation's `meta.fellBack` and passed to the client's `onError`. A request only a model could answer then says so: `unavailable`.
 
 ## Choosing a model
 
@@ -124,7 +128,7 @@ export const gemini = modelPlanner({ model: google({ model: 'gemini-3.8-flash' }
 | `google({ model })` | Gemini                                       | `GEMINI_API_KEY` or `GOOGLE_API_KEY`                | Structured output (`responseJsonSchema`)                    |
 
 - Each takes `apiKey`, for runtimes without a process environment such as Cloudflare Workers, where `environmentModel(env)` takes their variables too, and `timeoutMs`, 60 seconds by default.
-- `anthropic()` also takes `effort` (`low` by default), `fallbacks` and a `client`. It needs `@anthropic-ai/sdk`, which the server package brings.
+- `anthropic()` also takes `effort` (`low` by default), `fallbacks` and a `client`, and sends effort and the refusal fallback only to models that take them: no Haiku has the fallback, and Haiku 4.5 takes no effort. It needs `@anthropic-ai/sdk`, which the server package brings.
 - `openai()` takes `baseURL`, `headers`, `structured`, `reasoningEffort` and `prices`; `google()` takes `baseURL`, `structured`, `thinkingBudget` and `prices`. Both call `fetch`, with no SDK.
 - `modelPlanner` takes `maxTokens`, 16000 by default. The [API reference](api/planner.md#models) has every option.
 
@@ -194,39 +198,42 @@ export const acme: Model = {
 
 ## Statuses
 
-The handler answers with these statuses; on any but 200, `remotePlanner` falls back:
+The handler answers with these statuses; on any but 200, `remotePlanner` falls back. Failures from the model say only what the status means; the details go to `onError`:
 
-| Status | When                                                                                                                |
-| ------ | ------------------------------------------------------------------------------------------------------------------- |
-| 200    | A plan, or with `Accept: application/x-ndjson`, progress lines, then the result or an error                         |
-| 400    | The body isn't JSON or a plan request, or a command is over 500 characters                                          |
-| 401    | `authorize` said no: "Not allowed"                                                                                  |
-| 404    | Anything but `POST …/plan` or `POST …/command`                                                                      |
-| 409    | The client's contract isn't the server's: "The application changed; reload the page"                                |
-| 413    | The body is over `maxBody`                                                                                          |
-| 429    | Over `perMinute`, or the provider's rate limit                                                                      |
-| 502    | The model declined, the plan was cut short or strayed from the schema twice, or the provider answered with an error |
-| 500    | Anything else went wrong: "Planning failed", with the details for `onError` only                                    |
-| 503    | No credentials for the model's provider, or the provider rejected them                                              |
+| Status | When                                                                                                                                                                                                                                                                                                                 |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200    | A plan, or with `Accept: application/x-ndjson`, progress lines, then the result or an error                                                                                                                                                                                                                          |
+| 400    | The body isn't JSON or a plan request, or a command is over 500 characters                                                                                                                                                                                                                                           |
+| 401    | `authorize` said no: "Not allowed"                                                                                                                                                                                                                                                                                   |
+| 403    | The browser marked the request cross-site                                                                                                                                                                                                                                                                            |
+| 404    | Anything but `POST …/plan` or `POST …/command`                                                                                                                                                                                                                                                                       |
+| 409    | The client's contract isn't the server's: "The application changed; reload the page"                                                                                                                                                                                                                                 |
+| 413    | The body is over `maxBody`                                                                                                                                                                                                                                                                                           |
+| 415    | The body isn't sent as `application/json`                                                                                                                                                                                                                                                                            |
+| 429    | Over `perMinute`, or the provider's rate limit: "The model is busy; try again shortly"                                                                                                                                                                                                                               |
+| 499    | The client went away while the model planned: "Canceled"                                                                                                                                                                                                                                                             |
+| 500    | Anything else went wrong: "Planning failed"                                                                                                                                                                                                                                                                          |
+| 502    | "The model couldn't make a plan": it declined, its plan was cut short, its answer didn't follow the schema even when asked again, or the provider failed or timed out. When only the repair fails, after a first answer that policy partly accepted, that part is kept instead, with the reason in `meta.unrepaired` |
+| 503    | "Planning is unavailable": no credentials for the model's provider, or the provider rejected them                                                                                                                                                                                                                    |
 
 ## Large contracts
 
-A request about a large contract is planned over a subset of it: the **areas** on screen and the few most relevant to the words, where an area is one source with the actions that act on it and the routes that show it. Past 40 sources or 200 actions, plans get worse, and `uitive check` says so: curate what the interface needs, as [Coding agents](coding-agents.md#curation) shows. [ADR 0005](adr/0005-planning-at-scale.md) has the details.
+A request about a large contract is planned over a subset of it: the **areas** on screen and the few most relevant to the words, where an area is one source with the actions that act on it and the routes that show it. A contract with few sources is scoped the same way when one of its enums would pass 400 values, such as hundreds of actions. Past 40 sources or 200 actions, plans get worse, and `uitive check` says so: curate what the interface needs, as [Coding agents](coding-agents.md#curation) shows. [ADR 0005](adr/0005-planning-at-scale.md) has the details.
 
 ## Goals and autonomy
 
-A **goal** is what the person wants from the application, in their words, such as "I watch costs". `client.ask(text, { goal: true })` keeps it, `setGoal` changes it, and planners read it whenever they plan.
+A **goal** is what the person wants from the application, in their words, such as "I watch costs". `client.ask(text, { goal: true })` keeps it and applies what serves it at once, like any command; `setGoal` changes it, up to 500 characters, and a blank one clears it. Planners read it whenever they plan.
 
 **Autonomy** says how far planned changes may go without the person, who can change it in "Your interface":
 
-| Autonomy  | What planned changes do                                                                  |
-| --------- | ---------------------------------------------------------------------------------------- |
-| `suggest` | Wait for the person's yes                                                                |
-| `mixed`   | Apply at a safe moment once a second plan agrees, or the evidence is strong. The default |
-| `auto`    | Apply at the next safe moment; suggested items join the interface at once                |
+| Autonomy  | What planned changes do                                                                                                           |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `suggest` | Wait for the person's yes                                                                                                         |
+| `mixed`   | Apply at a safe moment; a model's changes wait for a plan in a later session to agree, unless the evidence is strong. The default |
+| `auto`    | Apply at the next safe moment; suggested items join the interface at once                                                         |
 
 In every mode, a redesign stays a suggestion until the person accepts it, and **freeze** stops planned changes while the person's own still apply.
 
 ## What the planner sees
 
-`client.request()` returns exactly what a planner receives: the contract's hash, usage as numbers, the current state of each surface, the route and the words of a request. Never rows, never params, never text typed into the application. [Privacy and security](privacy-and-security.md) has the full list.
+`client.request('plan')`, or `client.request('command', words)`, returns exactly what a planner receives: the contract's hash, usage as numbers, the current state of each surface, the route and the words of a request. Never rows, never params, never text typed into the application. [Privacy and security](privacy-and-security.md) has the full list.

@@ -15,8 +15,9 @@ Source: [`server.ts`](../../packages/mcp/src/server.ts)
 ### createServer
 
 Uitive over the Model Context Protocol: the agent kit's steps as tools, so any coding agent
-can integrate Uitive the way the CLI does. Every path stays inside the project root, and API
-descriptions come from files unless the network is allowed, since a URL can carry data out.
+can integrate Uitive the way the CLI does. Every path stays inside the project root, symbolic
+links resolved, and API descriptions come from files unless the network is allowed, since a URL
+can carry data out.
 
 ```ts
 function createServer(options?: ServerOptions): McpServer;
@@ -28,8 +29,8 @@ Uses: [`ServerOptions`](#serveroptions).
 
 How the MCP server runs: the project it is confined to, and whether it may use the network.
 
-| Property        | Type      | Default         | Description                                                          |
-| --------------- | --------- | --------------- | -------------------------------------------------------------------- |
-| `root?`         | `string`  | `process.cwd()` | The project the server works in; no tool reads or writes outside it. |
-| `allowNetwork?` | `boolean` | `false`         | Lets tools read API descriptions from URLs.                          |
-| `version?`      | `string`  |                 | Reported to clients.                                                 |
+| Property        | Type      | Default         | Description                                                                                  |
+| --------------- | --------- | --------------- | -------------------------------------------------------------------------------------------- |
+| `root?`         | `string`  | `process.cwd()` | The project the server works in; no tool reads or writes outside it.                         |
+| `allowNetwork?` | `boolean` | `false`         | Lets tools read API descriptions from URLs, and discovery crawl hosts other than local ones. |
+| `version?`      | `string`  | `'0.0.0'`       | Reported to clients.                                                                         |

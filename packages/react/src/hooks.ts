@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
+  createUitive,
   stableStringify,
   type ActionIdOf,
   type ActionView,
@@ -23,12 +24,29 @@ import {
   type View,
 } from '@plurid/uitive-core';
 
+const standards = new WeakMap<object, Uitive>();
+
+/**
+ * A client with nothing stored, for the same contract: what a server renders, so hydration reads
+ * the same state before the person's own takes over.
+ */
+function standardOf<C extends AnyContract>(client: Uitive<C>): Uitive<C> {
+  let found = standards.get(client);
+  if (!found) {
+    found = createUitive({ contract: client.contract, learn: false }) as unknown as Uitive;
+    standards.set(client, found);
+  }
+  return found as unknown as Uitive<C>;
+}
+
 /**
  * The client's whole snapshot. It changes with every usage event, so use it for panels, not for
- * the interface itself; prefer {@link useSurface} there.
+ * the interface itself; prefer {@link useSurface} there. Server rendering and hydration read the
+ * state of a client with nothing stored.
  */
 export function useSnapshot<C extends AnyContract>(client: Uitive<C>): Snapshot {
-  return useSyncExternalStore(client.subscribe, client.getSnapshot, client.getSnapshot);
+  const server = useCallback(() => standardOf(client).getSnapshot(), [client]);
+  return useSyncExternalStore(client.subscribe, client.getSnapshot, server);
 }
 
 /**
@@ -56,29 +74,43 @@ export function useStandard<C extends AnyContract, K extends SurfaceIdOf<C>>(
   return useSyncExternalStore(client.subscribe, read, read);
 }
 
-/** Every action, ranked for a palette by how the user reaches for them. */
+/**
+ * Every action, ranked for a palette by how the user reaches for them. Server rendering ranks
+ * them as for someone new.
+ */
 export function useRanked<C extends AnyContract>(
   client: Uitive<C>,
 ): readonly ActionView<ActionIdOf<C>>[] {
-  return useSyncExternalStore(client.subscribe, client.ranked, client.ranked);
+  const server = useCallback(() => standardOf(client).ranked(), [client]);
+  return useSyncExternalStore(client.subscribe, client.ranked, server);
 }
 
-/** Whether the user is looking at their own interface or the standard one. */
+const NO_PENDING: readonly Pending[] = [];
+const yours = (): View => 'yours';
+const none = () => undefined;
+
+/**
+ * Whether the user is looking at their own interface or the standard one; `yours` during server
+ * rendering.
+ */
 export function useView<C extends AnyContract>(client: Uitive<C>): View {
   const read = useCallback(() => client.getSnapshot().view, [client]);
-  return useSyncExternalStore(client.subscribe, read, read);
+  return useSyncExternalStore(client.subscribe, read, yours);
 }
 
-/** The latest adaptation, for banners. Re-renders only when a new one arrives. */
+/**
+ * The latest adaptation, for banners. Re-renders only when a new one arrives; none during server
+ * rendering.
+ */
 export function useLatest<C extends AnyContract>(client: Uitive<C>): Adaptation | undefined {
   const read = useCallback(() => client.getSnapshot().latest, [client]);
-  return useSyncExternalStore(client.subscribe, read, read);
+  return useSyncExternalStore(client.subscribe, read, none);
 }
 
-/** Changes waiting for the next safe moment. */
+/** Changes waiting for the next safe moment; none during server rendering. */
 export function usePending<C extends AnyContract>(client: Uitive<C>): readonly Pending[] {
   const read = useCallback(() => client.getSnapshot().pending, [client]);
-  return useSyncExternalStore(client.subscribe, read, read);
+  return useSyncExternalStore(client.subscribe, read, () => NO_PENDING);
 }
 
 /** A request's state, for an interface: whether it is in flight, and its result or error. */
@@ -170,9 +202,16 @@ const UNBOUND: DataEntry = {
 };
 const silent = () => () => {};
 
+/** Whether a query names the page's row, which it can't read until the row is known. */
+const needsRow = (query: Query) =>
+  query.filter.some((entry) =>
+    entry.values.some((value) => value.trim().toLowerCase() === '$current'),
+  );
+
 /**
  * One query's result, shared with everything else that asks for it. Fetches when there is none
- * or it went stale; renders from the cache meanwhile.
+ * or it went stale; renders from the cache meanwhile. A query naming `$current` loads until the
+ * row is known.
  */
 export function useQuery<C extends AnyContract>(
   client: Uitive<C>,
@@ -182,7 +221,10 @@ export function useQuery<C extends AnyContract>(
   return useQueries(client, [query], scope)[0] as DataEntry;
 }
 
-/** Several queries' results at once, in order; an undefined query reads as loading. */
+/**
+ * Several queries' results at once, in order; an undefined query reads as loading, as does one
+ * naming `$current` until the row is known.
+ */
 export function useQueries<C extends AnyContract>(
   client: Uitive<C>,
   queries: readonly (Query | undefined)[],
@@ -195,7 +237,7 @@ export function useQueries<C extends AnyContract>(
   const read = useCallback(() => {
     const entries = queries.map((query) => {
       if (!data) return UNBOUND;
-      if (!query) return LOADING;
+      if (!query || (current === undefined && needsRow(query))) return LOADING;
       return data.peek(query, current === undefined ? {} : { current }) ?? LOADING;
     });
     const same =
@@ -208,7 +250,8 @@ export function useQueries<C extends AnyContract>(
   const entries = useSyncExternalStore(data?.subscribe ?? silent, read, read);
   useEffect(() => {
     for (const query of queries) {
-      if (query && data) data.read(query, current === undefined ? {} : { current });
+      if (!query || !data || (current === undefined && needsRow(query))) continue;
+      data.read(query, current === undefined ? {} : { current });
     }
     // Reading again after every change refetches what went stale or was invalidated.
   }, [data, key, entries]);
@@ -262,9 +305,11 @@ export function useLocation<C extends AnyContract>(client: Uitive<C>): Location 
   return useSyncExternalStore(client.subscribe, read, () => undefined);
 }
 
-/** The pages the user made. */
+const NO_PAGES: readonly UserPage[] = [];
+
+/** The pages the user made; none during server rendering, so hydration never mismatches. */
 export function useUserPages<C extends AnyContract>(client: Uitive<C>): readonly UserPage[] {
-  return useSyncExternalStore(client.subscribe, client.userPages, client.userPages);
+  return useSyncExternalStore(client.subscribe, client.userPages, () => NO_PAGES);
 }
 
 /**

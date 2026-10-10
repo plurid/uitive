@@ -116,6 +116,44 @@ describe('<uitive-confirm>', () => {
   });
 });
 
+describe('<uitive-confirm> money and focus', () => {
+  it('shows money in its own currency and units, in a modal that gives focus back', async () => {
+    const shop = defineApp({
+      id: 'shop',
+      description: 'A shop',
+      actions: {
+        refund: action({
+          label: 'Refund',
+          description: 'Returns money',
+          params: z.object({
+            amount: field.money({ currency: 'currency', minor: true }),
+            currency: z.string(),
+          }),
+          effect: 'write',
+        }),
+      },
+      surfaces: {},
+    });
+    const client = createUitive({ contract: shop, bindings: { perform: { refund: () => {} } } });
+    stops.push(startUitive(client));
+    const opener = document.createElement('button');
+    document.body.append(opener);
+    opener.focus();
+    const { element, root } = dialog();
+    const running = client.perform('refund', { amount: 5000, currency: 'jpy' });
+    await Promise.resolve();
+    const yen = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'JPY' });
+    expect(root.querySelector('dd')?.textContent).toBe(yen.format(5000));
+    const modal = root.querySelector('dialog') as HTMLDialogElement;
+    expect(modal.open).toBe(true);
+    expect(element.shadowRoot?.activeElement).toBe(root.querySelector('button[type="submit"]'));
+    modal.dispatchEvent(new Event('cancel', { cancelable: true }));
+    expect((await running).status).toBe('canceled');
+    expect(root.querySelector('dialog')).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+});
+
 describe('startUitive', () => {
   it('gives elements rendered later the client, saves usage when hidden, and undoes it all', () => {
     const { client, stop } = setup();

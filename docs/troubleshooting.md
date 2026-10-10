@@ -6,11 +6,13 @@ Find the message or the symptom, then the fix. Messages are quoted as Uitive pri
 
 **"contract.ts not found; run `uitive init` first"**: the command ran outside the application's package, or the Uitive folder is elsewhere. Run it where package.json is, or pass `--contract <file>`; `init --dir` records a folder in package.json as `uitive.dir`.
 
+**"uitive.dir in package.json must be a folder inside the project"**: every command reads and writes the Uitive folder, so it can't be absolute or reach out through `..`. Record a folder inside the project, such as `src/uitive`.
+
 **"the module exports no contract: export one made with defineApp as `contract`"**: export the contract from `contract.ts`, made with `defineApp`.
 
 **`actions: "Orders.Cancel" must match /^[a-z0-9][a-z0-9.:-]*$/`**: action IDs, route and region IDs, and context and choice values are lowercase, with dots, colons or dashes. Surfaces, contexts and blocks are camelCase. [Contracts](contracts.md#ids) lists every rule.
 
-**`"orders.Cancel" collides with "orders.cancel" ignoring case`**: models can't be trusted with case, so IDs must differ by more than case.
+**`surfaces: "addnew" collides with "addNew" ignoring case`**: models can't be trusted with case, so IDs must differ by more than case.
 
 **Errors from the contract's module itself**, such as an import that doesn't resolve: `check` loads the contract in Node, through the project's tsconfig paths. Aliases only the bundler knows don't resolve, so keep the contract importable on its own.
 
@@ -42,15 +44,17 @@ Find the message or the symptom, then the fix. Messages are quoted as Uitive pri
 
 **A request answers "unavailable"**: the client has a model planner, but it couldn't be reached, and the request needs one. The adaptation's `meta.fellBack` says why, such as "server answered 401: Not allowed".
 
-**"server answered 401: Not allowed"**: the handler's `authorize` refused the request. Its default allows only localhost; in production, check the session.
+**"server answered 401: Not allowed"**: the handler's `authorize` refused the request. `init`'s template allows requests only outside production; replace it with the application's session check.
+
+**"server answered 403: Cross-site requests are refused"** or **"415: Send JSON"**: the request came from a page on another site, or wasn't sent as `application/json`. `remotePlanner` sends JSON; a `fetch` of your own must too.
 
 **"server answered 409: The application changed; reload the page"**: the client's contract isn't the server's. Deploy them together; a reload picks up the new client.
 
-**"server answered 429: Too many requests; try again in a minute"**: over `perMinute`. Behind no proxy, every request shares one budget, because clients are told apart by `X-Forwarded-For`.
+**"server answered 429: Too many requests; try again in a minute"**: over `perMinute`. Behind no proxy, every request shares one budget, because clients are told apart by the right-most `X-Forwarded-For` entry; pass `client` to tell them apart another way.
 
-**"server answered 503: No Anthropic credentials", "No OpenAI credentials" or "No Gemini credentials"**: the server has no key for the model's provider. Set `ANTHROPIC_API_KEY` (or run `ant auth login`), `OPENAI_API_KEY` or `GEMINI_API_KEY` in the server's environment, never in client code.
+**"server answered 503: Planning is unavailable"**: the server has no key for the model's provider, or the provider rejected it; `onError` says which. Set `ANTHROPIC_API_KEY` (or run `ant auth login`), `OPENAI_API_KEY` or `GEMINI_API_KEY` in the server's environment, never in client code.
 
-**"server answered 502: The model's answer didn't follow the plan's form, even when asked again"**: the model couldn't keep to the schema. Use a model with structured output, or a stronger one; with a local server, try `structured: 'json'`.
+**"server answered 502: The model couldn't make a plan"**: `onError` has the reason. When it is "The model's answer didn't follow the plan's form, even when asked again", the model couldn't keep to the schema: use a model with structured output, or a stronger one; with a local server, try `structured: 'json'`.
 
 **"Planning with Claude needs @anthropic-ai/sdk installed"**: `anthropic()` loads Anthropic's SDK when it first plans. Install it, or plan with another provider.
 
@@ -67,9 +71,12 @@ Find the message or the symptom, then the fix. Messages are quoted as Uitive pri
 - the autonomy: in `suggest`, changes wait for the person's yes;
 - whether the interface is frozen;
 - whether the person reverted the same change recently: it waits five sessions, and a second revert blocks it for good;
-- in `mixed`, a model's change waits for a second plan to agree, unless the evidence is strong; the banner says how many changes will apply at the next session.
+- in `mixed`, a model's change waits for a plan in a later session to agree, unless the evidence is strong; the banner says how many changes will apply at the next session;
+- whether it would push out an item that moved in the last three sessions, or a second item from the same list: it waits for a later safe moment.
 
 **Nothing learns from use**: the provider and `startUitive` plan once a session. With a client used without either, call `client.learn()` when a session starts, or `client.plan()` yourself; `learn: false` turns learning off.
+
+**A tab stops saving**: another tab runs a different version of the application, as after a deploy. The older tab leaves the newer one's state alone and tells `onError`; reloading it picks the newer state up.
 
 **A redesign shows only as a suggestion**: a redesign the person didn't ask for always waits for them to accept it, whatever the autonomy.
 

@@ -1,6 +1,8 @@
 import type { AnyContract, AnyPage, AnyPageSpec, CollectionSpec, ListSpec } from './contract.js';
 import {
+  CHANGE_OPS,
   EVERY,
+  isApplied,
   MAX_USER_PAGES,
   operationKey,
   redesigned,
@@ -11,6 +13,7 @@ import {
   resolveCollection,
   resolveList,
   userDecides,
+  type AppliedOperation,
   type Change,
   type Definition,
   type Evidence,
@@ -82,6 +85,12 @@ export interface PolicyContext {
   session: number;
   /** The user's own words behind this request: a command or their stated goal. */
   intent?: string;
+  /**
+   * Whether a model read those words. What it says the person named outright joins their own
+   * layer, but it never deletes one of their pages and never brings back a change they blocked.
+   * @default false
+   */
+  interpreted?: boolean;
 }
 
 /** Sessions an item must sit unused before usage alone justifies moving it to overflow. */
@@ -110,7 +119,10 @@ const fail = (rule: Rule, message: string): never => {
   throw new Violation(rule, message);
 };
 
-/** Checks operations in order, each against the definition as if the earlier ones applied. */
+/**
+ * Checks operations in order, each against the definition it is given: callers that apply one
+ * before checking the next pass the definition as it then is.
+ */
 export function check(operations: readonly Operation[], context: PolicyContext): CheckResult {
   const accepted: Operation[] = [];
   const rejected: Rejection[] = [];
@@ -156,6 +168,15 @@ function checkOne(operation: Operation, context: PolicyContext): Operation {
       change.kind === 'list' || change.kind === 'page' ? change.context : undefined;
     if (userDecides(definition, change.surface, surfaceContext, target)) {
       fail('precedence', 'You already decided this yourself');
+    }
+  } else if (context.interpreted) {
+    // A model's reading of the words is not the person's own hand: their pages are theirs to
+    // delete, and a change they reverted twice stays blocked whoever names it.
+    if (change.kind === 'userPage' && change.op === 'delete') {
+      fail('kind', `Delete your page ${change.slug} yourself, from Your interface`);
+    }
+    if (definition.blocked.includes(operationKey(change))) {
+      fail('blocked', 'You reverted this change twice');
     }
   }
 
@@ -211,10 +232,10 @@ export function canonical(change: Change, contract: AnyContract): Change {
     if (!contract.items(surface, context).includes(target)) {
       fail('unknown', `${target} is not part of ${surface}`);
     }
+    // Which item makes room is fixed when the change applies, never taken from a proposal.
     const result: ListChange = { kind: 'list', surface, op: change.op, target };
     if (context !== undefined) result.context = context;
     if (change.index !== undefined) result.index = change.index;
-    if (change.evict !== undefined) result.evict = change.evict;
     return result;
   }
   if (change.kind === 'choice') {
@@ -301,6 +322,9 @@ function checkCollection(
   }
   if (change.op === 'add' && exists) fail('noop', 'Already suggested');
   if (change.op === 'update' && !exists) fail('noop', 'No such item');
+  if (change.op === 'add' && current.items.length >= spec.max) {
+    fail('capacity', `${spec.label} holds at most ${spec.max}`);
+  }
   checkItem(spec, change.value);
 }
 
@@ -399,13 +423,7 @@ function checkUserPage(change: UserPageChange, context: PolicyContext): UserPage
     op: change.op,
     slug: change.slug,
   };
-  const title = () => {
-    const text = change.title?.trim() ?? '';
-    if (text.length === 0 || text.length > TITLE_LENGTH) {
-      fail('validator', `Page titles need 1 to ${TITLE_LENGTH} characters`);
-    }
-    return text;
-  };
+  const title = () => pageTitle(change.title);
   const value = () => checkPageValue(context.contract, userPageSpec(), change.value);
   if (change.op === 'create') {
     if (existing) fail('noop', `You already have a page at ${change.slug}`);
@@ -425,6 +443,15 @@ function checkUserPage(change: UserPageChange, context: PolicyContext): UserPage
 
 const contextOf = (change: PageChange) =>
   change.context === undefined ? {} : { context: change.context };
+
+/** A title for one of the person's pages, trimmed, within the length allowed. */
+function pageTitle(title: string | undefined): string {
+  const text = title?.trim() ?? '';
+  if (text.length === 0 || text.length > TITLE_LENGTH) {
+    fail('validator', `Page titles need 1 to ${TITLE_LENGTH} characters`);
+  }
+  return text;
+}
 
 /** Validates a whole page against its blocks, regions, limits and the application's rules. */
 export function checkPageValue(
@@ -452,7 +479,9 @@ function supported(
   context: PolicyContext,
 ): Evidence[] {
   const rows = context.summary.rows;
-  const intent = context.intent ?? context.definition.goal;
+  const intent = [context.intent, context.definition.goal].find(
+    (words) => words !== undefined && words.trim() !== '',
+  );
   const evidence: Evidence[] = [];
   for (const entry of claimed) {
     if ('intent' in entry) {
@@ -511,6 +540,166 @@ function cleanNote(note: string | undefined): string | undefined {
 
 function label(contract: AnyContract, id: string): string {
   return contract.actions[id]?.label ?? id;
+}
+
+/**
+ * Checks operations read from an imported file, or kept under an earlier contract, against the
+ * rules that hold whatever the person's state: contract names, what planners may do and which of
+ * their changes wait for a yes, required items, item schemas and validators, page and query rules,
+ * and the caps on collections and the person's own pages. Each is checked as if the earlier ones
+ * applied; what passes comes out canonical, and what fails is returned with its reason.
+ */
+export function checkStored(
+  operations: readonly AppliedOperation[],
+  contract: AnyContract,
+): { accepted: AppliedOperation[]; rejected: Rejection[] } {
+  const accepted: AppliedOperation[] = [];
+  const rejected: Rejection[] = [];
+  const ids = new Set<string>();
+  const items = new Map<string, Set<string>>();
+  const pages = new Set<string>();
+  for (const operation of operations) {
+    try {
+      if (ids.has(operation.id)) fail('noop', 'This change is listed twice');
+      const change = storedChange(operation, contract);
+      if (isApplied(operation) && change.kind === 'collection') {
+        const spec = contract.surfaces[change.surface] as CollectionSpec;
+        const held = items.get(change.surface) ?? new Set<string>();
+        items.set(change.surface, held);
+        if (change.op === 'add') {
+          if (held.has(change.item)) fail('noop', 'Already added');
+          if (held.size >= spec.max) fail('capacity', `${spec.label} holds at most ${spec.max}`);
+          held.add(change.item);
+        } else if (!held.has(change.item)) {
+          fail('noop', 'No such item');
+        } else if (change.op === 'remove') {
+          held.delete(change.item);
+        }
+      } else if (isApplied(operation) && change.kind === 'userPage') {
+        if (change.op === 'create') {
+          if (pages.has(change.slug)) fail('noop', `You already have a page at ${change.slug}`);
+          if (pages.size >= MAX_USER_PAGES) {
+            fail('capacity', `You can keep up to ${MAX_USER_PAGES} pages`);
+          }
+          pages.add(change.slug);
+        } else if (!pages.has(change.slug)) {
+          fail('unknown', `You have no page at ${change.slug}`);
+        } else if (change.op === 'delete') {
+          pages.delete(change.slug);
+        }
+      }
+      ids.add(operation.id);
+      accepted.push({ ...operation, change });
+    } catch (error) {
+      rejected.push({
+        operation,
+        rule: error instanceof Violation ? error.rule : 'validator',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return { accepted, rejected };
+}
+
+/** One stored operation's change against the rules that need no state; returns it canonical. */
+function storedChange(operation: AppliedOperation, contract: AnyContract): Change {
+  const raw = operation.change;
+  const change = canonical(raw, contract);
+  const planned = operation.origin !== 'user';
+  if (planned && !MODEL_OPS[change.kind].includes(change.op)) {
+    fail(
+      'kind',
+      change.kind === 'userPage'
+        ? `Only you can ${change.op} your pages`
+        : `Only you can ${change.op} items`,
+    );
+  }
+  const waits = operation.status === 'suggested' || operation.status === 'dismissed';
+  const suggestion =
+    (change.kind === 'collection' && change.op === 'add') ||
+    (change.kind === 'page' && change.op === 'set');
+  if (waits && !(planned && suggestion)) {
+    fail('kind', 'Only suggested items and redesigns wait for a yes');
+  }
+  if (change.kind === 'list') {
+    const spec = contract.surfaces[change.surface] as ListSpec;
+    if (
+      (change.op === 'demote' || change.op === 'hide') &&
+      spec.required?.includes(change.target)
+    ) {
+      fail('required', `${label(contract, change.target)} is required by this application`);
+    }
+    if (change.op === 'move' && (!Number.isInteger(change.index) || (change.index ?? -1) < 0)) {
+      fail('kind', 'Invalid position');
+    }
+    // The item that made room was fixed when the change applied: keep it, in today's spelling.
+    const evict =
+      raw.kind === 'list' && raw.evict !== undefined ? contract.action(raw.evict) : undefined;
+    return evict !== undefined && contract.items(change.surface, change.context).includes(evict)
+      ? { ...change, evict }
+      : change;
+  }
+  if (change.kind === 'collection') {
+    if (change.op !== 'remove') {
+      checkItem(contract.surfaces[change.surface] as CollectionSpec, change.value);
+    }
+    return change;
+  }
+  if (change.kind === 'page') {
+    if (change.op === 'reset') {
+      return { kind: 'page', surface: change.surface, op: 'reset', ...contextOf(change) };
+    }
+    const spec = contract.surfaces[change.surface] as AnyPageSpec;
+    return {
+      ...change,
+      value: checkPageValue(contract, spec, change.value, change.context, planned),
+    };
+  }
+  if (change.kind === 'userPage') {
+    const base: UserPageChange = {
+      kind: 'userPage',
+      surface: USER_PAGES,
+      op: change.op,
+      slug: change.slug,
+    };
+    if (change.op === 'create' || change.op === 'rename') base.title = pageTitle(change.title);
+    if (change.op === 'create' || change.op === 'set') {
+      base.value = checkPageValue(contract, userPageSpec(), change.value);
+    }
+    return base;
+  }
+  return change;
+}
+
+/** An operation key in the contract's spelling, or nothing when it names nothing there. */
+export function canonicalKey(key: string, contract: AnyContract): string | undefined {
+  const [surface = '', second = '', op = '', ...rest] = key.split('|');
+  const target = rest.join('|');
+  try {
+    if (surface === USER_PAGES) {
+      if (!CHANGE_OPS.userPage.includes(op)) return undefined;
+      const change = { kind: 'userPage', surface, op, slug: second } as UserPageChange;
+      return operationKey(canonical(change, contract));
+    }
+    const id = contract.surface(surface);
+    const kind = id === undefined ? undefined : contract.surfaces[id]?.kind;
+    if (kind === undefined || !CHANGE_OPS[kind].includes(op)) {
+      return undefined;
+    }
+    const context = second === '' ? {} : { context: second };
+    const change = (
+      kind === 'list'
+        ? { kind, surface, ...context, op, target }
+        : kind === 'choice'
+          ? { kind, surface, op, value: target }
+          : kind === 'collection'
+            ? { kind, surface, op, item: target }
+            : { kind, surface, ...context, op }
+    ) as Change;
+    return operationKey(canonical(change, contract));
+  } catch {
+    return undefined;
+  }
 }
 
 /** The usage row behind a list item, if the summary has one. */

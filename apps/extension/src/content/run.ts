@@ -12,12 +12,15 @@ import type {
 } from '@plurid/uitive-core';
 import { toContent } from '../messages.ts';
 import type { PageReport } from '../messages.ts';
-import { resolveAnchors, unmapped } from './anchors.ts';
+import { resolveAnchors, unmapped, withRepairs } from './anchors.ts';
 import type { Resolution } from './anchors.ts';
+import { lastOf, remember } from './boot.ts';
 import { fallback, workerFetch, workerPlanner } from './bridge.ts';
 import { createEngine } from './engine.ts';
+import type { Engine } from './engine.ts';
 import { lookOf, mountMore } from './more.tsx';
 import type { More } from './more.tsx';
+import { linkTo, modePrefix, targetOf } from './navigate.ts';
 import { mountOverlay, themeOf } from './overlay.tsx';
 import type { Overlay } from './overlay.tsx';
 import { pick as pickElement, propose } from './repair.ts';
@@ -29,6 +32,8 @@ export interface RunOptions {
   store: Store;
   /** Anchors the person repaired on this device, tried before the adapter's own strategies. */
   overrides?: Record<string, Strategy>;
+  /** The engine that applied the last effects at page start, before storage answered. */
+  engine?: Engine;
 }
 
 /** The interface the client holds now, in the shape effects are compiled from. */
@@ -51,42 +56,74 @@ function valuesOf(client: Uitive<AnyContract>, adapter: Adapter): Values {
   return { lists, pages };
 }
 
+const OURS = ['data-uitive-more', 'data-uitive-overlay', 'data-uitive-pick'];
+
+/** Whether a change is only our own elements coming or going, which needs no new sync. */
+const ours = (record: MutationRecord) => {
+  const nodes = [...record.addedNodes, ...record.removedNodes];
+  return (
+    nodes.length > 0 &&
+    nodes.every(
+      (node) => node.nodeType === 1 && OURS.some((name) => (node as Element).hasAttribute(name)),
+    )
+  );
+};
+
+/** Whether a key press is typing, where a shortcut must not fire. */
+const typing = (event: KeyboardEvent) => {
+  const target = event.composedPath()[0];
+  if (!target || (target as Node).nodeType !== 1) return false;
+  const element = target as HTMLElement;
+  return (
+    element.isContentEditable ||
+    /^(input|textarea|select)$/i.test(element.tagName) ||
+    // Our overlays are closed: what has focus inside them can't be seen, so assume a field.
+    element.hasAttribute('data-uitive-overlay')
+  );
+};
+
 /**
  * Runs Uitive on a page it doesn't own: finds the adapter's anchors, keeps the client's
  * location in step with the page, and applies the person's interface as effects, again whenever
  * the page re-renders. Page text never leaves the page: requests carry structure only.
  */
-export function run({ window, adapter, contract, store, overrides: initial = {} }: RunOptions) {
+export function run({
+  window,
+  adapter,
+  contract,
+  store,
+  overrides: initial = {},
+  engine = createEngine(window.document),
+}: RunOptions) {
   const document = window.document;
   let overrides = initial;
   const repairsKey = `overrides:${adapter.id}`;
-  const anchorsNow = () => ({
-    anchors: Object.fromEntries(
-      Object.entries(adapter.anchors).map(([name, anchor]) => {
-        const repaired = overrides[name];
-        return [name, repaired ? { ...anchor, match: [repaired, ...anchor.match] } : anchor];
-      }),
-    ),
-  });
   const connector = Object.values(adapter.connectors)[0];
   const mode = () =>
-    connector?.testMode && new RegExp(connector.testMode).test(window.location.pathname)
-      ? 'test'
-      : 'live';
+    modePrefix(connector?.testMode, window.location.pathname) !== '' ? 'test' : 'live';
   let anchors = new Map<string, Resolution>();
   let route: string | null = null;
   let lastRequest: PlanRequest | null = null;
+  // Which connectors have a key, by mode, as the worker last said: whether a source can be read.
+  let keys: Record<string, { test: boolean; live: boolean }> = {};
+  const refreshKeys = async () => {
+    try {
+      const reply = (await chrome.runtime.sendMessage({ kind: 'keys', adapter: adapter.id })) as
+        { ok: true; value: typeof keys } | { ok: false } | undefined;
+      if (reply?.ok) keys = reply.value;
+    } catch {
+      // The worker is restarting; the last answer stands.
+    }
+  };
 
   const environment = (): Environment => ({
     route,
     anchors: Object.fromEntries([...anchors].map(([name, entry]) => [name, entry.state])),
     sources: Object.fromEntries(
-      contract.sourceIds.map((id) => [
-        id,
-        Object.values(adapter.connectors).some((entry) => entry.sources[id])
-          ? 'live'
-          : 'unavailable',
-      ]),
+      contract.sourceIds.map((id) => {
+        const reader = Object.entries(adapter.connectors).find(([, entry]) => entry.sources[id]);
+        return [id, reader && keys[reader[0]]?.[mode()] ? 'live' : 'unavailable'];
+      }),
     ),
     unmapped: unmapped(document, anchors),
   });
@@ -104,43 +141,40 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
       fetch: workerFetch(adapter.id, mode),
       // Links go through the page's own links where it has one, so its router handles them.
       navigate: (href) => {
-        const link = [...document.querySelectorAll('a[href]')].find((element) =>
-          new URL(element.getAttribute('href') ?? '', document.baseURI).pathname.endsWith(href),
-        );
+        const target = targetOf(href, connector?.testMode, window.location);
+        const link = linkTo(document, target.path);
         if (link instanceof HTMLElement) link.click();
-        else window.location.assign(href);
+        else window.location.assign(target.href);
       },
     },
     environment,
     onError: (error) => console.warn('[uitive]', error),
   });
 
-  const engine = createEngine(document);
   const overlays = new Map<string, Overlay>();
   const mores = new Map<string, More>();
-  let forwarding = false;
   const label = (action: string) => contract.actions[action]?.label ?? action;
   const pick = (surface: string, action: string) => {
     const element = anchors.get(adapter.lists[surface]?.items[action] ?? '')?.element;
     client.record(action, { via: 'overflow', surface });
-    if (!(element instanceof HTMLElement)) return;
-    // The page's own handlers take the click, hidden or not; it isn't counted twice.
-    forwarding = true;
-    try {
-      element.click();
-    } finally {
-      forwarding = false;
-    }
+    // The page's own handlers take the click, hidden or not; untrusted, it isn't counted twice.
+    if (element instanceof HTMLElement) element.click();
   };
   let failed: { effect: Effect['kind']; target: string; reason: string }[] = [];
   let syncing = false;
   let path = '';
+  let frame: number | undefined;
+  let remembered = '';
 
   const sync = () => {
     if (syncing) return;
     syncing = true;
+    if (frame !== undefined) {
+      window.cancelAnimationFrame(frame);
+      frame = undefined;
+    }
     try {
-      anchors = resolveAnchors(anchorsNow(), document);
+      anchors = resolveAnchors(withRepairs(adapter, overrides), document);
       const matched = routeOf(adapter, window.location.pathname);
       route = matched?.route ?? null;
       const next =
@@ -152,6 +186,12 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
       }
       const effects = compileEffects(adapter, valuesOf(client, adapter), route);
       failed = engine.apply(effects, anchors).failed;
+      const last = lastOf(effects, overrides);
+      const text = JSON.stringify(last);
+      if (text !== remembered) {
+        remembered = text;
+        remember(window, adapter, last);
+      }
       const wanted = new Set<string>();
       for (const effect of effects) {
         if (effect.kind !== 'overlay') continue;
@@ -229,11 +269,12 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
     }
   };
 
-  // What people use teaches the interface: action IDs only, never what the page shows.
+  // What people use teaches the interface: action IDs only, never what the page shows. Only the
+  // person's own clicks count: never a script's, nor the More list forwarding one.
   document.addEventListener(
     'click',
     (event) => {
-      if (forwarding || !(event.target instanceof Element)) return;
+      if (!event.isTrusted || !(event.target instanceof Element)) return;
       for (const [surface, list] of Object.entries(adapter.lists)) {
         for (const [action, name] of Object.entries(list.items)) {
           const element = anchors.get(name)?.element;
@@ -253,11 +294,22 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
   const timings: number[] = [];
   let over: { at: number; ms: number }[] = [];
   let paused: string | null = null;
-  const observer = new MutationObserver(() => follow());
+  // A burst of changes is followed once, in the frame before it paints.
+  const later = () => {
+    if (paused || frame !== undefined) return;
+    frame = window.requestAnimationFrame(() => {
+      frame = undefined;
+      follow();
+    });
+  };
+  const observer = new MutationObserver((records) => {
+    if (!records.every(ours)) later();
+  });
   const watch = () =>
     observer.observe(document.documentElement, { childList: true, subtree: true });
   const follow = () => {
-    if (paused) return;
+    // Inside a sync, as when it moves the client's location, the sync already covers it.
+    if (paused || syncing) return;
     const started = performance.now();
     sync();
     const took = performance.now() - started;
@@ -285,15 +337,24 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
     return Math.round((sorted[Math.floor(sorted.length * 0.95)] ?? 0) * 10) / 10;
   };
 
-  // Mutation callbacks run before the next paint, so re-rendered elements are marked unseen.
   watch();
   client.subscribe(follow);
   window.addEventListener('popstate', sync);
+  // Forgetting everything, from the side panel or another tab, reaches this page too: the
+  // definition through the store, repairs here.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    const change = changes[repairsKey];
+    if (area !== 'local' || !change) return;
+    overrides = (change.newValue ?? {}) as Record<string, Strategy>;
+    sync();
+  });
   // A new session may bring changes learned from use, planned once a session however many pages
   // it spans.
   client.resume();
   void client.learn();
+  void refreshKeys();
   window.addEventListener('keydown', (event) => {
+    if (!event.isTrusted || typing(event)) return;
     if (event.altKey && event.shiftKey && event.code === 'KeyA') {
       engine.original(!engine.showingOriginal);
       sync();
@@ -330,20 +391,23 @@ export function run({ window, adapter, contract, store, overrides: initial = {} 
     if (message.kind === 'snapshot') {
       reply({ ok: true, value: { ...report(), failed } });
     } else if (message.kind === 'ask') {
-      client.ask(message.text).then(
-        (adaptation) =>
-          reply({
-            ok: true,
-            value: {
-              status: adaptation.status ?? 'done',
-              applied: adaptation.applied.length,
-              candidates: adaptation.candidates ?? [],
-              meta: adaptation.meta ?? null,
-              report: report(),
-            },
-          }),
-        (error: unknown) => reply({ ok: false, problem: (error as Error).message }),
-      );
+      // Keys may have changed in the side panel since the page loaded.
+      refreshKeys()
+        .then(() => client.ask(message.text))
+        .then(
+          (adaptation) =>
+            reply({
+              ok: true,
+              value: {
+                status: adaptation.status ?? 'done',
+                applied: adaptation.applied.length,
+                candidates: adaptation.candidates ?? [],
+                meta: adaptation.meta ?? null,
+                report: report(),
+              },
+            }),
+          (error: unknown) => reply({ ok: false, problem: (error as Error).message }),
+        );
       return true;
     } else if (message.kind === 'revert') {
       client.revert(message.operation);

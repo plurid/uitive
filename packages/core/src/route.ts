@@ -108,13 +108,16 @@ export function matchRoute(
   return best && { route: best.route, params: best.params };
 }
 
-/** The path of a route with its params filled in, or undefined when one is missing. */
+/**
+ * The path of a route with its params filled in, or undefined when one is missing or can't be one
+ * segment, such as `..`.
+ */
 export function buildPath(
   contract: AnyContract,
   id: string,
   params: Readonly<Record<string, string>> = {},
 ): string | undefined {
-  const spec = contract.routes[id];
+  const spec = Object.hasOwn(contract.routes, id) ? contract.routes[id] : undefined;
   if (!spec) return undefined;
   const parts: string[] = [];
   for (const segment of segments(spec.path)) {
@@ -122,11 +125,32 @@ export function buildPath(
       parts.push(segment.literal);
       continue;
     }
-    const value = params[segment.param];
-    if (value === undefined || value === '') return undefined;
-    parts.push(encodeURIComponent(value));
+    const value = Object.hasOwn(params, segment.param) ? params[segment.param] : undefined;
+    const encoded = value === undefined ? undefined : pathSegment(value);
+    if (encoded === undefined) return undefined;
+    parts.push(encoded);
   }
   return `/${parts.join('/')}`;
+}
+
+/**
+ * A value as one path segment, encoded. Empty, `.` and `..` are refused: URLs resolve dot
+ * segments, even encoded ones, so they would climb out of the path.
+ */
+export function pathSegment(value: string): string | undefined {
+  if (value === '' || value === '.' || value === '..') return undefined;
+  return encodeURIComponent(value);
+}
+
+/** What links to a route say: its own label, else its page's label, else its ID. */
+export function routeLabel(contract: AnyContract, id: string): string {
+  const spec = Object.hasOwn(contract.routes, id) ? contract.routes[id] : undefined;
+  if (spec?.label !== undefined) return spec.label;
+  const page =
+    spec?.page !== undefined && Object.hasOwn(contract.surfaces, spec.page)
+      ? contract.surfaces[spec.page]
+      : undefined;
+  return page?.label ?? id;
 }
 
 /** The route that shows one row of a source, for links from rows. */

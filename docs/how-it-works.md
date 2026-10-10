@@ -28,9 +28,9 @@ flowchart LR
 
 ## Commands and plans
 
-A **command** is the person asking: "hide Bold", "move Table to the top", "make my home a morning check". It is planned at once and applies at once, on the person's own layer, and the banner says what happened.
+A **command** is the person asking: "hide Bold", "move Table to the top", "make my home a morning check". It is planned at once and applies at once, and the banner says what happened. What the person named outright joins their own layer; what a model adds for a goal they state joins the model's. A model's answer never deletes one of the person's own pages: they delete it themselves, from "Your interface".
 
-A **plan** comes from use: the provider, or `startUitive` without React, asks the planner once a session, as it starts. What policy accepts becomes pending, and applies only at a **safe moment**: the start of a later session, when the person comes back after a while. At most two structural changes apply at a time, a moved item keeps its place for three sessions, and a model's change applies only once a second plan agrees, unless the evidence is strong. Nothing moves while someone works.
+A **plan** comes from use: the provider, or `startUitive` without React, asks the planner once a session, as it starts. What policy accepts becomes pending, and applies only at a **safe moment**: the start of a later session, when the person comes back after a while. At most two structural changes apply at a time, and at most one item leaves each list; an item that moved keeps its place for three sessions, whichever change would move it; and a model's change applies only once a plan in a later session agrees, unless the evidence is strong. Nothing moves while someone works, not even when they open a second tab.
 
 A planned **redesign** of a page, or a suggested item for a collection, is only ever a suggestion: the person previews it, accepts it or dismisses it.
 
@@ -46,7 +46,7 @@ Every applied change is listed with what it did and why, in true numbers: "Table
 - **Keep** confirms a change: it moves to the person's own layer.
 - **Freeze** stops planned changes; the person's own still apply.
 - **Standard view** shows the application as shipped, with nothing changed, and back.
-- **Export and import** carry the definition to another device; **reset** starts over.
+- **Export and import** carry the definition to another device, checked like any change; **reset** puts the layout back to standard, keeping usage, freeze, blocked changes and the stated goal.
 
 ## Data and actions
 

@@ -7,6 +7,7 @@ import {
   GenericProblem,
   type GenericName,
 } from './generic.js';
+import { stableStringify } from './hash.js';
 import { TEXT_LENGTH, TITLE_LENGTH } from './limits.js';
 import { checkQuery, type Query } from './query.js';
 
@@ -167,11 +168,24 @@ export function fromSections(page: SectionsPage): PageValue {
   return { root: 'page', elements, data: [] };
 }
 
-/** A page in the flat format, whichever format it came in. */
+/** A page in the flat format, whichever format it came in. Malformed sections stay as they are. */
 export function toPage(value: unknown): unknown {
-  const sections = (value as { sections?: unknown } | null | undefined)?.sections;
-  return Array.isArray(sections) ? fromSections(value as SectionsPage) : value;
+  return isSectionsPage(value) ? fromSections(value) : value;
 }
+
+const isSectionsPage = (value: unknown): value is SectionsPage => {
+  const sections = (value as { sections?: unknown } | null | undefined)?.sections;
+  return (
+    Array.isArray(sections) &&
+    sections.every((section: unknown) => {
+      const blocks = (section as { blocks?: unknown } | null | undefined)?.blocks;
+      return (
+        Array.isArray(blocks) &&
+        blocks.every((placed: unknown) => placed !== null && typeof placed === 'object')
+      );
+    })
+  );
+};
 
 /** A page written as a tree, for standard pages in code. */
 export interface Node {
@@ -285,7 +299,8 @@ export interface ValidateOptions {
 
 /**
  * Validates a whole page against its blocks, queries, regions and limits, and returns it in
- * canonical form: canonical names, a single tree from the root, elements in tree order.
+ * canonical form: canonical names, a single tree from the root, elements in tree order. Queries
+ * may compare with `$me`, whoever the bindings' `context()` says is signed in when they run.
  */
 export function validatePage(
   contract: AnyContract,
@@ -294,6 +309,9 @@ export function validatePage(
   context?: string,
   options: ValidateOptions = {},
 ): PageValue {
+  if (Array.isArray((raw as { sections?: unknown } | null | undefined)?.sections)) {
+    if (!isSectionsPage(raw)) problem('validator', 'Each section needs its blocks');
+  }
   const value = toPage(raw) as { root?: unknown; elements?: unknown; data?: unknown } | undefined;
   const maxElements = spec.maxElements ?? MAX_ELEMENTS;
   const maxDepth = spec.maxDepth ?? MAX_DEPTH;
@@ -314,11 +332,11 @@ export function validatePage(
       problem('validator', `Query names are short words, not "${String(raw.name)}"`);
     }
     if (queries.has(name)) problem('validator', `Two queries are called "${name}"`);
-    const checked = checkQuery(
-      contract,
-      raw.query,
-      spec.entity === undefined ? {} : { entity: spec.entity },
-    );
+    // Who `$me` is is known only when the query runs, so a page may always ask.
+    const checked = checkQuery(contract, raw.query, {
+      me: true,
+      ...(spec.entity === undefined ? {} : { entity: spec.entity }),
+    });
     if (!checked.ok) problem('validator', `${name}: ${checked.problem}`);
     queries.set(name, (checked as { ok: true; query: Query }).query);
   }
@@ -436,6 +454,35 @@ export function validatePage(
     elements: ordered,
     data: [...queries].map(([name, query]) => ({ name, query })),
   };
+}
+
+/** A page surface's standard pages as data: the most common one, and values whose page differs. */
+export interface StandardData {
+  /** The standard page most context values share, or the only one. */
+  page: AnyPage;
+  /** The context values whose standard page differs, with theirs. */
+  values?: Record<string, AnyPage>;
+}
+
+/**
+ * Standard pages, one per context value, as data: what the JSON contract writes and the contract's
+ * hash covers. The most common page is the default; ties go to the first.
+ */
+export function standardData(
+  values: readonly (string | undefined)[],
+  pages: readonly AnyPage[],
+): StandardData {
+  const keys = pages.map((entry) => stableStringify(entry));
+  const counts = new Map<string, number>();
+  for (const key of keys) counts.set(key, (counts.get(key) ?? 0) + 1);
+  const common = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const page = pages[keys.indexOf(common as string)] as AnyPage;
+  const differing = values.flatMap((value, index) =>
+    value !== undefined && keys[index] !== common
+      ? [[value, pages[index] as AnyPage] as const]
+      : [],
+  );
+  return { page, ...(differing.length === 0 ? {} : { values: Object.fromEntries(differing) }) };
 }
 
 /** The elements of a page in tree order, with each one's depth. */

@@ -23,7 +23,7 @@ export interface UsageEvent {
   via: Via;
   /** The session it happened in. */
   session: number;
-  /** The surface it was reached on, when known. */
+  /** The surface it was reached on, when known: its use then counts there alone. */
   surface?: string;
   /** The page element it came from, for actions run from generated pages. */
   element?: string;
@@ -124,8 +124,18 @@ export interface UsageSummary {
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
-/** Whether an event belongs to a list (and context value) for placement purposes. */
-function belongs(event: UsageEvent, spec: ListSpec, context: string | undefined): boolean {
+/**
+ * Whether an event belongs to a list (and context value) for placement purposes: one reached on a
+ * known surface belongs there alone, and one with no surface to every list holding its action.
+ */
+function belongs(
+  event: UsageEvent,
+  where: string | undefined,
+  surface: string,
+  spec: ListSpec,
+  context: string | undefined,
+): boolean {
+  if (where !== undefined && where !== surface) return false;
   if (spec.context === undefined || context === undefined) return true;
   return event.contexts?.[spec.context] === context;
 }
@@ -172,6 +182,8 @@ function visibleSince(
 
 /**
  * Summarizes usage per action and surface over recent sessions, with older sessions weighing less.
+ * `from` is the first session whose events are all kept: the window never reaches further back,
+ * so figures cover only sessions whose use is known in full.
  */
 export function summarize(
   contract: AnyContract,
@@ -179,10 +191,19 @@ export function summarize(
   events: readonly UsageEvent[],
   sessions: readonly SessionRecord[],
   session: number,
+  from = 0,
 ): UsageSummary {
-  const start = session - WINDOW + 1;
+  const start = Math.min(session, Math.max(session - WINDOW + 1, from));
   const rows: UsageRow[] = [];
   const leaders: string[] = [];
+  // Where each event was reached, in the contract's spelling; elsewhere, or nowhere, counts as no
+  // surface.
+  const where = new Map(
+    events.map((event) => [
+      event,
+      event.surface === undefined ? undefined : contract.surface(event.surface),
+    ]),
+  );
 
   for (const surface of [...contract.surfaceIds].sort()) {
     const spec = contract.surfaces[surface];
@@ -200,9 +221,11 @@ export function summarize(
 
     for (const context of values) {
       const state = resolveList(contract, definition, surface, context);
-      const own = events.filter((event) => belongs(event, spec, context));
+      const own = events.filter((event) =>
+        belongs(event, where.get(event), surface, spec, context),
+      );
       const active = activeSessions(sessions, own, spec, context).filter(
-        (index) => index < session,
+        (index) => index < session && index >= from,
       );
       const scored: UsageRow[] = [];
       for (const action of contract.items(surface, context)) {
@@ -255,7 +278,7 @@ export function summarize(
 
   return {
     session,
-    window: Math.min(WINDOW, session + 1),
+    window: session - start + 1,
     rows,
     hash: hash(leaders),
   };

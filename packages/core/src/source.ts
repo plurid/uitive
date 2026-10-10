@@ -88,7 +88,7 @@ export interface SourceSpec<R extends z.ZodObject = z.ZodObject> {
   scan?: number;
   /** Most rows one query may ask for. @default 100 */
   maxLimit?: number;
-  /** Seconds a result stays fresh. @default 30 */
+  /** Seconds a result stays fresh, counted from when it arrives; at least one. @default 30 */
   ttl?: number;
 }
 
@@ -114,7 +114,7 @@ export interface AnySourceSpec {
   scan?: number;
   /** Most rows one query may ask for. @default 100 */
   maxLimit?: number;
-  /** Seconds a result stays fresh. @default 30 */
+  /** Seconds a result stays fresh, counted from when it arrives; at least one. @default 30 */
   ttl?: number;
 }
 
@@ -241,7 +241,9 @@ export function resolveSources(
   for (const entry of Object.values(resolved)) {
     for (const item of entry.fields) {
       if (item.type !== 'ref') continue;
-      const target = resolved[item.source ?? ''];
+      const target = Object.hasOwn(resolved, item.source ?? '')
+        ? resolved[item.source ?? '']
+        : undefined;
       if (!target) {
         throw new Error(
           `source ${entry.id}: ${item.name} refers to unknown source "${item.source}"`,
@@ -292,7 +294,9 @@ export function resolvePath(
     return { name: `${owner.id}.${first.name}`, source: owner.id, field: first };
   }
   if (first.type !== 'ref') return undefined;
-  const target = sources[first.source ?? ''];
+  const target = Object.hasOwn(sources, first.source ?? '')
+    ? sources[first.source ?? '']
+    : undefined;
   if (!target) return undefined;
   const reachable = target.fields.filter(
     (entry) => target.summary.includes(entry.name) || entry.name === target.key,
@@ -315,12 +319,14 @@ export function qualifiedFields(
 ): string[] {
   const names: string[] = [];
   for (const id of ids) {
-    const entry = sources[id];
+    const entry = Object.hasOwn(sources, id) ? sources[id] : undefined;
     if (!entry) continue;
     for (const item of entry.fields) {
       names.push(`${id}.${item.name}`);
       if (item.type !== 'ref') continue;
-      const target = sources[item.source ?? ''];
+      const target = Object.hasOwn(sources, item.source ?? '')
+        ? sources[item.source ?? '']
+        : undefined;
       if (!target) continue;
       for (const reached of target.fields) {
         if (target.summary.includes(reached.name) || reached.name === target.key) {

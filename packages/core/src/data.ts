@@ -1,8 +1,15 @@
 import type { AnyContract, RowOf, SourceIdOf } from './contract.js';
-import { currencyDigits, type Field } from './field.js';
-import { NONE, type Bucket, type Direction, type Query } from './query.js';
+import { minorDigits, type Field } from './field.js';
+import {
+  currencyField,
+  NONE,
+  type Bucket,
+  type Direction,
+  type Filter,
+  type Query,
+} from './query.js';
 import type { FieldPath, Op, ResolvedSource } from './source.js';
-import { parseValue, startOf, timeOf, type Clock } from './values.js';
+import { dateIn, parseValue, partsIn, startOf, timeOf, type Clock } from './values.js';
 
 /** A value as a source stores it: money in its own units, times in the field's unit. */
 export type Stored = string | number | boolean;
@@ -55,7 +62,7 @@ export interface FetchResult<R = unknown> {
 
 /** Who and where the user is, as far as the binding knows. */
 export interface BindingContext {
-  /** The signed-in user, for `$me`. */
+  /** The signed-in user, for `$me`: the value fields that hold a person are compared with. */
   me?: string;
   /** An IANA time zone, for "today" and time buckets. @default 'UTC' */
   timeZone?: string;
@@ -83,7 +90,11 @@ export type Row = Readonly<Record<string, unknown>>;
 export interface Group {
   /** The group's value of the grouping field, or `null` for one number. */
   by: Stored | null;
-  /** The group's value, as people read it. */
+  /**
+   * The group's value, as people read it. Time buckets read as local dates in the person's time
+   * zone: `2026-10-03T14:00` for hours, `2026-10-03` for days and weeks, `2026-10`, `2026-Q4`
+   * and `2026` for months, quarters and years. Rows without a time group as `None`, last.
+   */
   label: string;
   /** The value of the second grouping, or `null` without one. */
   split: Stored | null;
@@ -95,13 +106,20 @@ export interface Group {
   currency?: string;
 }
 
-/** A query's answer: rows, or groups for a summary, and whether a scan cap made it partial. */
+/**
+ * A query's answer: rows, or groups for a summary, and whether it was cut short. Money keeps its
+ * currency beside it: `orders.currency` beside `orders.total`, and `orders.customer.currency`
+ * beside `orders.customer.balance`.
+ */
 export interface QueryResult {
   /** The rows, for queries without a summary. */
   rows: readonly Row[];
   /** The groups, for summaries. */
   groups: readonly Group[];
-  /** The scan stopped before the last page, so counts and sums may be low. */
+  /**
+   * Not every row was read: the scan cap stopped before the last page, a source without paging
+   * filled its one page, or related rows were left unread. Counts and sums may be low.
+   */
   partial: boolean;
   /** When the data was read, in milliseconds. */
   at: number;
@@ -123,6 +141,8 @@ export interface RunOptions {
 
 const PAGE = 100;
 
+type Data = Record<string, unknown>;
+
 /** Runs a checked query: pushes down what the binding supports, does the rest here. */
 export async function runQuery(
   contract: AnyContract,
@@ -134,7 +154,11 @@ export async function runQuery(
   if (!source) throw new Error(`No source "${query.source}"`);
   const fetchFor = (id: string): Fetch => {
     const found =
-      typeof fetchers === 'function' ? fetchers : (fetchers as Record<string, Fetch>)[id];
+      typeof fetchers === 'function'
+        ? fetchers
+        : Object.hasOwn(fetchers, id)
+          ? (fetchers as Record<string, Fetch>)[id]
+          : undefined;
     if (!found) throw new Error(`No fetch binding for ${id}`);
     return found;
   };
@@ -143,6 +167,7 @@ export async function runQuery(
     ...options.clock,
     ...(context.timeZone === undefined ? {} : { timeZone: context.timeZone }),
   };
+  const zone = clock.timeZone ?? 'UTC';
   const path = (name: string) => contract.path(name) as FieldPath;
   const reads = new Set([source.id]);
 
@@ -159,7 +184,7 @@ export async function runQuery(
     const ops = source.capabilities.filter[entry.path.field.name] ?? [];
     const stored =
       entry.path.via === undefined && ops.includes(entry.op)
-        ? toStored(entry.path.field, entry.values, clock, source, resolvedFilters)
+        ? toStored(entry.path.field, entry.op, entry.values, clock, source, resolvedFilters)
         : undefined;
     if (stored) pushed.push({ field: entry.path.field.name, op: entry.op, values: stored });
     else local.push(entry);
@@ -173,7 +198,7 @@ export async function runQuery(
       const sortPath = path(entry.field);
       return sortPath.via === undefined && source.capabilities.sort.includes(sortPath.field.name);
     });
-  // When the binding does everything, one page of `limit` rows is the answer.
+  // When the binding does everything, the first `limit` rows are the answer.
   const exact =
     local.length === 0 &&
     !aggregate &&
@@ -181,11 +206,12 @@ export async function runQuery(
     (query.sort.length === 0 || sortPushed);
 
   const needed = neededFields(query, source, path);
-  const base: Record<string, unknown>[] = [];
+  const base: Data[] = [];
   let cursor: string | undefined;
   let partial = false;
-  const pageSize = exact ? query.limit : Math.min(PAGE, source.scan);
+  const paged = source.capabilities.pagination !== 'none';
   do {
+    const limit = exact ? query.limit - base.length : Math.min(PAGE, source.scan);
     const page = await fetchFor(source.id)(
       {
         source: source.id,
@@ -197,30 +223,35 @@ export async function runQuery(
               direction: entry.direction,
             }))
           : [],
-        limit: pageSize,
+        limit,
         ...(cursor === undefined ? {} : { cursor }),
         ...(searchPushed ? { search: query.search } : {}),
         ...(options.signal === undefined ? {} : { signal: options.signal }),
       },
       context,
     );
-    base.push(...(page.rows as Record<string, unknown>[]));
-    cursor = source.capabilities.pagination === 'none' ? undefined : page.next;
-    if (exact) break;
-    if (cursor !== undefined && base.length >= source.scan) {
+    base.push(...(page.rows as Data[]));
+    cursor = paged && page.rows.length > 0 ? page.next : undefined;
+    // A source without paging answers once, so a full page may have left rows behind.
+    if (!paged && !exact && page.rows.length >= limit) partial = true;
+    if (exact) {
+      if (base.length >= query.limit) break;
+    } else if (cursor !== undefined && base.length >= source.scan) {
       partial = true;
       break;
     }
   } while (cursor !== undefined);
 
   // Follow relations the query reaches through.
-  const hops = new Map<string, Map<string, Record<string, unknown>>>();
+  const hops = new Map<string, Map<string, Data>>();
   const vias = new Set<string>();
   for (const name of [
     ...query.fields,
     ...query.filter.map((entry) => entry.field),
     ...query.sort.map((entry) => entry.field),
+    query.aggregate.of,
   ]) {
+    if (name === NONE) continue;
     const via = path(name).via;
     if (via !== undefined) vias.add(via);
   }
@@ -235,19 +266,46 @@ export async function runQuery(
     const ref = source.fields.find((entry) => entry.name === via) as Field;
     const target = contract.source(ref.source ?? '') as ResolvedSource;
     reads.add(target.id);
-    hops.set(via, await related(target, base, via, fetchFor(target.id), context, options.signal));
+    const found = await related(target, base, via, fetchFor(target.id), context, options.signal);
+    if (found.partial) partial = true;
+    hops.set(via, found.rows);
   }
 
-  const valueOf = (row: Record<string, unknown>, fieldPath: FieldPath): unknown => {
-    if (fieldPath.via === undefined) return row[fieldPath.field.name];
-    const key = row[fieldPath.via];
-    if (key === null || key === undefined) return undefined;
-    return hops.get(fieldPath.via)?.get(String(key))?.[fieldPath.field.name];
+  const read: Reader = {
+    owner(row, fieldPath) {
+      if (fieldPath.via === undefined) return row;
+      const key = row[fieldPath.via];
+      if (key === null || key === undefined) return undefined;
+      return hops.get(fieldPath.via)?.get(String(key));
+    },
+    value: (row, fieldPath) => read.owner(row, fieldPath)?.[fieldPath.field.name],
+    // Money is read in its own row's currency: the related row's, for amounts one hop away.
+    currency(row, fieldPath) {
+      const field = fieldPath.field;
+      if (field.type !== 'money') return undefined;
+      if (field.code !== undefined) return field.code;
+      if (field.currency === undefined) return undefined;
+      const code = read.owner(row, fieldPath)?.[field.currency];
+      return typeof code === 'string' && code.trim() !== '' ? code.trim().toUpperCase() : undefined;
+    },
   };
+  // Keys and references name rows, so they compare exactly; text and enums ignore case.
+  const exactly = (fieldPath: FieldPath) =>
+    fieldPath.field.type === 'ref' ||
+    fieldPath.field.name ===
+      (fieldPath.via === undefined ? source.key : contract.source(fieldPath.target ?? '')?.key);
 
   let rows = base.filter((row) =>
     local.every((entry) =>
-      matches(entry.path, entry.op, entry.values, valueOf(row, entry.path), row, clock),
+      matches(
+        entry.path.field,
+        entry.op,
+        entry.values,
+        read.value(row, entry.path),
+        read.currency(row, entry.path),
+        exactly(entry.path),
+        clock,
+      ),
     ),
   );
   if (query.search !== '' && !searchPushed) {
@@ -265,7 +323,7 @@ export async function runQuery(
   if (aggregate) {
     return {
       rows: [],
-      groups: summarize(query, rows, source, contract, valueOf, hops, clock),
+      groups: summarize(query, rows, contract, read, hops, clock),
       partial,
       at: clock.now,
       reads: [...reads],
@@ -277,9 +335,17 @@ export async function runQuery(
       path: path(entry.field),
       direction: entry.direction,
     }));
+    const sortable = (row: Data, fieldPath: FieldPath) =>
+      comparable(
+        fieldPath.field,
+        read.value(row, fieldPath),
+        read.currency(row, fieldPath),
+        zone,
+        true,
+      );
     rows = [...rows].sort((a, b) => {
       for (const order of orders) {
-        const result = compare(order.path, valueOf(a, order.path), valueOf(b, order.path), a, b);
+        const result = compare(sortable(a, order.path), sortable(b, order.path));
         if (result !== 0) return order.direction === 'asc' ? result : -result;
       }
       return 0;
@@ -287,18 +353,25 @@ export async function runQuery(
   }
 
   const projected = rows.slice(0, query.limit).map((row) => {
-    const out: Record<string, unknown> = { [`${source.id}.${source.key}`]: row[source.key] };
+    const out: Data = { [`${source.id}.${source.key}`]: row[source.key] };
     for (const name of query.fields) {
       const fieldPath = path(name);
-      out[name] = valueOf(row, fieldPath) ?? null;
-      const currency = fieldPath.field.type === 'money' ? fieldPath.field.currency : undefined;
-      if (currency !== undefined && fieldPath.via === undefined) {
-        out[`${source.id}.${currency}`] = row[currency] ?? null;
+      out[name] = read.value(row, fieldPath) ?? null;
+      const currency = currencyField(fieldPath);
+      if (currency !== undefined) {
+        out[currency] = read.owner(row, fieldPath)?.[fieldPath.field.currency as string] ?? null;
       }
     }
     return out;
   });
   return { rows: projected, groups: [], partial, at: clock.now, reads: [...reads] };
+}
+
+/** How a result row's values are read: from the row itself, or from the related row of a hop. */
+interface Reader {
+  owner(row: Data, path: FieldPath): Data | undefined;
+  value(row: Data, path: FieldPath): unknown;
+  currency(row: Data, path: FieldPath): string | undefined;
 }
 
 function resolveToken(value: string, current: string | undefined, me: string | undefined): string {
@@ -316,20 +389,21 @@ function resolveToken(value: string, current: string | undefined, me: string | u
 /** Converts filter values to the field's stored form, or undefined when that can't be known. */
 function toStored(
   field: Field,
+  op: Op,
   values: readonly string[],
   clock: Clock,
   source: ResolvedSource,
   filters: readonly { path: FieldPath; op: Op; values: readonly string[] }[],
 ): Stored[] | undefined {
   const out: Stored[] = [];
-  for (const value of values) {
+  for (const [index, value] of values.entries()) {
     const parsed = parseValue(field, value, clock);
     if (!parsed) return undefined;
     if (field.type === 'money') {
       const code = field.code ?? fixedCurrency(field, source, filters);
       if (code === undefined && field.minor) return undefined;
       const amount = parsed.value as number;
-      out.push(field.minor ? Math.round(amount * 10 ** currencyDigits(code ?? 'USD')) : amount);
+      out.push(field.minor ? Math.round(amount * 10 ** minorDigits(field, code)) : amount);
     } else if (field.type === 'time') {
       const ms = parsed.value as number;
       out.push(
@@ -337,13 +411,26 @@ function toStored(
           ? Math.floor(ms / 1000)
           : field.unit === 'ms'
             ? ms
-            : new Date(ms).toISOString(),
+            : field.unit === 'date'
+              ? dayFor(ms, op, index, clock.timeZone ?? 'UTC')
+              : new Date(ms).toISOString(),
       );
     } else {
       out.push(parsed.value);
     }
   }
   return out;
+}
+
+/**
+ * The day a bound on a date-only field compares with, so the binding keeps exactly the days whose
+ * start passes the bound: `gte` and `lt` round a time within a day up to the next day.
+ */
+function dayFor(ms: number, op: Op, index: number, zone: string): string {
+  const up = op === 'gte' || op === 'lt' || (op === 'between' && index === 0);
+  if (!up || startOf(ms, 'day', zone) === ms) return dateIn(ms, zone);
+  const local = partsIn(ms, zone);
+  return dateIn(Date.UTC(local.year, local.month - 1, local.day + 1));
 }
 
 /** The one currency a query is about, when it filters on its money field's currency. */
@@ -363,48 +450,51 @@ function fixedCurrency(
   return found?.values[0]?.toUpperCase();
 }
 
-/** A money value in major units, given its row. */
-function major(
-  field: Field,
-  value: unknown,
-  row: Record<string, unknown> | undefined,
-): number | undefined {
+/** A money value in major units, in its currency. */
+function major(field: Field, value: unknown, code: string | undefined): number | undefined {
   if (typeof value !== 'number') return undefined;
   if (!field.minor) return value;
-  const code =
-    field.code ?? (field.currency === undefined ? undefined : String(row?.[field.currency] ?? ''));
-  return value / 10 ** currencyDigits(code && code.length > 0 ? code : 'USD');
+  return value / 10 ** minorDigits(field, code);
+}
+
+/** A stored value in a form that compares: money in major units, times in milliseconds. */
+function comparable(
+  field: Field,
+  value: unknown,
+  code: string | undefined,
+  zone: string,
+  exact: boolean,
+): number | string | boolean | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (field.type === 'money') return major(field, value, code);
+  if (field.type === 'time') return timeOf(field, value, zone);
+  if (field.type === 'text' || field.type === 'ref' || field.type === 'enum') {
+    return exact ? String(value) : String(value).toLowerCase();
+  }
+  return value as number | boolean;
 }
 
 function matches(
-  path: FieldPath,
+  field: Field,
   op: Op,
   values: readonly string[],
   actual: unknown,
-  row: Record<string, unknown>,
+  code: string | undefined,
+  exact: boolean,
   clock: Clock,
 ): boolean {
-  const field = path.field;
   const empty = actual === null || actual === undefined || actual === '';
   if (op === 'empty') return empty;
   if (op === 'present') return !empty;
   if (empty) return op === 'ne' || op === 'nin';
 
-  const owner = path.via === undefined ? row : undefined;
-  const comparable = (value: unknown): number | string | boolean | undefined => {
-    if (field.type === 'money') return major(field, value, owner);
-    if (field.type === 'time') return timeOf(field, value);
-    if (field.type === 'text' || field.type === 'ref' || field.type === 'enum') {
-      return String(value).toLowerCase();
-    }
-    return value as number | boolean;
-  };
-  const left = comparable(actual);
+  const left = comparable(field, actual, code, clock.timeZone ?? 'UTC', exact);
   if (left === undefined) return op === 'ne' || op === 'nin';
+  const fold = (value: string) => (exact ? value : value.toLowerCase());
   const parsed = values.map((value) => {
     const result = parseValue(field, value, clock);
-    if (!result) return String(value).toLowerCase();
-    return typeof result.value === 'string' ? result.value.toLowerCase() : result.value;
+    if (!result) return fold(String(value));
+    return typeof result.value === 'string' ? fold(result.value) : result.value;
   });
   const [first, second] = parsed;
   // Ordered operators only apply to numbers, money and times, which compare as numbers.
@@ -436,22 +526,10 @@ function matches(
 }
 
 function compare(
-  path: FieldPath,
-  a: unknown,
-  b: unknown,
-  rowA: Record<string, unknown>,
-  rowB: Record<string, unknown>,
+  a: number | string | boolean | undefined,
+  b: number | string | boolean | undefined,
 ): number {
-  const field = path.field;
-  // A hop's money is read without its own row, so its currency comes from the field.
-  const ownerA = path.via === undefined ? rowA : undefined;
-  const ownerB = path.via === undefined ? rowB : undefined;
-  const emptyA = a === null || a === undefined;
-  const emptyB = b === null || b === undefined;
-  if (emptyA || emptyB) return emptyA === emptyB ? 0 : emptyA ? 1 : -1;
-  if (field.type === 'money')
-    return (major(field, a, ownerA) ?? 0) - (major(field, b, ownerB) ?? 0);
-  if (field.type === 'time') return (timeOf(field, a) ?? 0) - (timeOf(field, b) ?? 0);
+  if (a === undefined || b === undefined) return a === b ? 0 : a === undefined ? 1 : -1;
   if (typeof a === 'number' && typeof b === 'number') return a - b;
   if (typeof a === 'boolean' && typeof b === 'boolean') return Number(a) - Number(b);
   return String(a).localeCompare(String(b));
@@ -481,15 +559,18 @@ function neededFields(
   return [...names];
 }
 
-/** Rows of a related source, by key, fetched in batches where the binding filters by key. */
+/**
+ * Rows of a related source, by key, fetched in batches where the binding filters by key. Partial
+ * when its scan stopped short of rows it was looking for.
+ */
 async function related(
   target: ResolvedSource,
-  rows: readonly Record<string, unknown>[],
+  rows: readonly Data[],
   via: string,
   fetch: Fetch,
   context: BindingContext,
   signal: unknown,
-): Promise<Map<string, Record<string, unknown>>> {
+): Promise<{ rows: Map<string, Data>; partial: boolean }> {
   const keys = [
     ...new Set(
       rows
@@ -498,10 +579,18 @@ async function related(
         .map(String),
     ),
   ];
-  const found = new Map<string, Record<string, unknown>>();
-  if (keys.length === 0) return found;
+  const found = new Map<string, Data>();
+  if (keys.length === 0) return { rows: found, partial: false };
   const byKey = (target.capabilities.filter[target.key] ?? []).includes('in');
-  const fields = [...new Set([target.key, target.title, ...target.summary])];
+  const reached = target.fields.filter((entry) =>
+    [target.key, target.title, ...target.summary].includes(entry.name),
+  );
+  // Amounts come with their currency, wherever it is kept.
+  const fields = [
+    ...new Set(
+      reached.flatMap((entry) => [entry.name, ...(entry.currency ? [entry.currency] : [])]),
+    ),
+  ];
   const extra = signal === undefined ? {} : { signal };
   if (byKey) {
     for (let start = 0; start < keys.length; start += 50) {
@@ -517,13 +606,15 @@ async function related(
         },
         context,
       );
-      for (const row of page.rows as Record<string, unknown>[])
-        found.set(String(row[target.key]), row);
+      for (const row of page.rows as Data[]) found.set(String(row[target.key]), row);
     }
-    return found;
+    return { rows: found, partial: false };
   }
+  const paged = target.capabilities.pagination !== 'none';
+  const limit = Math.min(PAGE, target.scan);
   let cursor: string | undefined;
   let read = 0;
+  let stopped = false;
   do {
     const page = await fetch(
       {
@@ -531,27 +622,27 @@ async function related(
         fields,
         filter: [],
         sort: [],
-        limit: PAGE,
+        limit,
         ...(cursor === undefined ? {} : { cursor }),
         ...extra,
       },
       context,
     );
-    for (const row of page.rows as Record<string, unknown>[])
-      found.set(String(row[target.key]), row);
+    for (const row of page.rows as Data[]) found.set(String(row[target.key]), row);
     read += page.rows.length;
-    cursor = target.capabilities.pagination === 'none' ? undefined : page.next;
-  } while (cursor !== undefined && read < target.scan);
-  return found;
+    cursor = paged && page.rows.length > 0 ? page.next : undefined;
+    if (!paged && page.rows.length >= limit) stopped = true;
+    if (cursor !== undefined && read >= target.scan) stopped = true;
+  } while (cursor !== undefined && !stopped);
+  return { rows: found, partial: stopped && keys.some((key) => !found.has(key)) };
 }
 
 function summarize(
   query: Query,
-  rows: readonly Record<string, unknown>[],
-  source: ResolvedSource,
+  rows: readonly Data[],
   contract: AnyContract,
-  valueOf: (row: Record<string, unknown>, path: FieldPath) => unknown,
-  hops: Map<string, Map<string, Record<string, unknown>>>,
+  read: Reader,
+  hops: Map<string, Map<string, Data>>,
   clock: Clock,
 ): Group[] {
   const { measure, bucket } = query.aggregate;
@@ -565,19 +656,19 @@ function summarize(
       : (contract.path(query.aggregate.split) as FieldPath);
   const zone = clock.timeZone ?? 'UTC';
 
-  const keyOf = (row: Record<string, unknown>, path: FieldPath | undefined): Stored | null => {
+  const keyOf = (row: Data, path: FieldPath | undefined): Stored | null => {
     if (!path) return null;
-    const value = valueOf(row, path);
+    const value = read.value(row, path);
     if (value === null || value === undefined || value === '') return null;
     if (path.field.type === 'time') {
-      const ms = timeOf(path.field, value);
+      const ms = timeOf(path.field, value, zone);
       return ms === undefined ? null : bucketStart(ms, bucket, zone);
     }
     return value as Stored;
   };
   const labelOf = (path: FieldPath | undefined, key: Stored | null): string => {
     if (!path || key === null) return path ? 'None' : '';
-    if (path.field.type === 'time') return new Date(key as number).toISOString();
+    if (path.field.type === 'time') return bucketLabel(key as number, bucket, zone);
     if (path.field.type === 'bool') return key ? 'Yes' : 'No';
     if (path.field.type === 'ref' && path.via === undefined) {
       const target = contract.source(path.field.source ?? '');
@@ -587,10 +678,7 @@ function summarize(
     return String(key);
   };
 
-  const buckets = new Map<
-    string,
-    { by: Stored | null; split: Stored | null; rows: Record<string, unknown>[] }
-  >();
+  const buckets = new Map<string, { by: Stored | null; split: Stored | null; rows: Data[] }>();
   for (const row of rows) {
     const groupBy = keyOf(row, by);
     const groupSplit = keyOf(row, split);
@@ -605,36 +693,37 @@ function summarize(
       buckets.get(JSON.stringify([null, null])) ?? { by: null, split: null, rows: [] },
     );
 
-  const currencyOf = (members: readonly Record<string, unknown>[]): string | undefined => {
+  const currencyOf = (members: readonly Data[]): string | undefined => {
     if (of?.field.type !== 'money') return undefined;
     if (of.field.code !== undefined) return of.field.code;
-    const field = of.field.currency;
-    if (field === undefined) return undefined;
-    const codes = new Set(members.map((row) => String(row[field] ?? '').toUpperCase()));
-    return codes.size === 1 ? [...codes][0] : undefined;
+    if (of.field.currency === undefined) return undefined;
+    const codes = new Set(members.map((row) => read.currency(row, of) ?? ''));
+    const [only] = codes;
+    return codes.size === 1 && only !== '' ? only : undefined;
   };
 
-  const measured = (members: readonly Record<string, unknown>[]): number | null => {
+  const measured = (members: readonly Data[]): number | null => {
     if (measure === 'count') {
       return of
-        ? members.filter((row) => valueOf(row, of) !== null && valueOf(row, of) !== undefined)
-            .length
+        ? members.filter((row) => {
+            const value = read.value(row, of);
+            return value !== null && value !== undefined;
+          }).length
         : members.length;
     }
     if (!of) return null;
     if (measure === 'distinct') {
       return new Set(
         members
-          .map((row) => valueOf(row, of))
+          .map((row) => read.value(row, of))
           .filter((value) => value !== null && value !== undefined),
       ).size;
     }
     const numbers = members
       .map((row) => {
-        const value = valueOf(row, of);
-        if (of.field.type === 'money')
-          return major(of.field, value, of.via === undefined ? row : undefined);
-        if (of.field.type === 'time') return timeOf(of.field, value);
+        const value = read.value(row, of);
+        if (of.field.type === 'money') return major(of.field, value, read.currency(row, of));
+        if (of.field.type === 'time') return timeOf(of.field, value, zone);
         return typeof value === 'number' ? value : undefined;
       })
       .filter((value): value is number => value !== undefined);
@@ -659,18 +748,23 @@ function summarize(
   });
 
   const timed = by?.field.type === 'time';
+  // Rows without a time can't sit on a timeline: they come last, whatever the limit keeps.
+  const undated = timed ? groups.filter((group) => group.by === null) : [];
+  if (timed) groups = groups.filter((group) => group.by !== null);
+  const order = query.sort[0];
+  const byGrouping = order !== undefined && by !== undefined && order.field === by.name;
   if (
     timed &&
     (measure === 'count' || measure === 'sum' || measure === 'distinct') &&
     groups.length > 0 &&
     !split
   ) {
-    groups = fillGaps(groups, bucket, zone);
+    const from = byGrouping && order.direction === 'asc' ? 'start' : 'end';
+    groups = fillGaps(groups, bucket, zone, query.limit, from);
   }
 
-  const order = query.sort[0];
   groups.sort((a, b) => {
-    if (order && by && order.field === by.name) {
+    if (order && byGrouping) {
       const result = compareKeys(a.by, b.by);
       return order.direction === 'asc' ? result : -result;
     }
@@ -682,18 +776,20 @@ function summarize(
     return (b.value ?? -Infinity) - (a.value ?? -Infinity) || compareKeys(a.by, b.by);
   });
 
+  let kept: Group[];
   if (timed && !order) {
     const times = [...new Set(groups.map((group) => group.by))].slice(-query.limit);
-    return groups.filter((group) => times.includes(group.by));
-  }
-  if (split) {
+    kept = groups.filter((group) => times.includes(group.by));
+  } else if (split) {
     const keys = [...new Set(groups.map((group) => JSON.stringify(group.by)))].slice(
       0,
       query.limit,
     );
-    return groups.filter((group) => keys.includes(JSON.stringify(group.by)));
+    kept = groups.filter((group) => keys.includes(JSON.stringify(group.by)));
+  } else {
+    kept = groups.slice(0, query.limit);
   }
-  return groups.slice(0, query.limit);
+  return [...kept, ...undated];
 }
 
 const round = (value: number) => Math.round(value * 1e6) / 1e6;
@@ -704,41 +800,73 @@ function compareKeys(a: Stored | null, b: Stored | null): number {
   return String(a).localeCompare(String(b));
 }
 
-/** The start of the bucket containing an instant. */
+/** The start of the bucket containing an instant, by the wall clock in a zone. */
 export function bucketStart(ms: number, bucket: Bucket, zone = 'UTC'): number {
-  if (bucket === 'hour') return Math.floor(ms / 3_600_000) * 3_600_000;
   if (bucket === 'none') return ms;
+  if (bucket === 'hour') {
+    // Some zones are offset by half or three quarters of an hour, so hours start by the wall clock.
+    const local = partsIn(ms, zone);
+    const within = (((ms % 1000) + 1000) % 1000) + (local.minute * 60 + local.second) * 1000;
+    return ms - within;
+  }
   return startOf(ms, bucket, zone);
 }
 
-/** Adds empty buckets between the first and last, so charts show quiet days as zero. */
-function fillGaps(groups: Group[], bucket: Bucket, zone: string): Group[] {
+/** A bucket as people read it: its start as a local date, as precise as the bucket. */
+function bucketLabel(ms: number, bucket: Bucket, zone: string): string {
+  const day = dateIn(ms, zone);
+  const local = partsIn(ms, zone);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  switch (bucket) {
+    case 'hour':
+      return `${day}T${pad(local.hour)}:${pad(local.minute)}`;
+    case 'month':
+      return day.slice(0, 7);
+    case 'quarter':
+      return `${day.slice(0, 4)}-Q${Math.floor((local.month - 1) / 3) + 1}`;
+    case 'year':
+      return day.slice(0, 4);
+    case 'none':
+      return `${day}T${pad(local.hour)}:${pad(local.minute)}:${pad(local.second)}`;
+    default:
+      return day;
+  }
+}
+
+/**
+ * Adds empty buckets where nothing happened, so charts show quiet days as zero: only within the
+ * `limit` buckets the result keeps, counting from its last bucket, or its first when sorted
+ * oldest first.
+ */
+function fillGaps(
+  groups: Group[],
+  bucket: Bucket,
+  zone: string,
+  limit: number,
+  from: 'start' | 'end',
+): Group[] {
   const times = groups.map((group) => group.by as number).sort((a, b) => a - b);
   const first = times[0] as number;
   const last = times[times.length - 1] as number;
-  const present = new Map(groups.map((group) => [group.by as number, group]));
+  const present = new Set(times);
   const template = groups[0] as Group;
-  const filled: Group[] = [];
-  let cursor = first;
-  for (let step = 0; cursor <= last && step < 1000; step++) {
-    filled.push(
-      present.get(cursor) ?? {
-        ...template,
-        by: cursor,
-        label: new Date(cursor).toISOString(),
-        value: 0,
-      },
-    );
-    cursor = nextBucket(cursor, bucket, zone);
+  const added: Group[] = [];
+  let cursor = from === 'end' ? last : first;
+  for (let step = 0; step < limit && cursor >= first && cursor <= last; step++) {
+    if (!present.has(cursor)) {
+      added.push({ ...template, by: cursor, label: bucketLabel(cursor, bucket, zone), value: 0 });
+    }
+    cursor =
+      from === 'end' ? bucketStart(cursor - 1, bucket, zone) : nextBucket(cursor, bucket, zone);
   }
-  return filled;
+  return [...groups, ...added];
 }
 
 function nextBucket(ms: number, bucket: Bucket, zone: string): number {
   const day = 86_400_000;
   switch (bucket) {
     case 'hour':
-      return ms + 3_600_000;
+      return bucketStart(ms + 3_600_000, 'hour', zone);
     case 'day':
       return startOf(ms + day + 3_600_000 * 3, 'day', zone);
     case 'week':
@@ -755,12 +883,14 @@ function nextBucket(ms: number, bucket: Bucket, zone: string): number {
 }
 
 /**
- * A fetcher over rows held in memory, applying every filter, sort and page it is asked for:
- * for demonstrations, tests and data an application already has.
+ * A fetcher over rows held in memory, applying every filter, sort and page it is asked for, as an
+ * API would: values compare exactly, and only `contains` and `prefix` ignore case. For
+ * demonstrations, tests and data an application already has.
  */
 export function fromRows(rows: Readonly<Record<string, readonly object[]>>): Fetch {
   return async (request) => {
-    let found = [...((rows[request.source] ?? []) as readonly Record<string, unknown>[])];
+    const own = Object.hasOwn(rows, request.source) ? rows[request.source] : undefined;
+    let found = [...((own ?? []) as readonly Data[])];
     for (const filter of request.filter) {
       found = found.filter((row) => matchStored(row[filter.field], filter.op, filter.values));
     }
@@ -792,25 +922,28 @@ export function fromRows(rows: Readonly<Record<string, readonly object[]>>): Fet
   };
 }
 
-/** Whether a stored value passes a pushed-down filter. */
+/** Whether a stored value passes a pushed-down filter: exactly, but `contains` and `prefix`. */
 export function matchStored(value: unknown, op: Op, values: readonly Stored[]): boolean {
   const empty = value === null || value === undefined || value === '';
   if (op === 'empty') return empty;
   if (op === 'present') return !empty;
   if (empty) return op === 'ne' || op === 'nin';
-  const fold = (entry: unknown) => (typeof entry === 'string' ? entry.toLowerCase() : entry);
-  const left = fold(value) as Stored;
-  const folded = values.map(fold) as Stored[];
-  const [first, second] = folded;
+  if (op === 'contains' || op === 'prefix') {
+    const text = String(value).toLowerCase();
+    const needle = String(values[0] ?? '').toLowerCase();
+    return op === 'contains' ? text.includes(needle) : text.startsWith(needle);
+  }
+  const left = value as Stored;
+  const [first, second] = values;
   switch (op) {
     case 'eq':
       return left === first;
     case 'ne':
       return left !== first;
     case 'in':
-      return folded.includes(left);
+      return values.includes(left);
     case 'nin':
-      return !folded.includes(left);
+      return !values.includes(left);
     case 'gt':
       return left > (first as Stored);
     case 'gte':
@@ -821,9 +954,47 @@ export function matchStored(value: unknown, op: Op, values: readonly Stored[]): 
       return left <= (first as Stored);
     case 'between':
       return left >= (first as Stored) && left <= (second as Stored);
-    case 'contains':
-      return String(left).includes(String(first));
-    case 'prefix':
-      return String(left).startsWith(String(first));
   }
+}
+
+/**
+ * Whether a result row, keyed by qualified field name, passes filters as a query applies them:
+ * money in major units, times as instants, `$current` and `$me` as what they stand for. A filter
+ * on a field the row lacks passes; a token that stands for nothing here fails.
+ */
+export function rowMatches(
+  contract: AnyContract,
+  filters: readonly Filter[],
+  row: Row,
+  options: { clock: Clock; current?: string; me?: string },
+): boolean {
+  return filters.every((filter) => {
+    const path = contract.path(filter.field);
+    if (!path || !(filter.field in row)) return true;
+    let values: string[];
+    try {
+      values = filter.values.map((value) => resolveToken(value, options.current, options.me));
+    } catch {
+      return false;
+    }
+    const field = path.field;
+    // Results carry money's currency beside it, the related row's for amounts one hop away.
+    const projected =
+      field.currency === undefined
+        ? undefined
+        : row[`${path.source}.${path.via === undefined ? '' : `${path.via}.`}${field.currency}`];
+    const code =
+      field.type !== 'money'
+        ? undefined
+        : (field.code ??
+          (typeof projected === 'string' && projected.trim() !== ''
+            ? projected.trim().toUpperCase()
+            : undefined));
+    // Keys and references name rows, so they compare exactly, as the executor compares them.
+    const exact =
+      field.type === 'ref' ||
+      field.name ===
+        contract.source(path.via === undefined ? path.source : (path.target ?? ''))?.key;
+    return matches(field, filter.op, values, row[filter.field], code, exact, options.clock);
+  });
 }

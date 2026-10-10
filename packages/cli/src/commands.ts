@@ -41,7 +41,7 @@ Commands:
   discover --url <url>               Crawls the running application and proposes routes, regions,
                                      lists and which buttons are which actions.
   check                              Whether the integration holds: contract, JSON, request
-                                     schemas, labels and bindings, with coverage.
+                                     schemas and bindings; warns about labels; prints coverage.
 
 Options:
   --cwd <dir>     The project's root. Default: the current directory.
@@ -76,7 +76,8 @@ Options:
   --packages <folder>   Installs from package tarballs (pnpm pack), such as a local build.
   --no-install          Writes the files and prints the install command instead.
   --no-agents           Leaves coding agents' configuration alone.
-  --mcp <command>       How agents start the MCP server. Default: npx -y @plurid/uitive-mcp
+  --mcp <command>       How agents start the MCP server, quoted as in a shell or as a JSON
+                        array of words. Default: npx -y @plurid/uitive-mcp
   --cwd <dir>, --json
 `,
   survey: `Usage: uitive survey --openapi <path or URL> [--curation <file>] [--cwd <dir>] [--json]
@@ -121,11 +122,12 @@ Options:
 
 Crawls the running application with Playwright, following same-origin links and never pressing
 anything, and writes <folder>/discovery.json: routes, a region per route, lists from navigation
-and toolbars, and which buttons match the contract's actions.
+and toolbars, which buttons match the contract's actions, and which open menus. Exits with 1
+when no page could be read.
 
 Options:
-  --pages <n>              Most pages visited. Default: 30.
-  --per-route <n>          Most visits per route. Default: 2.
+  --pages <n>              Most pages visited, at least 1. Default: 30.
+  --per-route <n>          Most visits per route, at least 1. Default: 2.
   --storage-state <file>   A Playwright storage state with a signed-in session.
   --chrome                 Uses the installed Chrome (with playwright-core).
   --out <file>             Default: <folder>/discovery.json.
@@ -134,8 +136,9 @@ Options:
   check: `Usage: uitive check [--contract <file>] [--bindings <file>] [--cwd <dir>] [--json]
 
 Whether the integration holds: the contract loads (tsconfig paths resolve) and validates, its
-JSON round-trips, every request schema fits structured outputs, labels are distinct and find what
-they name, and bindings exist for what the contract declares. Prints coverage.
+JSON round-trips, every request schema fits structured outputs, the largest a request can plan
+over included, and bindings exist for what the contract declares. Labels two actions share, or
+that don't find their source, are warnings: they don't fail the check. Prints coverage.
 `,
 };
 
@@ -153,6 +156,15 @@ const print = (context: RunContext, json: boolean, value: unknown, text: string)
 
 const problems = (context: RunContext, list: readonly string[]) => {
   for (const problem of list) context.err.write(`uitive: ${problem}\n`);
+};
+
+/** A count option, such as --pages: a whole number of at least 1. */
+const count = (value: string | undefined, name: string): number | undefined => {
+  if (value === undefined) return undefined;
+  if (!/^\d+$/.test(value) || Number(value) < 1) {
+    throw new Error(`--${name} takes a whole number of at least 1, not "${value}"`);
+  }
+  return Number(value);
 };
 
 const survey: Handler = async (args, context) => {
@@ -290,7 +302,9 @@ const generateBlocksCommand: Handler = async (args, context) => {
       : `${result.file} is up to date.`
     : result.written
       ? `Wrote ${result.file}: ${result.blocks.map((entry) => entry.name).join(', ')}.`
-      : `${result.file} is up to date.`;
+      : result.problems.length > 0
+        ? 'Nothing written.'
+        : `${result.file} is up to date.`;
   print(context, values.json, result, text);
   problems(context, result.problems);
   return result.problems.length > 0 || (values.check && result.drift) ? 1 : 0;
@@ -313,21 +327,40 @@ const discoverCommand: Handler = async (args, context) => {
     context.out.write(HELPS['discover'] ?? '');
     return values.help ? 0 : 1;
   }
+  let pages: number | undefined;
+  let perRoute: number | undefined;
+  try {
+    pages = count(values.pages, 'pages');
+    perRoute = count(values['per-route'], 'per-route');
+  } catch (error) {
+    problems(context, [(error as Error).message]);
+    return 1;
+  }
   const result = await discover({
     url: values.url,
     ...(values.cwd ? { cwd: values.cwd } : {}),
-    ...(values.pages ? { pages: Number(values.pages) } : {}),
-    ...(values['per-route'] ? { perRoute: Number(values['per-route']) } : {}),
+    ...(pages === undefined ? {} : { pages }),
+    ...(perRoute === undefined ? {} : { perRoute }),
     ...(values['storage-state'] ? { storageState: values['storage-state'] } : {}),
     ...(values.out ? { out: values.out } : {}),
     chrome: values.chrome,
   });
+  const visited = result.visited.length;
   print(
     context,
     values.json,
     result,
-    `Visited ${result.visited.length} pages; wrote ${result.file}.\n\n${discoveryText(result.discovery)}`,
+    [
+      `Visited ${visited} ${visited === 1 ? 'page' : 'pages'}; wrote ${result.file}.`,
+      ...result.skipped.map((entry) => `Skipped ${entry.url}: ${entry.reason}.`),
+      '',
+      discoveryText(result.discovery),
+    ].join('\n'),
   );
+  if (visited === 0) {
+    problems(context, ['No page could be read: is the application running at that address?']);
+    return 1;
+  }
   return 0;
 };
 

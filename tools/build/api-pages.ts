@@ -96,7 +96,7 @@ export const PAGES: Readonly<Record<string, PageConfig>> = {
       'The model planner, for any provider: contracts compiled to structured outputs, the prompt, and models from Anthropic, OpenAI and every server that speaks its API, Gemini, or your own. It runs on servers and in extensions.',
     guides: [{ title: 'Planning', path: 'planning.md' }],
     categories: [
-      { title: 'The model planner', modules: ['plan.ts', 'output.ts'] },
+      { title: 'The model planner', modules: ['plan.ts', 'output.ts', 'request.ts'] },
       {
         title: 'Models',
         modules: ['model.ts', 'environment.ts', 'anthropic.ts', 'openai.ts', 'google.ts'],

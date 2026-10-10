@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
 import ts from 'typescript';
+import { oneLine, property, quote, syntaxErrors } from './code.js';
 import { formatLikeProject } from './format.js';
 import { folderOf } from './folder.js';
 import { kebab } from './openapi.js';
@@ -182,8 +183,6 @@ function defaultsOf(symbol: ts.Symbol): Map<string, string> {
 
 type Mapped = { schema: string } | { adapter: string } | { error: string };
 
-const quote = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
-
 function schemaOf(checker: ts.TypeChecker, type: ts.Type, depth = 0): Mapped {
   const text = checker.typeToString(type);
   if (
@@ -249,14 +248,14 @@ export function emitBlocks(
         ]
           .filter(Boolean)
           .join(' ');
-        return `      ${prop.name}: ${prop.schema}${note ? `.describe(${quote(note)})` : ''},`;
+        return `      ${property(prop.name)}: ${prop.schema}${note ? `.describe(${quote(note)})` : ''},`;
       })
       .join('\n');
     const supplied =
       entry.adapter.length === 0
         ? ''
-        : `  // The adapter supplies ${entry.adapter.map((prop) => `${prop.name} (${prop.reason})`).join(', ')}.\n`;
-    return `${supplied}  ${entry.name}: block({
+        : `  ${oneLine(`// The adapter supplies ${entry.adapter.map((prop) => `${prop.name} (${prop.reason})`).join(', ')}.`)}\n`;
+    return `${supplied}  ${property(entry.name)}: block({
     label: ${quote(entry.label)},
     description: ${quote(entry.description)},
     props: z.object({
@@ -285,7 +284,7 @@ export interface GenerateBlocksOptions {
   cwd?: string;
   /** Where to write. @default 'blocks.generated.ts' in the project's Uitive folder */
   out?: string;
-  /** Reports whether the file is up to date, without writing it. */
+  /** Reports whether the file is up to date, without writing it. @default false */
   check?: boolean;
 }
 
@@ -297,7 +296,14 @@ export async function generateBlocks(options: GenerateBlocksOptions) {
   const cwd = resolve(options.cwd ?? process.cwd());
   const file = resolve(cwd, options.out ?? `${await folderOf(cwd)}/blocks.generated.ts`);
   const result = readBlocks(options.components, cwd);
-  const code = await formatLikeProject(emitBlocks(result.blocks), file, cwd);
+  const emitted = emitBlocks(result.blocks);
+  const broken = syntaxErrors(emitted, file);
+  if (broken.length > 0) {
+    result.problems.push(
+      `The generated code doesn't parse (${broken.join('; ')}); please report this.`,
+    );
+  }
+  const code = await formatLikeProject(emitted, file, cwd);
   const current = await readFile(file, 'utf8').catch(() => undefined);
   const drift = current !== code;
   const write = !options.check && result.problems.length === 0;

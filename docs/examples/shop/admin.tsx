@@ -7,7 +7,7 @@ import { OrdersPage } from './orders-page.js';
 export function Admin() {
   return (
     <UitiveProvider client={uitive} kit={kit}>
-      {/* Asks before anything changes data; without it, generated pages can't write at all. */}
+      {/* Buttons and destructive runs wait for it; a form showing every value is the yes. */}
       <Confirmations />
       <OrdersPage />
     </UitiveProvider>

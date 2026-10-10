@@ -6,12 +6,12 @@ The contract, the client, data and policy: everything that adapts an interface, 
 
 Install: `pnpm add @plurid/uitive-core`, with `zod` ^4.2.0 as a peer. Guides: [Getting started](../getting-started.md), [Contracts](../contracts.md), [Data and actions](../data-and-actions.md), [Pages](../pages.md).
 
-- [Contracts](#contracts): [`action`](#action), [`assertIds`](#assertids), [`block`](#block), [`canonicaliser`](#canonicaliser), [`choice`](#choice), [`collection`](#collection), [`CONTRACT_FORMAT`](#contract_format), [`defineApp`](#defineapp), [`fieldsFromJson`](#fieldsfromjson), [`fieldsToJson`](#fieldstojson), [`FORMAT_VERSION`](#format_version), [`fromJson`](#fromjson), [`ID_PATTERN`](#id_pattern), [`itemSchema`](#itemschema), [`list`](#list), [`page`](#page), [`SURFACE_PATTERN`](#surface_pattern), [`toJson`](#tojson), [`ActionIdOf`](#actionidof), [`ActionJson`](#actionjson), [`ActionSpec`](#actionspec), [`ActionView`](#actionview), [`AnyContract`](#anycontract), [`AnyPageSpec`](#anypagespec), [`BlockOf`](#blockof), [`BlockSpec`](#blockspec), [`ChoiceSpec`](#choicespec), [`CollectionEntry`](#collectionentry), [`CollectionSpec`](#collectionspec), [`CollectionValue`](#collectionvalue), [`ContextOf`](#contextof), [`Contract`](#contract), [`ContractJson`](#contractjson), [`ContractSpec`](#contractspec), [`FieldJson`](#fieldjson), [`FieldsJson`](#fieldsjson), [`ListSpec`](#listspec), [`ListValue`](#listvalue), [`PageSection`](#pagesection), [`PageSpec`](#pagespec), [`PropsOf`](#propsof), [`RegionSpec`](#regionspec), [`RowOf`](#rowof), [`Runtime`](#runtime), [`SectionPage`](#sectionpage), [`SourceIdOf`](#sourceidof), [`SourceJson`](#sourcejson), [`SurfaceIdOf`](#surfaceidof), [`SurfaceJson`](#surfacejson), [`SurfaceSpec`](#surfacespec), [`SurfaceValue`](#surfacevalue), [`SurfaceValueOf`](#surfacevalueof)
-- [Sources and fields](#sources-and-fields): [`ARITY`](#arity), [`currencyDigits`](#currencydigits), [`describeFields`](#describefields), [`field`](#field), [`FIELD_META`](#field_meta), [`FIELD_PATTERN`](#field_pattern), [`FIELD_TYPES`](#field_types), [`humanize`](#humanize), [`MAX_LIMIT`](#max_limit), [`OPS`](#ops), [`OPS_BY_TYPE`](#ops_by_type), [`qualifiedFields`](#qualifiedfields), [`resolvePath`](#resolvepath), [`resolveSources`](#resolvesources), [`SCAN`](#scan), [`source`](#source), [`SOURCE_PATTERN`](#source_pattern), [`TTL`](#ttl), [`AnySourceSpec`](#anysourcespec), [`Capabilities`](#capabilities), [`Field`](#field-type), [`FieldMeta`](#fieldmeta), [`FieldNameOf`](#fieldnameof), [`FieldOptions`](#fieldoptions), [`FieldPath`](#fieldpath), [`FieldType`](#fieldtype), [`Op`](#op), [`ResolvedSource`](#resolvedsource), [`SourceSpec`](#sourcespec), [`TimeUnit`](#timeunit)
+- [Contracts](#contracts): [`action`](#action), [`assertIds`](#assertids), [`block`](#block), [`canonicalizer`](#canonicalizer), [`choice`](#choice), [`collection`](#collection), [`CONTRACT_FORMAT`](#contract_format), [`defineApp`](#defineapp), [`fieldsFromJson`](#fieldsfromjson), [`fieldsToJson`](#fieldstojson), [`FORMAT_VERSION`](#format_version), [`fromJson`](#fromjson), [`ID_PATTERN`](#id_pattern), [`itemSchema`](#itemschema), [`list`](#list), [`page`](#page), [`SURFACE_PATTERN`](#surface_pattern), [`toJson`](#tojson), [`ActionIdOf`](#actionidof), [`ActionJson`](#actionjson), [`ActionSpec`](#actionspec), [`ActionView`](#actionview), [`AnyContract`](#anycontract), [`AnyPageSpec`](#anypagespec), [`BlockOf`](#blockof), [`BlockSpec`](#blockspec), [`ChoiceSpec`](#choicespec), [`CollectionEntry`](#collectionentry), [`CollectionSpec`](#collectionspec), [`CollectionValue`](#collectionvalue), [`ContextOf`](#contextof), [`Contract`](#contract), [`ContractJson`](#contractjson), [`ContractSpec`](#contractspec), [`FieldJson`](#fieldjson), [`FieldsJson`](#fieldsjson), [`ListSpec`](#listspec), [`ListValue`](#listvalue), [`PageSection`](#pagesection), [`PageSpec`](#pagespec), [`PropsOf`](#propsof), [`RegionSpec`](#regionspec), [`RowOf`](#rowof), [`Runtime`](#runtime), [`SectionPage`](#sectionpage), [`SourceIdOf`](#sourceidof), [`SourceJson`](#sourcejson), [`SurfaceIdOf`](#surfaceidof), [`SurfaceJson`](#surfacejson), [`SurfaceSpec`](#surfacespec), [`SurfaceValue`](#surfacevalue), [`SurfaceValueOf`](#surfacevalueof)
+- [Sources and fields](#sources-and-fields): [`ARITY`](#arity), [`currencyDigits`](#currencydigits), [`describeFields`](#describefields), [`field`](#field), [`FIELD_META`](#field_meta), [`FIELD_PATTERN`](#field_pattern), [`FIELD_TYPES`](#field_types), [`humanize`](#humanize), [`MAX_LIMIT`](#max_limit), [`OPS`](#ops), [`OPS_BY_TYPE`](#ops_by_type), [`qualifiedFields`](#qualifiedfields), [`resolvePath`](#resolvepath), [`resolveSources`](#resolvesources), [`SCAN`](#scan), [`source`](#source), [`SOURCE_PATTERN`](#source_pattern), [`TTL`](#ttl), [`AnySourceSpec`](#anysourcespec), [`Capabilities`](#capabilities), [`Field`](#field-type), [`FieldMeta`](#fieldmeta), [`FieldNameOf`](#fieldnameof), [`FieldOptions`](#fieldoptions), [`FieldPath`](#fieldpath), [`FieldType`](#fieldtype), [`MoneyOptions`](#moneyoptions), [`Op`](#op), [`ResolvedSource`](#resolvedsource), [`SourceSpec`](#sourcespec), [`TimeUnit`](#timeunit)
 - [Queries and data](#queries-and-data): [`BUCKETS`](#buckets), [`bucketStart`](#bucketstart), [`checkQuery`](#checkquery), [`createData`](#createdata), [`DEFAULT_LIMIT`](#default_limit), [`DIRECTIONS`](#directions), [`formatValue`](#formatvalue), [`fromRows`](#fromrows), [`isToken`](#istoken), [`MAX_FIELDS`](#max_fields), [`MAX_FILTERS`](#max_filters), [`MAX_SORTS`](#max_sorts), [`MEASURES`](#measures), [`NO_AGGREGATE`](#no_aggregate), [`NONE`](#none), [`parseTime`](#parsetime), [`parseValue`](#parsevalue), [`partsIn`](#partsin), [`PERIODS`](#periods), [`query`](#query), [`runQuery`](#runquery), [`SEARCH_LENGTH`](#search_length), [`startOf`](#startof), [`timeOf`](#timeof), [`TOKENS`](#tokens), [`VALUE_LENGTH`](#value_length), [`Aggregate`](#aggregate), [`BindingContext`](#bindingcontext), [`Bucket`](#bucket), [`Clock`](#clock), [`DataClient`](#dataclient), [`DataEntry`](#dataentry), [`DataOptions`](#dataoptions), [`DataScope`](#datascope), [`Direction`](#direction), [`Fetch`](#fetch), [`Fetchers`](#fetchers), [`FetchFilter`](#fetchfilter), [`FetchRequest`](#fetchrequest), [`FetchResult`](#fetchresult), [`Filter`](#filter), [`Group`](#group), [`LocalParts`](#localparts), [`Measure`](#measure), [`Parsed`](#parsed), [`Period`](#period), [`Query`](#query-type), [`QueryCheck`](#querycheck), [`QueryResult`](#queryresult), [`QueryScope`](#queryscope), [`Row`](#row), [`RunOptions`](#runoptions), [`Sort`](#sort), [`Stored`](#stored), [`Token`](#token)
 - [Actions and bindings](#actions-and-bindings): [`EFFECTS`](#effects), [`pointer`](#pointer), [`restFetch`](#restfetch), [`restPerform`](#restperform), [`rowParam`](#rowparam), [`Bindings`](#bindings), [`Confirmation`](#confirmation), [`DeclaredParams`](#declaredparams), [`Effect`](#effect), [`HttpFetch`](#httpfetch), [`HttpResponse`](#httpresponse), [`ParamsOf`](#paramsof), [`Perform`](#perform), [`PerformContext`](#performcontext), [`Performers`](#performers), [`PerformOptions`](#performoptions), [`PerformOutcome`](#performoutcome), [`PerformResult`](#performresult), [`RestAction`](#restaction), [`RestFetchConfig`](#restfetchconfig), [`RestPerformConfig`](#restperformconfig), [`RestSource`](#restsource), [`Target`](#target)
 - [Pages and blocks](#pages-and-blocks): [`BUILT_IN`](#built_in), [`builtInBlocks`](#builtinblocks), [`checkGeneric`](#checkgeneric), [`DATA_BLOCKS`](#data_blocks), [`DATA_PATTERN`](#data_pattern), [`ELEMENT_PATTERN`](#element_pattern), [`fromSections`](#fromsections), [`GENERIC`](#generic), [`genericBlocks`](#genericblocks), [`genericFor`](#genericfor), [`GenericProblem`](#genericproblem), [`LAYOUTS`](#layouts), [`MAX_DEPTH`](#max_depth), [`MAX_ELEMENTS`](#max_elements), [`MAX_QUERIES`](#max_queries), [`PageProblem`](#pageproblem), [`periodOf`](#periodof), [`regionsFor`](#regionsfor), [`toPage`](#topage), [`ui`](#ui), [`USER_PAGE_PATH`](#user_page_path), [`userPagePath`](#userpagepath), [`userPageSpec`](#userpagespec), [`validatePage`](#validatepage), [`walk`](#walk), [`ActionsProps`](#actionsprops), [`AnyPage`](#anypage), [`BoardProps`](#boardprops), [`BuiltIn`](#builtin), [`BuiltInElement`](#builtinelement), [`ChartProps`](#chartprops), [`DetailProps`](#detailprops), [`Element`](#element), [`ElementOf`](#elementof), [`FormProps`](#formprops), [`GenericName`](#genericname), [`GenericProps`](#genericprops), [`GenericScope`](#genericscope), [`Layout`](#layout), [`LinksProps`](#linksprops), [`ListProps`](#listprops), [`MetricProps`](#metricprops), [`NamedQuery`](#namedquery), [`Node`](#node), [`NoteProps`](#noteprops), [`PageValue`](#pagevalue), [`RegionProps`](#regionprops), [`RowAction`](#rowaction), [`SectionProps`](#sectionprops), [`SectionsPage`](#sectionspage), [`TableProps`](#tableprops), [`TabsProps`](#tabsprops), [`TimelineProps`](#timelineprops), [`ValidateOptions`](#validateoptions)
-- [Routes](#routes): [`buildPath`](#buildpath), [`entityRoute`](#entityroute), [`matchRoute`](#matchroute), [`route`](#route), [`segments`](#segments), [`validateRoutes`](#validateroutes), [`RouteSegment`](#routesegment), [`RouteSpec`](#routespec)
+- [Routes](#routes): [`buildPath`](#buildpath), [`entityRoute`](#entityroute), [`matchRoute`](#matchroute), [`route`](#route), [`routeLabel`](#routelabel), [`segments`](#segments), [`validateRoutes`](#validateroutes), [`RouteSegment`](#routesegment), [`RouteSpec`](#routespec)
 - [The client](#the-client): [`createUitive`](#createuitive), [`localStore`](#localstore), [`memoryStore`](#memorystore), [`Adaptation`](#adaptation), [`Autonomy`](#autonomy), [`DefinitionDocument`](#definitiondocument), [`Location`](#location), [`PageInput`](#pageinput), [`RecordOptions`](#recordoptions), [`Snapshot`](#snapshot), [`Store`](#store), [`Uitive`](#uitive), [`UitiveOptions`](#uitiveoptions), [`View`](#view)
 - [Planners](#planners): [`command`](#command), [`heuristicPlanner`](#heuristicplanner), [`keywordCommand`](#keywordcommand), [`MARGIN`](#margin), [`MIN_PROMOTE`](#min_promote), [`planResultSchema`](#planresultschema), [`remotePlanner`](#remoteplanner), [`ClaimedEvidence`](#claimedevidence), [`CommandResult`](#commandresult), [`CommandStatus`](#commandstatus), [`Environment`](#environment), [`FetchLike`](#fetchlike), [`PlanMeta`](#planmeta), [`Planner`](#planner), [`PlannerResponse`](#plannerresponse), [`PlannerStream`](#plannerstream), [`PlanOptions`](#planoptions), [`PlanProgress`](#planprogress), [`PlanRequest`](#planrequest), [`PlanResult`](#planresult), [`ProposedOperation`](#proposedoperation), [`RemotePlannerOptions`](#remoteplanneroptions), [`StateView`](#stateview)
 - [Definitions and policy](#definitions-and-policy): [`canonical`](#canonical), [`check`](#check), [`checkPageValue`](#checkpagevalue), [`DEFAULT_STABILIZER`](#default_stabilizer), [`describe`](#describe), [`emptyDefinition`](#emptydefinition), [`EVERY`](#every), [`isApplied`](#isapplied), [`MAX_USER_PAGES`](#max_user_pages), [`METRICS`](#metrics), [`migrateDefinition`](#migratedefinition), [`MIN_IDLE`](#min_idle), [`NOTE_LENGTH`](#note_length), [`operationKey`](#operationkey), [`redesigned`](#redesigned), [`resolveChoice`](#resolvechoice), [`resolveCollection`](#resolvecollection), [`resolveList`](#resolvelist), [`resolvePage`](#resolvepage), [`resolveUserPages`](#resolveuserpages), [`SLUG_PATTERN`](#slug_pattern), [`TEXT_LENGTH`](#text_length), [`TITLE_LENGTH`](#title_length), [`USER_PAGES`](#user_pages), [`validateOutput`](#validateoutput), [`AppliedOperation`](#appliedoperation), [`Change`](#change), [`CheckResult`](#checkresult), [`ChoiceChange`](#choicechange), [`CollectionChange`](#collectionchange), [`Definition`](#definition), [`Evidence`](#evidence), [`Explanation`](#explanation), [`ListChange`](#listchange), [`ListState`](#liststate), [`Metric`](#metric), [`Operation`](#operation), [`Origin`](#origin), [`OutputRejection`](#outputrejection), [`PageChange`](#pagechange), [`Pending`](#pending), [`PolicyContext`](#policycontext), [`Rejection`](#rejection), [`Rule`](#rule), [`StabilizerOptions`](#stabilizeroptions), [`Status`](#status), [`UserPage`](#userpage), [`UserPageChange`](#userpagechange)
@@ -52,12 +52,12 @@ function block<P>(spec: BlockSpec<P>): BlockSpec<P>;
 
 Uses: [`BlockSpec`](#blockspec).
 
-### canonicaliser
+### canonicalizer
 
 Maps a value to the canonical ID it names, comparing case-insensitively.
 
 ```ts
-function canonicaliser(ids: readonly string[]): (value: string) => string | undefined;
+function canonicalizer(ids: readonly string[]): (value: string) => string | undefined;
 ```
 
 ### choice
@@ -293,7 +293,7 @@ Uses: [`ActionSpec`](#actionspec), [`AnySourceSpec`](#anysourcespec), [`Field`](
 | `regions`        | `Readonly<Record<string, RegionSpec>>`                     | Every region, by name.                                                                 |
 | `routes`         | `Readonly<Record<string, RouteSpec>>`                      | Every route, by ID.                                                                    |
 | `surfaces`       | `Readonly<Record<string, SurfaceSpec>>`                    | Every surface, by name.                                                                |
-| `hash`           | `string`                                                   | Changes whenever anything a planner sees changes.                                      |
+| `hash`           | `string`                                                   | Changes whenever anything a planner sees changes, standard pages included.             |
 | `actionIds`      | `readonly string[]`                                        | Every action ID, in declaration order.                                                 |
 | `sourceIds`      | `readonly string[]`                                        | Every source ID, in declaration order.                                                 |
 | `routeIds`       | `readonly string[]`                                        | Every route ID, in declaration order.                                                  |
@@ -447,7 +447,7 @@ Type parameters: `A extends Record<string, ActionSpec> = Record<string, ActionSp
 | `description`    | `string`                                                   | What the application is, for the model.                                                |
 | `regions`        | `Readonly<Record<string, RegionSpec>>`                     | Every region, by name.                                                                 |
 | `routes`         | `Readonly<Record<string, RouteSpec>>`                      | Every route, by ID.                                                                    |
-| `hash`           | `string`                                                   | Changes whenever anything a planner sees changes.                                      |
+| `hash`           | `string`                                                   | Changes whenever anything a planner sees changes, standard pages included.             |
 | `routeIds`       | `readonly string[]`                                        | Every route ID, in declaration order.                                                  |
 | `contextValue()` | `(context: string, value: string) => string \| undefined`  | The canonical value of a context, compared case-insensitively.                         |
 | `items()`        | `(surface: string, context?: string) => readonly string[]` | The items a list offers, for one context value when the list is keyed by context.      |
@@ -809,7 +809,8 @@ Uses: [`Op`](#op).
 
 ### currencyDigits
 
-Decimal places of a currency's minor unit, such as 2 for USD and 0 for JPY.
+Decimal places of a currency's minor unit in ISO 4217, such as 2 for USD, 0 for JPY and 3 for
+KWD; 2 for codes it doesn't list.
 
 ```ts
 function currencyDigits(code: string): number;
@@ -834,16 +835,10 @@ reference to another source. Plain zod types work too, with their meaning inferr
 const field: {
   text(options?: FieldOptions): z.ZodString;
   number(options?: FieldOptions): z.ZodNumber;
-  money(
-    options?: FieldOptions & {
-      currency?: string;
-      code?: string;
-      minor?: boolean;
-    },
-  ): z.ZodNumber;
+  money(options?: MoneyOptions): z.ZodNumber;
   time(
     options?: FieldOptions & {
-      unit?: 'iso';
+      unit?: 'iso' | 'date';
     },
   ): z.ZodString;
   time(
@@ -862,17 +857,17 @@ const field: {
 };
 ```
 
-Uses: [`FieldOptions`](#fieldoptions).
+Uses: [`FieldOptions`](#fieldoptions), [`MoneyOptions`](#moneyoptions).
 
-| Member     | Description                                                                             |
-| ---------- | --------------------------------------------------------------------------------------- |
-| `text()`   | Text, such as a name or a description.                                                  |
-| `number()` | A number that isn't money, such as a count.                                             |
-| `money()`  | `currency` names the field holding each row's currency; `code` fixes one for every row. |
-| `time()`   | A moment: an ISO string, or seconds or milliseconds since the epoch with `unit`.        |
-| `enum()`   | One of a fixed set of values, such as a status.                                         |
-| `ref()`    | The key of a row in another source, which makes the field a relation.                   |
-| `bool()`   | Yes or no.                                                                              |
+| Member     | Description                                                                                                                                                                                   |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text()`   | Text, such as a name or a description.                                                                                                                                                        |
+| `number()` | A number that isn't money, such as a count.                                                                                                                                                   |
+| `money()`  | `currency` names the field holding each row's currency; `code` fixes one for every row; `minor` stores amounts in minor units, with ISO 4217's decimal places unless `digits` says otherwise. |
+| `time()`   | A moment: an ISO date-time, an ISO date with `unit: 'date'`, or seconds or milliseconds since the epoch with `unit: 's'` or `'ms'`.                                                           |
+| `enum()`   | One of a fixed set of values, such as a status.                                                                                                                                               |
+| `ref()`    | The key of a row in another source, which makes the field a relation.                                                                                                                         |
+| `bool()`   | Yes or no.                                                                                                                                                                                    |
 
 ### FIELD_META
 
@@ -1038,7 +1033,7 @@ Uses: [`Capabilities`](#capabilities).
 | `capabilities?` | `Capabilities`      | none of them | What the binding does itself: filters, sorts, search and paging.                  |
 | `scan?`         | `number`            | `500`        | Most rows fetched to answer one query on the client.                              |
 | `maxLimit?`     | `number`            | `100`        | Most rows one query may ask for.                                                  |
-| `ttl?`          | `number`            | `30`         | Seconds a result stays fresh.                                                     |
+| `ttl?`          | `number`            | `30`         | Seconds a result stays fresh, counted from when it arrives; at least one.         |
 
 ### Capabilities
 
@@ -1061,19 +1056,20 @@ One field of a source's rows, as everything after the contract sees it.
 
 Uses: [`FieldType`](#fieldtype), [`TimeUnit`](#timeunit).
 
-| Property      | Type                | Description                                                   |
-| ------------- | ------------------- | ------------------------------------------------------------- |
-| `name`        | `string`            | The field's name in its source's rows.                        |
-| `type`        | `FieldType`         | What the value means, which decides how it shows and filters. |
-| `label`       | `string`            | What people call it.                                          |
-| `description` | `string`            | What it holds, for people and models.                         |
-| `nullable`    | `boolean`           | Whether rows may lack a value.                                |
-| `values`      | `readonly string[]` | For enums: every value.                                       |
-| `source?`     | `string`            | For refs: the source whose key the field holds.               |
-| `currency?`   | `string`            | For money: the field holding each row's currency.             |
-| `code?`       | `string`            | For money: one currency for every row.                        |
-| `minor`       | `boolean`           | For money: whether amounts are in minor units.                |
-| `unit?`       | `TimeUnit`          | For time: how instants are stored.                            |
+| Property      | Type                               | Description                                                                              |
+| ------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- |
+| `name`        | `string`                           | The field's name in its source's rows.                                                   |
+| `type`        | `FieldType`                        | What the value means, which decides how it shows and filters.                            |
+| `label`       | `string`                           | What people call it.                                                                     |
+| `description` | `string`                           | What it holds, for people and models.                                                    |
+| `nullable`    | `boolean`                          | Whether rows may lack a value.                                                           |
+| `values`      | `readonly string[]`                | For enums: every value.                                                                  |
+| `source?`     | `string`                           | For refs: the source whose key the field holds.                                          |
+| `currency?`   | `string`                           | For money: the field holding each row's currency.                                        |
+| `code?`       | `string`                           | For money: one currency for every row.                                                   |
+| `minor`       | `boolean`                          | For money: whether amounts are in minor units.                                           |
+| `digits?`     | `Readonly<Record<string, number>>` | For money in minor units: decimal places by currency, where they differ from ISO 4217's. |
+| `unit?`       | `TimeUnit`                         | For time: how instants are stored.                                                       |
 
 ### FieldMeta
 
@@ -1081,15 +1077,16 @@ What a field helper records about a field, beyond its zod type.
 
 Uses: [`FieldType`](#fieldtype), [`TimeUnit`](#timeunit).
 
-| Property    | Type        | Default                     | Description                                                          |
-| ----------- | ----------- | --------------------------- | -------------------------------------------------------------------- |
-| `type`      | `FieldType` |                             | What the value means, which decides how it shows and filters.        |
-| `label?`    | `string`    | the field's name, humanized | Shown to people.                                                     |
-| `currency?` | `string`    |                             | For money: the field holding each row's ISO 4217 currency code.      |
-| `code?`     | `string`    |                             | For money: one ISO 4217 currency for every row.                      |
-| `minor?`    | `boolean`   | `false`                     | For money: whether amounts are stored in minor units, such as cents. |
-| `unit?`     | `TimeUnit`  |                             | For time: how instants are stored.                                   |
-| `source?`   | `string`    |                             | For ref: the source whose key this field holds.                      |
+| Property    | Type                               | Default                     | Description                                                                                                                                       |
+| ----------- | ---------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`      | `FieldType`                        |                             | What the value means, which decides how it shows and filters.                                                                                     |
+| `label?`    | `string`                           | the field's name, humanized | Shown to people.                                                                                                                                  |
+| `currency?` | `string`                           |                             | For money: the field holding each row's ISO 4217 currency code.                                                                                   |
+| `code?`     | `string`                           |                             | For money: one ISO 4217 currency for every row.                                                                                                   |
+| `minor?`    | `boolean`                          | `false`                     | For money: whether amounts are stored in minor units, such as cents.                                                                              |
+| `digits?`   | `Readonly<Record<string, number>>` | `{}`                        | For money in minor units: decimal places by currency where the API's minor units differ from ISO 4217's, such as `{ ISK: 2, MGA: 0 }` for Stripe. |
+| `unit?`     | `TimeUnit`                         |                             | For time: how instants are stored.                                                                                                                |
+| `source?`   | `string`                           |                             | For ref: the source whose key this field holds.                                                                                                   |
 
 ### FieldNameOf
 
@@ -1131,6 +1128,19 @@ type FieldType = (typeof FIELD_TYPES)[number];
 ```
 
 Uses: [`FIELD_TYPES`](#field_types).
+
+### MoneyOptions
+
+What `field.money` takes: where each amount's currency comes from, and how it is stored.
+
+| Property       | Type                               | Default                     | Description                                                                                                                              |
+| -------------- | ---------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `currency?`    | `string`                           |                             | The field holding each row's ISO 4217 currency code.                                                                                     |
+| `code?`        | `string`                           |                             | One ISO 4217 currency for every row.                                                                                                     |
+| `minor?`       | `boolean`                          | `false`                     | Whether amounts are stored in minor units, such as cents.                                                                                |
+| `digits?`      | `Readonly<Record<string, number>>` | `{}`                        | For minor units: decimal places by currency where the API's minor units differ from ISO 4217's, such as `{ ISK: 2, MGA: 0 }` for Stripe. |
+| `label?`       | `string`                           | the field's name, humanized | Shown to people, such as a column's header.                                                                                              |
+| `description?` | `string`                           |                             | What the field holds, for planners and for people.                                                                                       |
 
 ### Op
 
@@ -1183,14 +1193,15 @@ Type parameters: `R extends z.ZodObject = z.ZodObject`.
 | `capabilities?` | `Capabilities<FieldNameOf<R>>` | none of them | What the binding does itself: filters, sorts, search and paging.                       |
 | `scan?`         | `number`                       | `500`        | Most rows fetched to answer one query on the client.                                   |
 | `maxLimit?`     | `number`                       | `100`        | Most rows one query may ask for.                                                       |
-| `ttl?`          | `number`                       | `30`         | Seconds a result stays fresh.                                                          |
+| `ttl?`          | `number`                       | `30`         | Seconds a result stays fresh, counted from when it arrives; at least one.              |
 
 ### TimeUnit
 
-How instants are stored: ISO 8601 strings, or seconds or milliseconds since the epoch.
+How instants are stored: ISO 8601 date-times, ISO 8601 dates (`2026-10-03`, a day in the
+person's time zone), or seconds or milliseconds since the epoch.
 
 ```ts
-type TimeUnit = 'iso' | 's' | 'ms';
+type TimeUnit = 'iso' | 'date' | 's' | 'ms';
 ```
 
 ## Queries and data
@@ -1207,7 +1218,7 @@ const BUCKETS: readonly ['none', 'hour', 'day', 'week', 'month', 'quarter', 'yea
 
 ### bucketStart
 
-The start of the bucket containing an instant.
+The start of the bucket containing an instant, by the wall clock in a zone.
 
 ```ts
 function bucketStart(ms: number, bucket: Bucket, zone?: string): number;
@@ -1267,8 +1278,9 @@ Uses: [`Field`](#field-type).
 
 ### fromRows
 
-A fetcher over rows held in memory, applying every filter, sort and page it is asked for:
-for demonstrations, tests and data an application already has.
+A fetcher over rows held in memory, applying every filter, sort and page it is asked for, as an
+API would: values compare exactly, and only `contains` and `prefix` ignore case. For
+demonstrations, tests and data an application already has.
 
 ```ts
 function fromRows(rows: Readonly<Record<string, readonly object[]>>): Fetch;
@@ -1430,10 +1442,11 @@ Uses: [`Period`](#period).
 
 ### timeOf
 
-A stored time as milliseconds since the epoch, whatever the field's unit.
+A stored time as milliseconds since the epoch, whatever the field's unit. A date without a time
+is the start of that day in `zone`.
 
 ```ts
-function timeOf(field: Field, value: unknown): number | undefined;
+function timeOf(field: Field, value: unknown, zone?: string): number | undefined;
 ```
 
 Uses: [`Field`](#field-type).
@@ -1472,11 +1485,11 @@ Uses: [`Bucket`](#bucket), [`Measure`](#measure).
 
 Who and where the user is, as far as the binding knows.
 
-| Property    | Type     | Default | Description                                      |
-| ----------- | -------- | ------- | ------------------------------------------------ |
-| `me?`       | `string` |         | The signed-in user, for `$me`.                   |
-| `timeZone?` | `string` | `'UTC'` | An IANA time zone, for "today" and time buckets. |
-| `locale?`   | `string` |         | A BCP 47 locale, for formatting.                 |
+| Property    | Type     | Default | Description                                                                           |
+| ----------- | -------- | ------- | ------------------------------------------------------------------------------------- |
+| `me?`       | `string` |         | The signed-in user, for `$me`: the value fields that hold a person are compared with. |
+| `timeZone?` | `string` | `'UTC'` | An IANA time zone, for "today" and time buckets.                                      |
+| `locale?`   | `string` |         | A BCP 47 locale, for formatting.                                                      |
 
 ### Bucket
 
@@ -1502,15 +1515,16 @@ When a query runs, and where: "today" and "this month" depend on the user's time
 Query results shared across an interface: fetched once, cached, refreshed when stale or after a
 write to their source.
 
-Uses: [`DataEntry`](#dataentry), [`DataScope`](#datascope), [`Query`](#query-type), [`QueryResult`](#queryresult).
+Uses: [`DataEntry`](#dataentry), [`DataScope`](#datascope), [`Filter`](#filter), [`Query`](#query-type), [`QueryResult`](#queryresult), [`Row`](#row).
 
-| Property       | Type                                                          | Description                                                                      |
-| -------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `read()`       | `(query: Query, scope?: DataScope) => DataEntry`              | The entry for a query, fetching when there is none, or when it is stale.         |
-| `peek()`       | `(query: Query, scope?: DataScope) => DataEntry \| undefined` | The entry for a query as it stands, without fetching: safe inside a render.      |
-| `load()`       | `(query: Query, scope?: DataScope) => Promise<QueryResult>`   | The result of a query, fresh or cached.                                          |
-| `subscribe()`  | `(listener: () => void) => () => void`                        | Calls the listener whenever an entry changes; returns its removal.               |
-| `invalidate()` | `(sources: readonly string[]) => void`                        | Marks results that read these sources stale, so they fetch again when next read. |
+| Property       | Type                                                                   | Description                                                                                                                                    |
+| -------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `read()`       | `(query: Query, scope?: DataScope) => DataEntry`                       | The entry for a query, fetching when there is none, or when it is stale.                                                                       |
+| `peek()`       | `(query: Query, scope?: DataScope) => DataEntry \| undefined`          | The entry for a query as it stands, without fetching: safe inside a render.                                                                    |
+| `load()`       | `(query: Query, scope?: DataScope) => Promise<QueryResult>`            | The result of a query, fresh or cached.                                                                                                        |
+| `subscribe()`  | `(listener: () => void) => () => void`                                 | Calls the listener whenever an entry changes; returns its removal.                                                                             |
+| `invalidate()` | `(sources: readonly string[]) => void`                                 | Marks results that read these sources stale, so they fetch again when next read.                                                               |
+| `matches()`    | `(filters: readonly Filter[], row: Row, scope?: DataScope) => boolean` | Whether a result row passes filters as queries apply them, on this client's clock, time zone and user: for the rows an action's `when` allows. |
 
 ### DataEntry
 
@@ -1646,14 +1660,14 @@ One group of a summary. Money is in major units.
 
 Uses: [`Stored`](#stored).
 
-| Property     | Type             | Description                                                        |
-| ------------ | ---------------- | ------------------------------------------------------------------ |
-| `by`         | `Stored \| null` | The group's value of the grouping field, or `null` for one number. |
-| `label`      | `string`         | The group's value, as people read it.                              |
-| `split`      | `Stored \| null` | The value of the second grouping, or `null` without one.           |
-| `splitLabel` | `string`         | The second grouping's value, as people read it.                    |
-| `value`      | `number \| null` | The measure, or `null` when nothing was measured.                  |
-| `currency?`  | `string`         | For money: the currency the value is in, when one applies.         |
+| Property     | Type             | Description                                                                                                                                                                                                                                                                 |
+| ------------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `by`         | `Stored \| null` | The group's value of the grouping field, or `null` for one number.                                                                                                                                                                                                          |
+| `label`      | `string`         | The group's value, as people read it. Time buckets read as local dates in the person's time zone: `2026-10-03T14:00` for hours, `2026-10-03` for days and weeks, `2026-10`, `2026-Q4` and `2026` for months, quarters and years. Rows without a time group as `None`, last. |
+| `split`      | `Stored \| null` | The value of the second grouping, or `null` without one.                                                                                                                                                                                                                    |
+| `splitLabel` | `string`         | The second grouping's value, as people read it.                                                                                                                                                                                                                             |
+| `value`      | `number \| null` | The measure, or `null` when nothing was measured.                                                                                                                                                                                                                           |
+| `currency?`  | `string`         | For money: the currency the value is in, when one applies.                                                                                                                                                                                                                  |
 
 ### LocalParts
 
@@ -1749,17 +1763,19 @@ Uses: [`Query`](#query-type).
 
 ### QueryResult
 
-A query's answer: rows, or groups for a summary, and whether a scan cap made it partial.
+A query's answer: rows, or groups for a summary, and whether it was cut short. Money keeps its
+currency beside it: `orders.currency` beside `orders.total`, and `orders.customer.currency`
+beside `orders.customer.balance`.
 
 Uses: [`Group`](#group), [`Row`](#row).
 
-| Property  | Type                | Description                                                           |
-| --------- | ------------------- | --------------------------------------------------------------------- |
-| `rows`    | `readonly Row[]`    | The rows, for queries without a summary.                              |
-| `groups`  | `readonly Group[]`  | The groups, for summaries.                                            |
-| `partial` | `boolean`           | The scan stopped before the last page, so counts and sums may be low. |
-| `at`      | `number`            | When the data was read, in milliseconds.                              |
-| `reads`   | `readonly string[]` | Every source read, for invalidation.                                  |
+| Property  | Type                | Description                                                                                                                                                                   |
+| --------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rows`    | `readonly Row[]`    | The rows, for queries without a summary.                                                                                                                                      |
+| `groups`  | `readonly Group[]`  | The groups, for summaries.                                                                                                                                                    |
+| `partial` | `boolean`           | Not every row was read: the scan cap stopped before the last page, a source without paging filled its one page, or related rows were left unread. Counts and sums may be low. |
+| `at`      | `number`            | When the data was read, in milliseconds.                                                                                                                                      |
+| `reads`   | `readonly string[]` | Every source read, for invalidation.                                                                                                                                          |
 
 ### QueryScope
 
@@ -1999,13 +2015,13 @@ Uses: [`PerformContext`](#performcontext), [`PerformOutcome`](#performoutcome).
 What a `perform` binding learns about a run, besides its params: who and where, which action, and
 a key for doing it once.
 
-| Property         | Type     | Default | Description                                                          |
-| ---------------- | -------- | ------- | -------------------------------------------------------------------- |
-| `action`         | `string` |         | The action being run.                                                |
-| `idempotencyKey` | `string` |         | Unique to one confirmed run, so a binding can refuse to do it twice. |
-| `me?`            | `string` |         | The signed-in user, for `$me`.                                       |
-| `timeZone?`      | `string` | `'UTC'` | An IANA time zone, for "today" and time buckets.                     |
-| `locale?`        | `string` |         | A BCP 47 locale, for formatting.                                     |
+| Property         | Type     | Default | Description                                                                           |
+| ---------------- | -------- | ------- | ------------------------------------------------------------------------------------- |
+| `action`         | `string` |         | The action being run.                                                                 |
+| `idempotencyKey` | `string` |         | Unique to one confirmed run, so a binding can refuse to do it twice.                  |
+| `me?`            | `string` |         | The signed-in user, for `$me`: the value fields that hold a person are compared with. |
+| `timeZone?`      | `string` | `'UTC'` | An IANA time zone, for "today" and time buckets.                                      |
+| `locale?`        | `string` |         | A BCP 47 locale, for formatting.                                                      |
 
 ### Performers
 
@@ -2153,7 +2169,7 @@ interface RestSource {
 | `repeat?`     | `[]`               | Parameters sent once per value (`status=a&status=b`) rather than joined by commas.                                                                                                                                  |
 | `limit?`      | `'limit'`          | The page-size parameter; empty when the endpoint has none.                                                                                                                                                          |
 | `pagination?` | `{ kind: 'none' }` | How pages chain.                                                                                                                                                                                                    |
-| `more?`       |                    | A JSON pointer to a boolean saying whether more rows exist, such as `/has_more`.                                                                                                                                    |
+| `more?`       |                    | A JSON pointer to a boolean saying whether more rows exist, such as `/has_more`. Without it, a cursor's `next` pointer says so, and otherwise a page shorter than the limit is the last.                            |
 | `sort?`       |                    | Sorting: the parameter, and how a field and direction are written.                                                                                                                                                  |
 | `search?`     |                    | The text-search parameter.                                                                                                                                                                                          |
 | `key?`        | `'id'`             | The key field, for cursors made from the last row and for `item`.                                                                                                                                                   |
@@ -2372,7 +2388,7 @@ Uses: [`AnyContract`](#anycontract), [`AnyPageSpec`](#anypagespec).
 
 ### toPage
 
-A page in the flat format, whichever format it came in.
+A page in the flat format, whichever format it came in. Malformed sections stay as they are.
 
 ```ts
 function toPage(value: unknown): unknown;
@@ -2432,7 +2448,8 @@ Uses: [`AnyPageSpec`](#anypagespec).
 ### validatePage
 
 Validates a whole page against its blocks, queries, regions and limits, and returns it in
-canonical form: canonical names, a single tree from the root, elements in tree order.
+canonical form: canonical names, a single tree from the root, elements in tree order. Queries
+may compare with `$me`, whoever the bindings' `context()` says is signed in when they run.
 
 ```ts
 function validatePage(
@@ -2629,9 +2646,9 @@ Uses: [`LAYOUTS`](#layouts).
 
 Links to the contract's routes, each with its own label.
 
-| Property | Type                                                          | Description                                                                 |
-| -------- | ------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `items`  | `readonly { label: string; route: string; entity: string }[]` | The links: a label, a route, and the row's key when the route is about one. |
+| Property | Type                                                          | Description                                                                                                                                                                               |
+| -------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`  | `readonly { label: string; route: string; entity: string }[]` | The links: a label, or empty for the route's own, a route, and for a route about one row, its key or `$current`, the page's own row. Planners, who never see rows, write only `$current`. |
 
 ### ListProps
 
@@ -2806,7 +2823,8 @@ Source: [`route.ts`](../../packages/core/src/route.ts)
 
 ### buildPath
 
-The path of a route with its params filled in, or undefined when one is missing.
+The path of a route with its params filled in, or undefined when one is missing or can't be one
+segment, such as `..`.
 
 ```ts
 function buildPath(
@@ -2856,6 +2874,16 @@ function route(spec: RouteSpec): RouteSpec;
 ```
 
 Uses: [`RouteSpec`](#routespec).
+
+### routeLabel
+
+What links to a route say: its own label, else its page's label, else its ID.
+
+```ts
+function routeLabel(contract: AnyContract, id: string): string;
+```
+
+Uses: [`AnyContract`](#anycontract).
 
 ### segments
 
@@ -2961,9 +2989,10 @@ Uses: [`CommandStatus`](#commandstatus), [`PlanMeta`](#planmeta), [`Rejection`](
 ### Autonomy
 
 How far the system may act on its own. `suggest`: planned changes wait for the person's yes.
-`mixed`: a planned change applies at a safe moment once a second plan agrees or it clears the
-margin. `auto`: planned changes apply at the next safe moment, and suggested items join the
-interface at once. In every mode a redesign stays a suggestion until the person accepts it.
+`mixed`: planned changes apply at a safe moment, a model's once a plan in a later session agrees
+or it clears the margin. `auto`: planned changes apply at the next safe moment, and suggested
+items join the interface at once. In every mode a redesign stays a suggestion until the person
+accepts it.
 
 ```ts
 type Autonomy = 'suggest' | 'mixed' | 'auto';
@@ -3013,12 +3042,12 @@ How one use of an action came about, for `record`.
 
 Uses: [`Via`](#via).
 
-| Property   | Type      | Default    | Description                                                                                                                 |
-| ---------- | --------- | ---------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `via?`     | `Via`     | `'region'` | How the person reached it: straight from where it shows, from overflow, the palette, a suggestion, a shortcut or a command. |
-| `surface?` | `string`  |            | The surface it was used from, such as `toolbar`, so learning knows which list it belongs to.                                |
-| `element?` | `string`  |            | The page element it came from.                                                                                              |
-| `typed?`   | `boolean` |            | For palette picks: whether the user typed a search first.                                                                   |
+| Property   | Type      | Default    | Description                                                                                                                                                                                              |
+| ---------- | --------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `via?`     | `Via`     | `'region'` | How the person reached it: straight from where it shows, from overflow, the palette, a suggestion, a shortcut or a command.                                                                              |
+| `surface?` | `string`  |            | The surface it was used from, such as `toolbar`, so learning knows which list it belongs to: the use then counts toward that surface alone. Without one, it counts toward every list holding the action. |
+| `element?` | `string`  |            | The page element it came from.                                                                                                                                                                           |
+| `typed?`   | `boolean` |            | For palette picks: whether the user typed a search first.                                                                                                                                                |
 
 ### Snapshot
 
@@ -3171,9 +3200,9 @@ Uses: [`ActionIdOf`](#actionidof), [`ActionView`](#actionview), [`Adaptation`](#
 | `resume()`           | A safe moment after the page was hidden: starts a session and applies pending changes.                                                                                                                                           |
 | `nextSession()`      | Ends the session now and applies pending changes, as if the user came back later.                                                                                                                                                |
 | `apply()`            | Applies pending changes now: an explicit safe moment.                                                                                                                                                                            |
-| `plan()`             | Asks the planner for changes from usage and any stated goal. What policy accepts waits for a safe moment, and redesigns stay suggestions.                                                                                        |
+| `plan()`             | Asks the planner for changes from usage and any stated goal. What policy accepts waits for a safe moment, and redesigns stay suggestions. Calls while a plan is on its way share it.                                             |
 | `learn()`            | Plans from use once a session; the provider and `startUitive` call it whenever one starts. Does nothing when this session was planned already, when the interface is frozen, or when the client was created with `learn: false`. |
-| `ask()`              | A request in the user's own words. With `goal`, the words are kept as their stated goal.                                                                                                                                         |
+| `ask()`              | A request in the user's own words, answered at once. With `goal`, the words are kept as their stated goal; blank words clear it.                                                                                                 |
 | `pin()`              | Keeps an action visible in a list, bringing it out of overflow if needed.                                                                                                                                                        |
 | `unpin()`            | Lets a pinned action move again; after a pin, it reverts the pin.                                                                                                                                                                |
 | `hide()`             | Moves an action out of a list's visible part, into overflow. Required actions refuse.                                                                                                                                            |
@@ -3182,23 +3211,23 @@ Uses: [`ActionIdOf`](#actionidof), [`ActionView`](#actionview), [`Adaptation`](#
 | `set()`              | Sets a choice to one of its values.                                                                                                                                                                                              |
 | `setPage()`          | Redesigns a page outright; for a page keyed by context, one value or `*` for every value.                                                                                                                                        |
 | `resetPage()`        | Puts a page back to standard.                                                                                                                                                                                                    |
-| `preview()`          | Shows a suggested redesign in place without applying it; nothing to stop previewing.                                                                                                                                             |
+| `preview()`          | Shows a suggested redesign in place without applying it; nothing to stop previewing. Only a redesign still suggested can be previewed, and the preview ends when it no longer is.                                                |
 | `addItem()`          | Adds an item to a collection, checked against its schema and validator.                                                                                                                                                          |
 | `updateItem()`       | Changes an item of a collection.                                                                                                                                                                                                 |
 | `removeItem()`       | Removes an item from a collection.                                                                                                                                                                                               |
 | `revert()`           | Undoes an applied change. A planned change cools down; a second revert blocks it.                                                                                                                                                |
 | `revertAdaptation()` | Undoes every change an adaptation applied.                                                                                                                                                                                       |
 | `keep()`             | Confirms a change; it joins the user's own layer.                                                                                                                                                                                |
-| `accept()`           | Accepts a pending change or a suggested item.                                                                                                                                                                                    |
+| `accept()`           | Accepts a pending change or a suggested item; either joins the user's own layer.                                                                                                                                                 |
 | `dismiss()`          | Declines a pending change or a suggested item; it cools down.                                                                                                                                                                    |
 | `freeze()`           | Stops or resumes planned changes; the person's own still apply.                                                                                                                                                                  |
-| `setGoal()`          | Keeps or clears the person's stated goal, such as "I watch costs", which planners read.                                                                                                                                          |
+| `setGoal()`          | Keeps or clears the person's stated goal, such as "I watch costs", which planners read. It is trimmed and kept to 500 characters; a blank one clears it.                                                                         |
 | `setView()`          | Shows the person's interface, or the application as shipped.                                                                                                                                                                     |
 | `setAutonomy()`      | Sets how far the system may act on its own.                                                                                                                                                                                      |
-| `reset()`            | Back to the standard interface. Usage is kept.                                                                                                                                                                                   |
+| `reset()`            | Puts the layout back to standard. Usage is kept, and so are freeze, blocked changes, cooldowns and the stated goal.                                                                                                              |
 | `clearData()`        | Forgets everything: usage, definition and history.                                                                                                                                                                               |
 | `export()`           | The person's definition, portable, for a file or another device.                                                                                                                                                                 |
-| `import()`           | Takes a definition from `export`, checked against this contract like any change.                                                                                                                                                 |
+| `import()`           | Takes a definition from `export`, checked against this contract like any change: what breaks the contract's rules is skipped with its reason, and a file that isn't a definition is refused.                                     |
 | `explain()`          | Why a change was made, in plain words, with its evidence.                                                                                                                                                                        |
 | `request()`          | Exactly what a planner would receive: all that leaves the device.                                                                                                                                                                |
 | `summary()`          | Usage summarized per action and surface, as planners see it.                                                                                                                                                                     |
@@ -3213,19 +3242,19 @@ Uses: [`AnyContract`](#anycontract), [`Autonomy`](#autonomy), [`Bindings`](#bind
 
 Type parameters: `C extends AnyContract`.
 
-| Property       | Type                             | Default              | Description                                                                                                                                                    |
-| -------------- | -------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contract`     | `C`                              |                      | The contract `defineApp` returned.                                                                                                                             |
-| `store?`       | `Store`                          | `memoryStore()`      | Where state persists.                                                                                                                                          |
-| `planner?`     | `Planner`                        | `heuristicPlanner()` | Who plans: the deterministic planner, or `remotePlanner` for a model on the application's server. Simple commands are always answered locally.                 |
-| `now?`         | `() => number`                   | `Date.now`           | The clock, in milliseconds; tests pass one that moves only when told.                                                                                          |
-| `idleMinutes?` | `number`                         | `30`                 | Minutes without activity that end a session.                                                                                                                   |
-| `autonomy?`    | `Autonomy`                       | `'mixed'`            | Used until the user chooses otherwise.                                                                                                                         |
-| `learn?`       | `boolean`                        | `true`               | Whether the client plans from use by itself, once a session (see `learn`). With a model planner, each plan is one request to the application's server.         |
-| `stabilizer?`  | `Partial<StabilizerOptions>`     |                      | How cautiously planned changes apply: how many per session, after how many sessions, and how long a reverted one waits.                                        |
-| `bindings?`    | `Bindings<C>`                    |                      | The application's code behind the contract: reading sources, running actions, routing.                                                                         |
-| `onError?`     | `(error: unknown) => void`       |                      | Called when storage or a planner fails; the interface keeps working.                                                                                           |
-| `environment?` | `() => Environment \| undefined` |                      | For pages Uitive adapts from outside, such as in a browser extension: what the page offers now, sent with each request. Structure only, never the page's text. |
+| Property       | Type                             | Default              | Description                                                                                                                                                                                        |
+| -------------- | -------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contract`     | `C`                              |                      | The contract `defineApp` returned.                                                                                                                                                                 |
+| `store?`       | `Store`                          | `memoryStore()`      | Where state persists.                                                                                                                                                                              |
+| `planner?`     | `Planner`                        | `heuristicPlanner()` | Who plans: the deterministic planner, or `remotePlanner` for a model on the application's server. Simple commands are always answered locally.                                                     |
+| `now?`         | `() => number`                   | `Date.now`           | The clock, in milliseconds; tests pass one that moves only when told.                                                                                                                              |
+| `idleMinutes?` | `number`                         | `30`                 | Minutes without activity that end a session.                                                                                                                                                       |
+| `autonomy?`    | `Autonomy`                       | `'mixed'`            | Used until the user chooses otherwise.                                                                                                                                                             |
+| `learn?`       | `boolean`                        | `true`               | Whether the client plans from use by itself, once a session (see `learn`). With a model planner, each plan is one request to the application's server.                                             |
+| `stabilizer?`  | `Partial<StabilizerOptions>`     |                      | How cautiously planned changes apply: how many per session, after how many sessions, and how long a reverted one waits.                                                                            |
+| `bindings?`    | `Bindings<C>`                    |                      | The application's code behind the contract: reading sources, running actions, routing.                                                                                                             |
+| `onError?`     | `(error: unknown) => void`       |                      | Called when storage or a planner fails, including a remote planner whose fallback answered instead, and when another tab runs a different version of the application; the interface keeps working. |
+| `environment?` | `() => Environment \| undefined` |                      | For pages Uitive adapts from outside, such as in a browser extension: what the page offers now, sent with each request. Structure only, never the page's text.                                     |
 
 ### View
 
@@ -3382,17 +3411,18 @@ Uses: [`PlannerResponse`](#plannerresponse).
 How a plan was made: by which planner and model, how fast, at what cost, and whether it was
 scoped or repaired.
 
-| Property    | Type                                                                       | Description                                                       |
-| ----------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `planner`   | `string`                                                                   | The planner's name.                                               |
-| `ms`        | `number`                                                                   | How long planning took, in milliseconds.                          |
-| `subset?`   | `readonly string[]`                                                        | The sources the request was scoped to, for large contracts.       |
-| `repaired?` | `boolean`                                                                  | A second round fixed what policy rejected in the first.           |
-| `stages?`   | `number`                                                                   | Model calls made.                                                 |
-| `model?`    | `string`                                                                   | The model that planned, for model planners.                       |
-| `fellBack?` | `string`                                                                   | Why a fallback planner answered instead.                          |
-| `usage?`    | `{ input: number; output: number; cacheRead: number; cacheWrite: number }` | Tokens the model read and wrote, and what the prompt cache saved. |
-| `cost?`     | `number`                                                                   | Estimated cost in US dollars.                                     |
+| Property      | Type                                                                       | Description                                                                                  |
+| ------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `planner`     | `string`                                                                   | The planner's name.                                                                          |
+| `ms`          | `number`                                                                   | How long planning took, in milliseconds.                                                     |
+| `subset?`     | `readonly string[]`                                                        | The sources the request was scoped to, for large contracts.                                  |
+| `repaired?`   | `boolean`                                                                  | A second round fixed what policy rejected in the first.                                      |
+| `unrepaired?` | `string`                                                                   | Why the second round failed, when what policy accepted of the first answer was kept instead. |
+| `stages?`     | `number`                                                                   | Model calls made.                                                                            |
+| `model?`      | `string`                                                                   | The model that planned, for model planners.                                                  |
+| `fellBack?`   | `string`                                                                   | Why a fallback planner answered instead.                                                     |
+| `usage?`      | `{ input: number; output: number; cacheRead: number; cacheWrite: number }` | Tokens the model read and wrote, and what the prompt cache saved.                            |
+| `cost?`       | `number`                                                                   | Estimated cost in US dollars.                                                                |
 
 ### Planner
 
@@ -3507,13 +3537,13 @@ Where `remotePlanner` sends requests, and what answers when the server can't.
 
 Uses: [`FetchLike`](#fetchlike), [`Planner`](#planner).
 
-| Property     | Type                     | Default                             | Description                                                                  |
-| ------------ | ------------------------ | ----------------------------------- | ---------------------------------------------------------------------------- |
-| `url`        | `string`                 |                                     | The handler's base URL; requests go to `<url>/plan` and `<url>/command`.     |
-| `fallback?`  | `Planner`                |                                     | Answers when the server can't.                                               |
-| `fetch?`     | `FetchLike`              | `globalThis.fetch`                  | The `fetch` it calls.                                                        |
-| `timeoutMs?` | `number`                 | 60000 for plans, 20000 for commands | How long to wait before the fallback answers.                                |
-| `headers?`   | `Record<string, string>` |                                     | Headers sent with every request, such as one the server's `authorize` reads. |
+| Property     | Type                     | Default                             | Description                                                                                                                                                               |
+| ------------ | ------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`        | `string`                 |                                     | The handler's base URL; requests go to `<url>/plan` and `<url>/command`.                                                                                                  |
+| `fallback?`  | `Planner`                |                                     | Answers when the server can't.                                                                                                                                            |
+| `fetch?`     | `FetchLike`              | `globalThis.fetch`                  | The `fetch` it calls.                                                                                                                                                     |
+| `timeoutMs?` | `number`                 | 60000 for plans, 20000 for commands | How long to wait for the server before the fallback answers. While progress streams, each line from the server starts the wait again, so a long redesign isn't cut short. |
+| `headers?`   | `Record<string, string>` |                                     | Headers sent with every request, such as one the server's `authorize` reads.                                                                                              |
 
 ### StateView
 
@@ -3559,7 +3589,7 @@ Uses: [`AnyPage`](#anypage).
 | ------------- | ----------------------------------------------------------------------- |
 | `lists`       | Each list's visible and pinned items, per context value in view.        |
 | `choices`     | Each choice's value.                                                    |
-| `collections` | Each collection's item IDs.                                             |
+| `collections` | Each collection's item titles, as the person sees them.                 |
 | `pages`       | The pages in view now, as they are.                                     |
 | `userPages`   | The pages the user made.                                                |
 | `userPage?`   | The user's own page in view, if any.                                    |
@@ -3585,7 +3615,8 @@ Uses: [`AnyContract`](#anycontract), [`Change`](#change).
 
 ### check
 
-Checks operations in order, each against the definition as if the earlier ones applied.
+Checks operations in order, each against the definition it is given: callers that apply one
+before checking the next pass the definition as it then is.
 
 ```ts
 function check(operations: readonly Operation[], context: PolicyContext): CheckResult;
@@ -3651,7 +3682,7 @@ const EVERY = '*';
 
 ### isApplied
 
-Whether an operation counts towards the interface: active, or kept by the person.
+Whether an operation counts toward the interface: active, or kept by the person.
 
 ```ts
 function isApplied(operation: AppliedOperation): boolean;
@@ -4073,13 +4104,14 @@ and any stated intent.
 
 Uses: [`AnyContract`](#anycontract), [`Definition`](#definition), [`UsageSummary`](#usagesummary).
 
-| Property     | Type           | Description                                                               |
-| ------------ | -------------- | ------------------------------------------------------------------------- |
-| `contract`   | `AnyContract`  | The contract.                                                             |
-| `definition` | `Definition`   | The person's definition.                                                  |
-| `summary`    | `UsageSummary` | Usage, as numbers.                                                        |
-| `session`    | `number`       | The current session.                                                      |
-| `intent?`    | `string`       | The user's own words behind this request: a command or their stated goal. |
+| Property       | Type           | Default | Description                                                                                                                                                                          |
+| -------------- | -------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `contract`     | `AnyContract`  |         | The contract.                                                                                                                                                                        |
+| `definition`   | `Definition`   |         | The person's definition.                                                                                                                                                             |
+| `summary`      | `UsageSummary` |         | Usage, as numbers.                                                                                                                                                                   |
+| `session`      | `number`       |         | The current session.                                                                                                                                                                 |
+| `intent?`      | `string`       |         | The user's own words behind this request: a command or their stated goal.                                                                                                            |
+| `interpreted?` | `boolean`      | `false` | Whether a model read those words. What it says the person named outright joins their own layer, but it never deletes one of their pages and never brings back a change they blocked. |
 
 ### Rejection
 
@@ -4128,8 +4160,8 @@ settles rather than churns.
 
 ### Status
 
-`suggested` operations add collection items for the user to accept; `kept` ones were
-confirmed by the user and join the user layer.
+`suggested` operations add collection items, or redesign pages, for the user to accept; `kept`
+ones were confirmed by the user and join the user layer.
 
 ```ts
 type Status = 'active' | 'kept' | 'reverted' | 'suggested' | 'dismissed';
@@ -4215,6 +4247,8 @@ Uses: [`AnyContract`](#anycontract), [`Persona`](#persona), [`SessionReport`](#s
 ### summarize
 
 Summarizes usage per action and surface over recent sessions, with older sessions weighing less.
+`from` is the first session whose events are all kept: the window never reaches further back,
+so figures cover only sessions whose use is known in full.
 
 ```ts
 function summarize(
@@ -4223,6 +4257,7 @@ function summarize(
   events: readonly UsageEvent[],
   sessions: readonly SessionRecord[],
   session: number,
+  from?: number,
 ): UsageSummary;
 ```
 
@@ -4299,15 +4334,15 @@ One activation. Never text typed into the application, never page content.
 
 Uses: [`Via`](#via).
 
-| Property    | Type                     | Description                                                          |
-| ----------- | ------------------------ | -------------------------------------------------------------------- |
-| `action`    | `string`                 | The action used.                                                     |
-| `via`       | `Via`                    | How it was reached.                                                  |
-| `session`   | `number`                 | The session it happened in.                                          |
-| `surface?`  | `string`                 | The surface it was reached on, when known.                           |
-| `element?`  | `string`                 | The page element it came from, for actions run from generated pages. |
-| `contexts?` | `Record<string, string>` | Context values active when it happened, by context name.             |
-| `typed?`    | `boolean`                | For palette picks: whether the user typed a search first.            |
+| Property    | Type                     | Description                                                                 |
+| ----------- | ------------------------ | --------------------------------------------------------------------------- |
+| `action`    | `string`                 | The action used.                                                            |
+| `via`       | `Via`                    | How it was reached.                                                         |
+| `session`   | `number`                 | The session it happened in.                                                 |
+| `surface?`  | `string`                 | The surface it was reached on, when known: its use then counts there alone. |
+| `element?`  | `string`                 | The page element it came from, for actions run from generated pages.        |
+| `contexts?` | `Record<string, string>` | Context values active when it happened, by context name.                    |
+| `typed?`    | `boolean`                | For palette picks: whether the user typed a search first.                   |
 
 ### UsageRow
 
@@ -4449,7 +4484,9 @@ Uses: [`AnyContract`](#anycontract), [`PlanRequest`](#planrequest).
 
 ### stableStringify
 
-JSON with object keys sorted, so equal values always serialize to the same bytes.
+JSON with object keys sorted, so equal values always serialize to the same bytes. Values with
+`toJSON`, such as dates, serialize as it says; other objects must be plain, and a value that
+contains itself is refused.
 
 ```ts
 function stableStringify(value: unknown): string;

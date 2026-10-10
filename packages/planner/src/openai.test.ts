@@ -176,4 +176,51 @@ describe('openai', () => {
       message: "localhost:1234 couldn't be reached: connect ECONNREFUSED",
     });
   });
+
+  it('takes any refusal of the schema as too complex, so a smaller one is tried', async () => {
+    const send = fetching(
+      json({ error: { message: "Invalid schema: 'pattern' isn't allowed" } }, 400),
+    );
+    await expect(
+      openai({ model: 'm', apiKey: 'k', fetch: send }).generate(call()),
+    ).rejects.toMatchObject({ status: 502, reason: 'too-complex' });
+  });
+
+  it('fails with a status when the stream reports an error, times out or is canceled', async () => {
+    const errored = events([
+      { choices: [{ delta: { content: '{"sta' } }] },
+      { error: { message: 'The server is overloaded', type: 'server_error' } },
+    ]);
+    await expect(
+      openai({ model: 'm', apiKey: 'k', fetch: fetching(errored) }).generate(call()),
+    ).rejects.toMatchObject({
+      status: 502,
+      message: 'OpenAI failed mid-answer: The server is overloaded',
+    });
+
+    const encoder = new TextEncoder();
+    /** A stream that sends a little, then waits until its call is aborted. */
+    const stalling = vi.fn(async (_url: string, init: { signal?: unknown }) => {
+      const signal = init.signal as AbortSignal;
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"{"}}]}\n\n'));
+          signal.addEventListener('abort', () => controller.error(signal.reason));
+        },
+      });
+      return new Response(body, {
+        headers: { 'content-type': 'text/event-stream' },
+      }) as never;
+    });
+    await expect(
+      openai({ model: 'm', apiKey: 'k', timeoutMs: 50, fetch: stalling }).generate(call()),
+    ).rejects.toMatchObject({ status: 502, message: 'OpenAI timed out' });
+
+    const caller = new AbortController();
+    const pending = openai({ model: 'm', apiKey: 'k', fetch: stalling }).generate(
+      call({ signal: caller.signal }),
+    );
+    setTimeout(() => caller.abort(), 20);
+    await expect(pending).rejects.toMatchObject({ status: 499 });
+  });
 });

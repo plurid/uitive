@@ -1,10 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createUitive, type PlanProgress } from '@plurid/uitive-core';
+import { z } from 'zod';
+import {
+  action,
+  createUitive,
+  defineApp,
+  page,
+  source,
+  type AnySourceSpec,
+  type PlanProgress,
+} from '@plurid/uitive-core';
+import { payments } from '../../core/src/__fixtures__/payments.js';
 import { scale } from '../../core/src/__fixtures__/scale.js';
 import { ops } from './__fixtures__/ops.js';
 import { PlannerError, type Model, type ModelCall, type ModelReply } from './model.js';
 import { modelPlanner } from './plan.js';
 import { RULES } from './prompt.js';
+import { outputSchema, size } from './schema.js';
 
 const answer = {
   status: 'done',
@@ -201,5 +212,160 @@ describe('modelPlanner', () => {
     await expect(modelPlanner({ model }).plan(request(), ops)).rejects.toMatchObject({
       status: 503,
     });
+  });
+
+  it('never counts an unprompted plan as asked for, whatever basis the model claims', async () => {
+    const { model } = scripted([{}]);
+    const planned = createUitive({ contract: ops, now: () => 0 }).request('plan');
+    const result = await modelPlanner({ model }).plan(planned, ops);
+    expect(result.operations.length).toBeGreaterThan(0);
+    expect(result.operations.every((entry) => entry.scope === undefined)).toBe(true);
+  });
+});
+
+describe('modelPlanner when the repair fails', () => {
+  const orphan = {
+    ...answer,
+    pages: [
+      {
+        ...answer.pages[0],
+        elements: [
+          {
+            id: 'top',
+            block: 'section',
+            props: { title: 'Mine', layout: 'grid' },
+            children: ['ghost'],
+          },
+        ],
+      },
+    ],
+  };
+
+  it('keeps what policy accepted of the first answer, and says why', async () => {
+    for (const [second, why] of [
+      [{ text: 'Sorry, here you go: {oops' }, "The repaired answer didn't follow the plan's form"],
+      [{ stop: 'cut' }, "The model couldn't make a plan"],
+      [{ stop: 'refused' }, "The model couldn't make a plan"],
+      [new PlannerError('OpenAI rate limit reached', 429), 'The model is busy; try again shortly'],
+      [new PlannerError('OpenAI timed out', 502), "The model couldn't make a plan"],
+    ] as const) {
+      const { model, calls } = scripted([{ text: JSON.stringify(orphan) }, second]);
+      const result = await modelPlanner({ model }).plan(request(), ops);
+      expect(calls).toHaveLength(2);
+      expect(result.operations.map((entry) => entry.change.kind)).toEqual(['list', 'choice']);
+      expect(result.meta).toMatchObject({ unrepaired: why, stages: 2 });
+      expect(result.meta.repaired).toBeUndefined();
+    }
+  });
+
+  it('still fails when the person canceled, or when no part of the first answer was valid', async () => {
+    const caller = new AbortController();
+    const { model } = scripted([
+      { text: JSON.stringify(orphan) },
+      new PlannerError('Canceled', 499),
+    ]);
+    caller.abort();
+    await expect(
+      modelPlanner({ model }).plan(request(), ops, { signal: caller.signal }),
+    ).rejects.toMatchObject({ status: 499 });
+    const { model: stray } = scripted([{ text: 'not json' }, { stop: 'cut' }], 'text');
+    await expect(modelPlanner({ model: stray }).plan(request(), ops)).rejects.toMatchObject({
+      status: 502,
+    });
+  });
+});
+
+describe('modelPlanner scopes', () => {
+  const empty = JSON.stringify({ status: 'done', candidates: [], note: '', pages: [] });
+  const enumOf = (call: ModelCall | undefined) =>
+    (call?.schema.$defs as Record<string, { enum: string[] }>).action?.enum;
+
+  it('prepares a schema for each request’s actions, not only its sources', async () => {
+    const sources: Record<string, AnySourceSpec> = {};
+    for (let index = 0; index < 9; index++) {
+      sources[`s${index}`] = source({
+        label: `Thing ${index}`,
+        description: `Things ${index}`,
+        row: z.object({ id: z.string(), name: z.string() }),
+        key: 'id',
+        title: 'name',
+      });
+    }
+    const big = defineApp({
+      id: 'big',
+      description: 'Nine sources',
+      actions: {
+        frobnicate: action({ label: 'Frobnicate widgets', description: 'Frobnicates' }),
+        zorch: action({ label: 'Zorch gadgets', description: 'Zorches' }),
+      },
+      sources,
+      surfaces: {
+        home: page({})({ label: 'Home', description: 'Home', standard: () => ({ sections: [] }) }),
+      },
+    });
+    const { model, calls } = scripted([{ text: empty }, { text: empty }]);
+    const planner = modelPlanner({ model });
+    const client = createUitive({ contract: big, now: () => 0 });
+    await planner.plan(client.request('command', 'frobnicate'), big);
+    await planner.plan(client.request('command', 'zorch'), big);
+    expect(enumOf(calls[0])).toContain('frobnicate');
+    expect(enumOf(calls[1])).toContain('zorch');
+    expect(enumOf(calls[1])).not.toContain('frobnicate');
+  });
+
+  it('scopes a contract with few sources when its enums would be too large', async () => {
+    const many = defineApp({
+      id: 'many',
+      description: 'Many actions',
+      actions: {
+        ...Object.fromEntries(
+          Array.from({ length: 900 }, (_, index) => [
+            `do-${index}`,
+            // Runnable, with a param: forms would offer every one of them.
+            action({
+              label: `Task ${index}`,
+              description: 'Something to do',
+              effect: 'write',
+              params: z.object({ note: z.string() }),
+            }),
+          ]),
+        ),
+        frobnicate: action({ label: 'Frobnicate widgets', description: 'Frobnicates' }),
+      },
+      surfaces: {
+        home: page({})({ label: 'Home', description: 'Home', standard: () => ({ sections: [] }) }),
+      },
+    });
+    const { model, calls } = scripted([{ text: empty }]);
+    const result = await modelPlanner({ model }).plan(
+      createUitive({ contract: many, now: () => 0 }).request('command', 'frobnicate'),
+      many,
+    );
+    expect(result.meta.subset).toEqual([]);
+    expect(size(calls[0]?.schema).largestEnum).toBeLessThanOrEqual(400);
+    expect(enumOf(calls[0])).toContain('frobnicate');
+  });
+
+  it('retries a schema too complex with half the sources, never none', async () => {
+    // An empty answer in the form payments' schema asks for.
+    const required = outputSchema(payments).required as string[];
+    const nothing = Object.fromEntries(
+      required.map((key) => [key, key === 'status' ? 'done' : key === 'note' ? '' : []]),
+    );
+    const { model, calls } = scripted([
+      new PlannerError('Schema too complex', 502, 'too-complex'),
+      { text: JSON.stringify(nothing) },
+    ]);
+    // Nothing on screen and no word that names a source: retrieval alone would pick none.
+    const ask = createUitive({ contract: payments, now: () => 0 }).request('command', 'calmer');
+    const result = await modelPlanner({ model }).plan(ask, payments);
+    const sources = (call: ModelCall | undefined) =>
+      (call?.schema.$defs as { query?: { properties: { source: { enum: string[] } } } }).query
+        ?.properties.source.enum;
+    const half = Math.ceil(payments.sourceIds.length / 2);
+    expect(sources(calls[0])).toEqual(payments.sourceIds);
+    expect(sources(calls[1])).toHaveLength(half);
+    expect(result.meta.subset).toHaveLength(half);
+    expect(calls[1]?.contract).toContain(`(${half} of ${payments.sourceIds.length} sources`);
   });
 });

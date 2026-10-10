@@ -11,8 +11,9 @@ Serves Uitive's agent kit over the Model Context Protocol, on stdio.
 Options:
   --root <dir>       The project to work in; no tool reads or writes outside it.
                      Default: the current directory.
-  --allow-network    Lets tools read API descriptions from URLs. Off by default: a URL a
-                     model chose can carry data out.
+  --allow-network    Lets tools read API descriptions from URLs, and discovery crawl hosts
+                     other than this machine's. Off by default: a URL a model chose can
+                     carry data out.
   -h, --help
 `;
 

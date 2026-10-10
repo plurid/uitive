@@ -74,29 +74,64 @@ export function strength(
   return activity(summary, change, change.target) - (evict ? activity(summary, change, evict) : 0);
 }
 
+/** How many plans in a row proposed a change, counting a session once, and the latest session. */
+export interface Agreement {
+  /** Plans in a row that proposed it, at most one a session. */
+  count: number;
+  /** The session the latest of them was made in. */
+  session: number;
+}
+
 /**
  * Turns a plan's accepted operations into the pending set, tracking how many plans in a row
- * proposed each one: a model change waits for a second plan unless it is strong enough.
+ * proposed each one: a model change waits for a plan in a later session to agree, unless it is
+ * strong enough. Plans in the same session count once, so planning again proves nothing.
  */
 export function stage(
   accepted: readonly Operation[],
-  seen: Readonly<Record<string, number>>,
+  seen: Readonly<Record<string, Agreement>>,
   strengths: readonly number[],
-  options: StabilizerOptions & { hysteresis: boolean },
-): { pending: Pending[]; seen: Record<string, number> } {
-  const next: Record<string, number> = {};
+  options: StabilizerOptions & { hysteresis: boolean; session: number },
+): { pending: Pending[]; seen: Record<string, Agreement> } {
+  const next: Record<string, Agreement> = {};
   const pending = accepted.map((operation, index) => {
     const key = operationKey(operation.change);
-    next[key] = (seen[key] ?? 0) + 1;
+    const before = seen[key];
+    const count =
+      before === undefined
+        ? 1
+        : before.session === options.session
+          ? before.count
+          : before.count + 1;
+    next[key] = { count, session: options.session };
     const power = strengths[index] ?? 0;
     const held =
-      options.hysteresis &&
-      operation.origin === 'model' &&
-      (next[key] ?? 0) < 2 &&
-      power < options.margin;
+      options.hysteresis && operation.origin === 'model' && count < 2 && power < options.margin;
     return { ...operation, key, strength: power, held };
   });
   return { pending, seen: next };
+}
+
+/** Items of a change's list that operations applied in or after `since` moved. */
+function movedSince(
+  definition: Definition,
+  change: Extract<Change, { kind: 'list' }>,
+  since: number,
+): Set<string> {
+  return new Set(
+    definition.operations
+      .filter((operation) => {
+        const other = operation.change;
+        return (
+          isApplied(operation) &&
+          operation.session >= since &&
+          other.kind === 'list' &&
+          other.surface === change.surface &&
+          other.context === change.context
+        );
+      })
+      .map((operation) => (operation.change as Extract<Change, { kind: 'list' }>).target),
+  );
 }
 
 /**
@@ -118,20 +153,7 @@ export function evictFor(
   if (state.visible.has(change.target) || state.visible.size < spec.capacity) return undefined;
   const required = new Set(spec.required ?? []);
   const order = contract.items(change.surface, change.context);
-  const fresh = new Set(
-    definition.operations
-      .filter((operation) => {
-        const other = operation.change;
-        return (
-          isApplied(operation) &&
-          operation.session >= protectSince &&
-          other.kind === 'list' &&
-          other.surface === change.surface &&
-          other.context === change.context
-        );
-      })
-      .map((operation) => (operation.change as Extract<Change, { kind: 'list' }>).target),
-  );
+  const fresh = movedSince(definition, change, protectSince);
   const candidates = [...state.visible]
     .filter((item) => item !== change.target && !state.pinned.has(item) && !required.has(item))
     .sort(
@@ -154,6 +176,11 @@ export function applyOperation(
     adaptation: string;
     /** @default DEFAULT_STABILIZER */
     options?: StabilizerOptions;
+    /**
+     * Items moved in or after this session are spared as the one that makes room while another
+     * candidate remains. @default the session
+     */
+    since?: number;
   },
   status: AppliedOperation['status'] = 'active',
 ): Definition {
@@ -183,7 +210,7 @@ export function applyOperation(
     definition,
     operation.change,
     context.summary,
-    context.session,
+    context.since ?? context.session,
   );
   const change: Change =
     operation.change.kind === 'list'
@@ -200,17 +227,20 @@ export function applyOperation(
     session: context.session,
     adaptation: context.adaptation,
   };
-  // A later choice of the same setting replaces the earlier one: keeping both only fills the list
-  // of changes with values nobody sees any more.
+  // A later choice of the same setting replaces the earlier one, and a new suggestion one with the
+  // same aim: keeping both only fills the list of changes with values nobody sees any more.
+  const key = status === 'suggested' ? operationKey(change) : undefined;
   const kept =
-    change.kind === 'choice'
+    change.kind === 'choice' || key !== undefined
       ? definition.operations.filter(
           (entry) =>
             !(
-              entry.layer === operation.layer &&
-              (entry.status === 'active' || entry.status === 'kept') &&
-              entry.change.kind === 'choice' &&
-              entry.change.surface === change.surface
+              (change.kind === 'choice' &&
+                entry.layer === operation.layer &&
+                (entry.status === 'active' || entry.status === 'kept') &&
+                entry.change.kind === 'choice' &&
+                entry.change.surface === change.surface) ||
+              (entry.status === 'suggested' && operationKey(entry.change) === key)
             ),
         )
       : definition.operations;
@@ -252,7 +282,10 @@ export function settle(
   const dropped: Settled['dropped'] = [];
   const rejected: Rejection[] = [];
   let budget = options.budget;
+  // Surfaces that already lost an item from view at this safe moment, by demotion or eviction.
   const demoted = new Set<string>();
+  // An item keeps its place for `dwell` sessions after it moves, whichever change would move it.
+  const since = session - options.dwell + 1;
 
   const ordered = [...input.pending].sort(
     (a, b) => b.strength - a.strength || a.key.localeCompare(b.key),
@@ -278,12 +311,18 @@ export function settle(
     const change = operation.change;
     const structural = change.kind !== 'collection';
     const surfaceKey = `${change.surface}|${change.kind === 'list' ? (change.context ?? '') : ''}`;
-    const isDemotion = change.kind === 'list' && change.op === 'demote';
-    if (structural && (budget <= 0 || (isDemotion && demoted.has(surfaceKey)))) {
+    const evict =
+      change.kind === 'list' ? evictFor(contract, definition, change, summary, since) : undefined;
+    const pushesOut = (change.kind === 'list' && change.op === 'demote') || evict !== undefined;
+    if (structural && (budget <= 0 || (pushesOut && demoted.has(surfaceKey)))) {
       waiting.push(operation);
       continue;
     }
-    if (change.kind === 'list' && recentlyMoved(definition, change, session, options.dwell)) {
+    if (
+      change.kind === 'list' &&
+      (recentlyMoved(definition, change, session, options.dwell) ||
+        (evict !== undefined && movedSince(definition, change, since).has(evict)))
+    ) {
       waiting.push(operation);
       continue;
     }
@@ -292,12 +331,12 @@ export function settle(
     definition = applyOperation(
       definition,
       recheck.accepted[0] ?? operation,
-      { contract, summary, session, adaptation },
+      { contract, summary, session, adaptation, options, since },
       change.kind === 'collection' ? 'suggested' : 'active',
     );
     applied.push(definition.operations[definition.operations.length - 1] as AppliedOperation);
     if (structural) budget--;
-    if (isDemotion) demoted.add(surfaceKey);
+    if (pushesOut) demoted.add(surfaceKey);
   }
   return { definition, applied, pending: waiting, dropped, rejected };
 }
@@ -320,8 +359,8 @@ function recentlyMoved(
 }
 
 /**
- * Reverts an applied operation. A planned change then cools down; reverting the same change a
- * second time blocks it for good.
+ * Reverts an applied operation. A planned change then cools down; reverting the same planned
+ * change a second time blocks it for good.
  */
 export function revert(
   definition: Definition,
@@ -337,9 +376,11 @@ export function revert(
   let { cooldowns, blocked } = definition;
   if (target.origin !== 'user') {
     const key = operationKey(target.change);
+    // Only a planned change reverted before counts: the person undoing their own is no verdict.
     const before = definition.operations.some(
       (operation) =>
         operation.id !== id &&
+        operation.origin !== 'user' &&
         operation.status === 'reverted' &&
         operationKey(operation.change) === key,
     );

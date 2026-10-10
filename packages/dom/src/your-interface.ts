@@ -1,4 +1,5 @@
 import type { Adaptation, AppliedOperation, Operation, Origin } from '@plurid/uitive-core';
+import { accept } from './accept.js';
 import type { ClientLike } from './client-like.js';
 import { UitiveElement } from './element.js';
 import { escape, plural } from './html.js';
@@ -57,6 +58,7 @@ export class UitiveYourInterface extends UitiveElement {
       snapshot.session,
       snapshot.autonomy,
       snapshot.pending.map((operation) => `${operation.id}${operation.held ? '*' : ''}`).join(),
+      snapshot.preview ?? '',
       this.#editing,
       this.#message ?? '',
     ].join('|');
@@ -293,12 +295,14 @@ export class UitiveYourInterface extends UitiveElement {
           client.preview(client.getSnapshot().preview === argument ? undefined : argument);
         }
         return;
-      case 'accept':
-        if (argument !== undefined && !client.accept(argument)) {
-          this.#message = 'There is no room for another item. Remove one first.';
+      case 'accept': {
+        const refusal = argument === undefined ? undefined : accept(client, argument);
+        if (refusal !== undefined) {
+          this.#message = refusal;
           this.update(true);
         }
         return;
+      }
       case 'export':
         this.exportDocument();
         return;

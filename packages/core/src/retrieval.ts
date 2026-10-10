@@ -2,6 +2,7 @@ import { rowParam } from './action.js';
 import type { AnyContract } from './contract.js';
 import type { PlanRequest } from './planner.js';
 import { humanize } from './field.js';
+import { routeLabel } from './route.js';
 
 /** One source with everything that belongs to it: what a planner is shown together. */
 export interface Area {
@@ -81,7 +82,7 @@ export function areasOf(contract: AnyContract): Area[] {
         contract.actions[action]?.description ?? '',
       ]),
       ...routes.flatMap((route) => [
-        contract.routes[route]?.label ?? '',
+        routeLabel(contract, route),
         contract.routes[route]?.path ?? '',
       ]),
     ];

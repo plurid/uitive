@@ -14,15 +14,46 @@ const quote = (value: string) => JSON.stringify(value);
  * `adaptMarkup`, so nothing is ever out of reach. Choosing one clicks the hidden original, so the
  * application's own handler runs; when the original isn't in the page, it emits `uitive-open`
  * (`detail: { list, action }`) for the application to run. Shows nothing while no item is out.
- * The `label` attribute names its button (default "More").
+ * The `label` attribute names its button (default "More"). Opening it focuses the first item;
+ * the arrow keys, Home and End move between items, and Escape closes it.
  */
 export class UitiveMore extends UitiveElement<MoreClientLike> {
   #open = false;
   readonly #outside = (event: Event) => {
     if (this.#open && !event.composedPath().includes(this)) this.#toggle(false);
   };
-  readonly #escape = (event: Event) => {
-    if ((event as KeyboardEvent).key === 'Escape' && this.#open) this.#toggle(false);
+  readonly #keys = (event: Event) => {
+    if (!this.#open) return;
+    const key = (event as KeyboardEvent).key;
+    if (key === 'Escape') {
+      this.#toggle(false);
+      this.#focus('.toggle');
+      return;
+    }
+    if (key === 'Tab') {
+      this.#toggle(false);
+      return;
+    }
+    const items = [...this.content.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+    const at = items.indexOf(this.shadowRoot?.activeElement as HTMLElement);
+    const last = items.length - 1;
+    const next =
+      key === 'ArrowDown'
+        ? at === last
+          ? 0
+          : at + 1
+        : key === 'ArrowUp'
+          ? at <= 0
+            ? last
+            : at - 1
+          : key === 'Home'
+            ? 0
+            : key === 'End'
+              ? last
+              : undefined;
+    if (next === undefined) return;
+    event.preventDefault();
+    items[next]?.focus();
   };
 
   static get observedAttributes(): string[] {
@@ -36,13 +67,13 @@ export class UitiveMore extends UitiveElement<MoreClientLike> {
   connectedCallback(): void {
     super.connectedCallback();
     this.ownerDocument.addEventListener('pointerdown', this.#outside, true);
-    this.addEventListener('keydown', this.#escape);
+    this.addEventListener('keydown', this.#keys);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this.ownerDocument.removeEventListener('pointerdown', this.#outside, true);
-    this.removeEventListener('keydown', this.#escape);
+    this.removeEventListener('keydown', this.#keys);
   }
 
   protected styles(): string {
@@ -82,6 +113,10 @@ export class UitiveMore extends UitiveElement<MoreClientLike> {
     this.update(true);
   }
 
+  #focus(selector: string): void {
+    this.content.querySelector<HTMLElement>(selector)?.focus();
+  }
+
   protected key(client: MoreClientLike): string {
     const items = this.#items(client).map((item) => `${item.id}:${item.label}`);
     return JSON.stringify([items, this.#open, this.getAttribute('label')]);
@@ -91,12 +126,12 @@ export class UitiveMore extends UitiveElement<MoreClientLike> {
     const items = this.#items(client);
     if (items.length === 0) return '';
     const label = this.getAttribute('label') ?? 'More';
-    return `<button type="button" class="toggle" data-act="toggle" aria-haspopup="menu" aria-expanded="${this.#open}">${escape(label)}</button>${
+    return `<button type="button" class="toggle" data-key="toggle" data-act="toggle" aria-haspopup="menu" aria-expanded="${this.#open}">${escape(label)}</button>${
       this.#open
         ? `<div class="menu" role="menu">${items
             .map(
               (item) =>
-                `<button type="button" role="menuitem" data-act="open" data-arg="${escape(item.id)}" title="${escape(item.description)}">${escape(item.label)}</button>`,
+                `<button type="button" role="menuitem" tabindex="-1" data-act="open" data-arg="${escape(item.id)}" title="${escape(item.description)}">${escape(item.label)}</button>`,
             )
             .join('')}</div>`
         : ''
@@ -106,11 +141,13 @@ export class UitiveMore extends UitiveElement<MoreClientLike> {
   protected act(action: string, argument: string | undefined): void {
     if (action === 'toggle') {
       this.#toggle(!this.#open);
+      if (this.#open) this.#focus('[role="menuitem"]');
       return;
     }
     const client = this.client;
     if (action !== 'open' || !argument || !client) return;
     this.#toggle(false);
+    this.#focus('.toggle');
     const list = this.#list();
     client.record(argument, { via: 'overflow', surface: list });
     const root = this.getRootNode() as Document | ShadowRoot;

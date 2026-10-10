@@ -1,5 +1,20 @@
-/** A planner failure, with the HTTP status the handler answers with. */
+/** What a browser is told for each status: never a provider's words or a server's name. */
+const PUBLIC: Readonly<Record<number, string>> = {
+  429: 'The model is busy; try again shortly',
+  499: 'Canceled',
+  502: "The model couldn't make a plan",
+  503: 'Planning is unavailable',
+};
+
+/**
+ * A planner failure, with the HTTP status the handler answers with. Its `message` may hold a
+ * provider's own words and the address of a model's server, so only `onError` hears it; the
+ * browser gets `publicMessage`.
+ */
 export class PlannerError extends Error {
+  /** What the handler tells the browser: fixed for each status, so details stay on the server. */
+  readonly publicMessage: string;
+
   constructor(
     message: string,
     readonly status: number,
@@ -7,7 +22,22 @@ export class PlannerError extends Error {
     readonly reason?: 'too-complex',
   ) {
     super(message);
+    this.publicMessage = PUBLIC[status] ?? 'Planning failed';
   }
+}
+
+/**
+ * A call that failed before the provider finished answering: canceled by the caller, timed out,
+ * or cut off, as the status the handler answers with.
+ */
+export function interrupted(error: unknown, caller: unknown, provider: string): PlannerError {
+  if (error instanceof PlannerError) return error;
+  if ((caller as { aborted?: boolean } | undefined)?.aborted)
+    return new PlannerError('Canceled', 499);
+  const name = (error as { name?: unknown } | null)?.name;
+  if (name === 'TimeoutError') return new PlannerError(`${provider} timed out`, 502);
+  const message = error instanceof Error ? error.message : String(error);
+  return new PlannerError(`${provider} couldn't be reached: ${message}`, 502);
 }
 
 /** One message of a planning conversation: the request, and for a repair, the answer and what to fix. */
@@ -112,15 +142,26 @@ export function environment(name: string): string | undefined {
   return value === undefined || value === '' ? undefined : value;
 }
 
-/** The signal a call runs under: the caller's and a timeout together, where the platform can. */
+interface SignalLike {
+  aborted: boolean;
+  reason?: unknown;
+  addEventListener(type: 'abort', listener: () => void): void;
+}
+
+/** The signal a call runs under: the caller's and a timeout together, so neither drops the other. */
 export function deadline(signal: unknown, timeoutMs: number): unknown {
-  const signals = (
-    globalThis as {
-      AbortSignal?: { timeout?(ms: number): unknown; any?(signals: unknown[]): unknown };
-    }
-  ).AbortSignal;
-  const timeout = signals?.timeout?.(timeoutMs);
-  if (signal === undefined) return timeout;
-  if (timeout === undefined || !signals?.any) return signal;
-  return signals.any([signal, timeout]);
+  const platform = globalThis as {
+    AbortSignal?: { timeout?(ms: number): unknown; any?(signals: unknown[]): unknown };
+    AbortController?: new () => { signal: unknown; abort(reason?: unknown): void };
+  };
+  const timeout = platform.AbortSignal?.timeout?.(timeoutMs);
+  if (signal === undefined || timeout === undefined) return signal ?? timeout;
+  if (platform.AbortSignal?.any) return platform.AbortSignal.any([signal, timeout]);
+  if (!platform.AbortController) return signal;
+  const either = new platform.AbortController();
+  for (const source of [signal, timeout] as SignalLike[]) {
+    if (source.aborted) either.abort(source.reason);
+    else source.addEventListener('abort', () => either.abort(source.reason));
+  }
+  return either.signal;
 }

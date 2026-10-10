@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import { uitive } from '../vite/uitive.ts';
 
@@ -6,7 +7,7 @@ export default defineConfig({
   plugins: [uitive()],
   test: {
     environment: 'node',
-    root: new URL('../../', import.meta.url).pathname,
+    root: fileURLToPath(new URL('../../', import.meta.url)),
     include: [
       'packages/*/src/**/*.test.{ts,tsx}',
       'apps/*/src/**/*.test.{ts,tsx}',

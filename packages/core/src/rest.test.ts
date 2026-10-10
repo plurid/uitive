@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { createData, defineApp, field, query, restFetch, restPerform, source } from './index.js';
-import type { HttpFetch } from './index.js';
+import type { FetchRequest, HttpFetch, RestSource } from './index.js';
 
 interface Call {
   url: string;
@@ -134,7 +134,104 @@ describe('restFetch', () => {
   });
 });
 
+describe('restFetch pushdown', () => {
+  const read = (spec: RestSource, request: Partial<FetchRequest>, body: unknown = { data: [] }) => {
+    const { calls, fetch } = server([body]);
+    const binding = restFetch({ base: '', fetch, sources: { items: spec } });
+    return {
+      calls,
+      done: binding(
+        { source: 'items', fields: ['id'], filter: [], sort: [], limit: 10, ...request },
+        {},
+      ),
+    };
+  };
+  const between = { field: 'price', op: 'between' as const, values: [1, 5] };
+
+  it('applies everything pushed to it, or refuses', async () => {
+    const one = read(
+      { path: '/items', rows: '/data', filters: { 'price:between': 'price' } },
+      { filter: [between] },
+    );
+    await one.done;
+    expect(one.calls[0]?.url).toBe('/items?limit=10&price=1%2C5');
+    const pair = read(
+      {
+        path: '/items',
+        rows: '/data',
+        filters: { 'price:gte': 'price_min', 'price:lte': 'price_max' },
+      },
+      { filter: [between] },
+    );
+    await pair.done;
+    expect(pair.calls[0]?.url).toBe('/items?limit=10&price_min=1&price_max=5');
+    const half = read(
+      { path: '/items', rows: '/data', filters: { 'price:gte': 'price_min' } },
+      { filter: [between] },
+    );
+    await expect(half.done).rejects.toThrow("items can't filter price by between");
+    const sorted = read(
+      { path: '/items', rows: '/data' },
+      { sort: [{ field: 'price', direction: 'asc' }] },
+    );
+    await expect(sorted.done).rejects.toThrow("items can't sort");
+    const searched = read({ path: '/items', rows: '/data' }, { search: 'red' });
+    await expect(searched.done).rejects.toThrow("items can't search");
+  });
+
+  it("follows a cursor's next pointer when the API pages below the limit asked for", async () => {
+    const rows = Array.from({ length: 25 }, (_, index) => ({ id: `i${index}` }));
+    const capped = read(
+      {
+        path: '/items',
+        rows: '/data',
+        pagination: { kind: 'cursor', param: 'after', next: '/next' },
+      },
+      { limit: 100 },
+      { data: rows, next: 'i24' },
+    );
+    expect((await capped.done).next).toBe('i24');
+    const last = read(
+      {
+        path: '/items',
+        rows: '/data',
+        pagination: { kind: 'cursor', param: 'after', next: '/next' },
+      },
+      { limit: 100 },
+      { data: rows, next: null },
+    );
+    expect((await last.done).next).toBeUndefined();
+  });
+});
+
 describe('restFetch by key', () => {
+  it('reads a row that is gone as missing, and never a dot segment', async () => {
+    const urls: string[] = [];
+    const fetch: HttpFetch = async (url) => {
+      urls.push(url);
+      return url.endsWith('/gone')
+        ? { ok: false, status: 404, json: async () => ({}) }
+        : { ok: true, status: 200, json: async () => ({ id: url.split('/').pop() }) };
+    };
+    const binding = restFetch({
+      base: '',
+      fetch,
+      sources: { customers: { path: '/customers', item: { path: '/customers/{id}' } } },
+    });
+    const result = await binding(
+      {
+        source: 'customers',
+        fields: ['id'],
+        filter: [{ field: 'id', op: 'in', values: ['c1', 'gone', '..'] }],
+        sort: [],
+        limit: 3,
+      },
+      {},
+    );
+    expect(result.rows).toEqual([{ id: 'c1' }]);
+    expect(urls).toEqual(['/customers/c1', '/customers/gone']);
+  });
+
   it('reads rows one by one from an item endpoint and applies the other filters itself', async () => {
     const { calls, fetch } = server([
       { order: { id: 'o 1', status: 'paid' } },
@@ -220,5 +317,23 @@ describe('restPerform', () => {
       actions: { x: { method: 'POST', path: '/x/{id}' } },
     });
     await expect(perform({}, { action: 'x', idempotencyKey: 'k' })).rejects.toThrow('x needs id');
+  });
+
+  it('never lets a param climb out of its path', async () => {
+    const { calls, fetch } = server([{}]);
+    const perform = restPerform({
+      base: 'https://api.test/v1',
+      fetch,
+      actions: { 'orders.cancel': { method: 'POST', path: '/orders/{order}/cancel' } },
+    });
+    for (const order of ['..', '.']) {
+      await expect(
+        perform({ order }, { action: 'orders.cancel', idempotencyKey: 'k' }),
+      ).rejects.toThrow(`can't use "${order}" as order`);
+    }
+    await expect(
+      perform({ order: 'x' }, { action: 'constructor', idempotencyKey: 'k' }),
+    ).rejects.toThrow('No endpoint for constructor');
+    expect(calls).toHaveLength(0);
   });
 });

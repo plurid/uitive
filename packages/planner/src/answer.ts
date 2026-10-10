@@ -1,24 +1,77 @@
 type Json = Record<string, unknown>;
 
 /**
- * The JSON in a model's answer: the whole text, a fenced block, or the outermost object, since
- * models without structured output sometimes wrap their JSON in prose.
+ * The JSON in a model's answer, since models without structured output sometimes wrap it in prose:
+ * the whole text, else any fenced block, else the first balanced object that parses, each also
+ * read without trailing commas.
  */
 export function parseAnswer(text: string): unknown {
-  const trimmed = text.trim();
-  const fenced = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(trimmed)?.[1];
-  for (const candidate of [trimmed, fenced]) {
-    if (candidate === undefined) continue;
-    try {
-      return JSON.parse(candidate) as unknown;
-    } catch {
-      // Try the next reading.
+  for (const candidate of readings(text.trim())) {
+    for (const reading of [candidate, withoutTrailingCommas(candidate)]) {
+      try {
+        return JSON.parse(reading) as unknown;
+      } catch {
+        // Try the next reading.
+      }
     }
   }
-  const start = trimmed.indexOf('{');
-  const end = trimmed.lastIndexOf('}');
-  if (start === -1 || end <= start) throw new SyntaxError('No JSON object in the answer');
-  return JSON.parse(trimmed.slice(start, end + 1)) as unknown;
+  throw new SyntaxError('No JSON object in the answer');
+}
+
+/** Most objects tried in prose, so a pathological answer can't take long. */
+const ATTEMPTS = 64;
+
+function* readings(text: string): Generator<string> {
+  yield text;
+  for (const match of text.matchAll(/```[a-z]*[ \t]*\r?\n?([\s\S]*?)```/gi)) {
+    if (match[1] !== undefined) yield match[1].trim();
+  }
+  let start = text.indexOf('{');
+  for (let attempts = 0; start !== -1 && attempts < ATTEMPTS; attempts++) {
+    const end = closing(text, start);
+    if (end === -1) {
+      start = text.indexOf('{', start + 1);
+      continue;
+    }
+    yield text.slice(start, end + 1);
+    start = text.indexOf('{', end + 1);
+  }
+}
+
+/** Where the object opened at `start` closes, minding strings; -1 when it never does. */
+function closing(text: string, start: number): number {
+  let depth = 0;
+  let quoted = false;
+  for (let index = start; index < text.length; index++) {
+    const char = text[index];
+    if (quoted) {
+      if (char === '\\') index++;
+      else if (char === '"') quoted = false;
+    } else if (char === '"') quoted = true;
+    else if (char === '{') depth++;
+    else if (char === '}' && --depth === 0) return index;
+  }
+  return -1;
+}
+
+/** The text with commas before a closing brace or bracket left out, outside strings. */
+function withoutTrailingCommas(text: string): string {
+  let out = '';
+  let quoted = false;
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index] as string;
+    if (quoted) {
+      if (char === '\\') {
+        out += char + (text[index + 1] ?? '');
+        index++;
+        continue;
+      }
+      if (char === '"') quoted = false;
+    } else if (char === '"') quoted = true;
+    else if (char === ',' && /^\s*[}\]]/.test(text.slice(index + 1))) continue;
+    out += char;
+  }
+  return out;
 }
 
 const typeOf = (value: unknown): string =>

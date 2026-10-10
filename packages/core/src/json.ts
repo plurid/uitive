@@ -13,7 +13,7 @@ import {
 } from './contract.js';
 import { FIELD_META, type Field, type FieldMeta } from './field.js';
 import { stableStringify } from './hash.js';
-import { validatePage, type AnyPage } from './page.js';
+import { standardData, validatePage, type AnyPage } from './page.js';
 import type { Filter } from './query.js';
 import type { RouteSpec } from './route.js';
 import type { AnySourceSpec, Capabilities } from './source.js';
@@ -298,28 +298,19 @@ function surfaceToJson(contract: AnyContract, id: string, spec: SurfaceSpec): Su
   if (spec.kind === 'collection') {
     const item = exactSchema(spec.item, `surface ${id} items`);
     const properties = (item.properties ?? {}) as Record<string, { type?: unknown }>;
-    const title = TITLES.find((name) => properties[name]?.type === 'string');
+    const texts = Object.keys(properties).filter((name) => properties[name]?.type === 'string');
+    const title =
+      titleProperty(spec, texts) ?? TITLES.find((name) => properties[name]?.type === 'string');
     if (title === undefined) {
-      throw new Error(`surface ${id}: items need a label, title or name to be described as data`);
+      throw new Error(
+        `surface ${id}: items need a title that is one of their text properties, or a label, title or name, to be described as data`,
+      );
     }
     return { kind: 'collection', ...base, item, max: spec.max, title };
   }
   const page = spec as AnyPageSpec;
   const values = page.context === undefined ? [undefined] : (contract.contexts[page.context] ?? []);
   const pages = values.map((value) => validatePage(contract, page, page.standard(value), value));
-  const counts = new Map<string, number>();
-  for (const entry of pages) {
-    const key = stableStringify(entry);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  // The most common standard page is the default; values whose page differs are listed.
-  const common = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
-  const standard = pages.find((entry) => stableStringify(entry) === common) as AnyPage;
-  const differing = values.flatMap((value, index) =>
-    value !== undefined && stableStringify(pages[index]) !== common
-      ? [[value, pages[index] as AnyPage] as const]
-      : [],
-  );
   return {
     kind: 'page',
     ...base,
@@ -344,12 +335,44 @@ function surfaceToJson(contract: AnyContract, id: string, spec: SurfaceSpec): Su
         },
       ]),
     ),
-    standard: {
-      page: standard,
-      ...(differing.length === 0 ? {} : { values: Object.fromEntries(differing) }),
-    },
+    standard: standardData(values, pages),
   };
 }
+
+/** The text property a collection's `title` reads, found by asking it about a marked item. */
+function titleProperty(spec: CollectionSpec, texts: readonly string[]): string | undefined {
+  const mark = (name: string) => `\u0000${name}`;
+  try {
+    const said = spec.title(Object.fromEntries(texts.map((name) => [name, mark(name)])));
+    return texts.find((name) => said === mark(name));
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Whether a JSON Schema holds a regular expression. A hostile one can stall validation for
+ * seconds on a short value, so JSON contracts carry none.
+ */
+function patterned(schema: unknown): boolean {
+  if (Array.isArray(schema)) return schema.some(patterned);
+  if (schema === null || typeof schema !== 'object') return false;
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === 'pattern' || key === 'patternProperties') return true;
+    if (key === 'enum' || key === 'const' || key === 'default' || key === 'examples') continue;
+    // Under these keys, keys are names, which may be "pattern" without meaning one.
+    if (key === 'properties' || key === '$defs' || key === 'definitions') {
+      if (value !== null && typeof value === 'object' && Object.values(value).some(patterned)) {
+        return true;
+      }
+      continue;
+    }
+    if (patterned(value)) return true;
+  }
+  return false;
+}
+
+const PATTERNS = 'patterns stay out of JSON contracts; check the value in a validator instead';
 
 /** A zod schema as JSON Schema, refusing schemas the trip back would change. */
 function exactSchema(schema: z.ZodType, owner: string): Record<string, unknown> {
@@ -359,6 +382,7 @@ function exactSchema(schema: z.ZodType, owner: string): Record<string, unknown> 
   } catch {
     throw new Error(`${owner}: the schema can't be written as JSON Schema`);
   }
+  if (patterned(json)) throw new Error(`${owner}: ${PATTERNS}`);
   const back = z.toJSONSchema(z.fromJSONSchema(json as never), { target: 'draft-2020-12' });
   if (stableStringify(back) !== stableStringify(json)) {
     throw new Error(
@@ -378,13 +402,14 @@ export function fieldsToJson(fields: readonly Field[]): FieldsJson {
       ...(entry.currency === undefined ? {} : { currency: entry.currency }),
       ...(entry.code === undefined ? {} : { code: entry.code }),
       ...(entry.minor ? { minor: true } : {}),
+      ...(entry.digits === undefined ? {} : { digits: { ...entry.digits } }),
       ...(entry.unit === undefined ? {} : { unit: entry.unit }),
       ...(entry.source === undefined ? {} : { source: entry.source }),
     };
     const numeric =
       entry.type === 'number' ||
       entry.type === 'money' ||
-      (entry.type === 'time' && entry.unit !== 'iso');
+      (entry.type === 'time' && (entry.unit === 's' || entry.unit === 'ms'));
     properties[entry.name] = {
       type: numeric ? 'number' : entry.type === 'bool' ? 'boolean' : 'string',
       ...(entry.type === 'enum' ? { enum: [...entry.values] } : {}),
@@ -479,40 +504,56 @@ export function fromJson(raw: unknown, runtime: Runtime = {}): Contract {
     );
   }
   const json = raw as ContractJson;
-  const validator = (key: string) => runtime.validators?.[key];
+  const validator = (key: string) =>
+    runtime.validators !== undefined && Object.hasOwn(runtime.validators, key)
+      ? runtime.validators[key]
+      : undefined;
+  const schema = (value: unknown, owner: string) => {
+    if (patterned(value)) throw new Error(`${owner}: ${PATTERNS}`);
+    return z.fromJSONSchema(value as never);
+  };
+  const own = <T>(map: Readonly<Record<string, T>> | undefined, key: string | undefined) =>
+    map !== undefined && key !== undefined && Object.hasOwn(map, key) ? map[key] : undefined;
 
-  const actions: Record<string, ActionSpec> = {};
-  for (const [id, entry] of Object.entries(json.actions)) {
-    const { params, ...rest } = entry;
-    actions[id] = { ...rest, ...(params === undefined ? {} : { params: fieldsFromJson(params) }) };
-  }
-  const sources: Record<string, AnySourceSpec> = {};
-  for (const [id, entry] of Object.entries(json.sources)) {
-    sources[id] = { ...entry, row: fieldsFromJson(entry.row) };
-  }
-  const surfaces: Record<string, SurfaceSpec> = {};
-  for (const [id, entry] of Object.entries(json.surfaces)) {
-    if (entry.kind === 'list') {
-      const { available, ...rest } = entry;
-      surfaces[id] = {
-        ...rest,
-        ...(available === undefined
-          ? {}
-          : { available: (value: string) => available[value] ?? rest.items }),
-      };
-    } else if (entry.kind === 'choice') {
-      surfaces[id] = { ...entry };
-    } else if (entry.kind === 'collection') {
-      const { item, title, ...rest } = entry;
-      const check = validator(id);
-      const spec: CollectionSpec = {
-        ...rest,
-        item: z.fromJSONSchema(item as never),
-        title: (value) => String((value as Record<string, unknown>)[title] ?? ''),
-        ...(check === undefined ? {} : { validate: check as CollectionSpec['validate'] }),
-      };
-      surfaces[id] = spec;
-    } else {
+  // Built with fromEntries, so an ID such as `__proto__` stays an ID, and is refused as one.
+  const actions: Record<string, ActionSpec> = Object.fromEntries(
+    Object.entries(json.actions).map(([id, entry]) => {
+      const { params, ...rest } = entry;
+      return [id, { ...rest, ...(params === undefined ? {} : { params: fieldsFromJson(params) }) }];
+    }),
+  );
+  const sources: Record<string, AnySourceSpec> = Object.fromEntries(
+    Object.entries(json.sources).map(([id, entry]) => [
+      id,
+      { ...entry, row: fieldsFromJson(entry.row) },
+    ]),
+  );
+  const surfaces: Record<string, SurfaceSpec> = Object.fromEntries(
+    Object.entries(json.surfaces).map(([id, entry]): [string, SurfaceSpec] => {
+      if (entry.kind === 'list') {
+        const { available, ...rest } = entry;
+        return [
+          id,
+          {
+            ...rest,
+            ...(available === undefined
+              ? {}
+              : { available: (value: string) => own(available, value) ?? rest.items }),
+          },
+        ];
+      }
+      if (entry.kind === 'choice') return [id, { ...entry }];
+      if (entry.kind === 'collection') {
+        const { item, title, ...rest } = entry;
+        const check = validator(id);
+        const spec: CollectionSpec = {
+          ...rest,
+          item: schema(item, `surface ${id} items`),
+          title: (value) => String((value as Record<string, unknown>)[title] ?? ''),
+          ...(check === undefined ? {} : { validate: check as CollectionSpec['validate'] }),
+        };
+        return [id, spec];
+      }
       const { blocks, standard, generic, ...rest } = entry;
       const spec: AnyPageSpec = {
         ...rest,
@@ -523,18 +564,17 @@ export function fromJson(raw: unknown, runtime: Runtime = {}): Contract {
             const built: BlockSpec = {
               label: block.label,
               description: block.description,
-              props: z.fromJSONSchema(block.props as never),
+              props: schema(block.props, `surface ${id} block ${name}`),
               ...(check === undefined ? {} : { validate: check as BlockSpec['validate'] }),
             };
             return [name, built];
           }),
         ),
-        standard: (value) =>
-          (value === undefined ? undefined : standard.values?.[value]) ?? standard.page,
+        standard: (value) => own(standard.values, value) ?? standard.page,
       };
-      surfaces[id] = spec;
-    }
-  }
+      return [id, spec];
+    }),
+  );
 
   return defineApp({
     id: json.id,

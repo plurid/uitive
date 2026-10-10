@@ -4,17 +4,20 @@ Uitive adapts an interface from how it is used, so it is built to learn as littl
 
 ## What a planner sees
 
-`client.request()` returns exactly what a planner would receive: all that ever leaves the device. Call it to see for yourself.
+`client.request('plan')`, or `client.request('command', words)`, returns exactly what a planner would receive: all that ever leaves the device. Call it to see for yourself.
 
-| Part       | What it holds                                                                                                                    |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `contract` | The contract's ID and hash. The server holds the contract itself                                                                 |
-| `summary`  | Usage as numbers, per action and surface: uses, sessions with a use, how actions were reached, decayed scores                    |
-| `state`    | The interface as IDs: each list's visible and pinned items, choices, the pages in view, the person's own decisions and cooldowns |
-| `contexts` | Context values active now, such as `tool: pen`                                                                                   |
-| `route`    | The route in view, such as `orders.detail`; never the row it shows                                                               |
-| `text`     | A request, in the words the person typed into Uitive                                                                             |
-| `goal`     | The goal the person stated, if any                                                                                               |
+| Part          | What it holds                                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `kind`        | Whether it is a plan from use or a command                                                                                                                               |
+| `contract`    | The contract's ID and hash. The server holds the contract itself                                                                                                         |
+| `session`     | The number of the current session                                                                                                                                        |
+| `summary`     | Usage as numbers, per action and surface: uses, sessions with a use, how actions were reached, decayed scores                                                            |
+| `state`       | The interface as IDs: each list's visible and pinned items, choices, the pages in view, the person's own decisions and cooldowns, and the titles of items in collections |
+| `contexts`    | Context values active now, such as `tool: pen`                                                                                                                           |
+| `route`       | The route in view, such as `orders.detail`; never the row it shows                                                                                                       |
+| `text`        | A request, in the words the person typed into Uitive                                                                                                                     |
+| `goal`        | The goal the person stated, if any                                                                                                                                       |
+| `environment` | Only from the browser extension: which of an adapter's anchors and sources it found on the page, and counts of what it couldn't map; never the page's text               |
 
 It never holds:
 
@@ -26,7 +29,7 @@ It never holds:
 
 A usage event is an action's ID, how it was reached, the session, and optionally the surface, the page element and the contexts. The client keeps the last 2,000 events and 30 sessions, with the person's definition, in its store: with `localStore`, in the browser's `localStorage`, under the key you give it.
 
-The person controls all of it in "Your interface": **export** downloads their definition as JSON, **import** brings it to another device, checked like any change, **reset** goes back to the standard interface and keeps usage, and **forget** (`client.clearData()`) deletes usage, definition and history.
+The person controls all of it in "Your interface": **export** downloads their definition as JSON, **import** brings it to another device, checked like any change, **reset** goes back to the standard interface and keeps usage, freeze, blocked changes and the stated goal, and **forget** (`client.clearData()`) deletes usage, definition and history.
 
 ## Whoever pays holds the key
 
@@ -39,8 +42,10 @@ Model calls cost money, and the key belongs to whoever pays for them ([ADR 0006]
 
 `createUitiveHandler` is the only part that spends money, so it guards itself:
 
-- **`authorize`** decides who may plan. The default allows only requests to localhost, so a deployed handler refuses everyone until you check the session, as in [Planning](planning.md#a-model-on-your-server).
-- **Limits**: 20 requests a minute per client by default (`perMinute`), told apart by `X-Forwarded-For`, so put the handler behind a proxy that sets it; bodies up to 128 KiB (`maxBody`); commands up to 500 characters.
+- **`authorize`** decides who may plan, and every handler must say: there is no default. `init`'s server template allows requests only outside production, so a deployed handler refuses everyone until you replace it with the application's own session check, as in [Planning](planning.md#a-model-on-your-server). Nothing a client writes, such as its Host header, stands in for that check.
+- **Only same-site JSON**: requests must be sent as `application/json`, which a page on another origin can't do without the server's leave, and requests a browser marks as cross-site are refused.
+- **Limits**: 20 requests a minute per client by default (`perMinute`), told apart by the right-most `X-Forwarded-For` entry, the one your proxy wrote, so put the handler behind a proxy that sets it; bodies up to 128 KiB (`maxBody`), counted in bytes; requests and goals up to 500 characters. Every request's shape is checked before a planner sees it, and what the client wrote reaches the model quoted, as data.
+- **Failures say little**: the browser hears only what failed, such as "The model couldn't make a plan". A provider's own words and the address of a model's server go to `onError`, on the server.
 - **The contract stays on the server**. Clients send only its hash, and a request made with another hash is refused, so no client can widen what a planner may name.
 - **Bodies are never logged**. `onError` hears of failures without them.
 
@@ -60,8 +65,9 @@ The invariants behind these rules are in [CONTEXT.md](../CONTEXT.md#invariants).
 
 - The elements escape every value they render, and render in shadow roots.
 - `adaptMarkup` hides items with a constructable stylesheet, which works under a strict `style-src` policy, and moves no nodes.
+- **Strict Content Security Policy**: the elements style their shadow roots with constructed stylesheets too, so they need no inline styles. In React, the provider adds the default kit's styles in a style element: pass the policy's nonce, as in `<UitiveProvider client={uitive} nonce={nonce}>`, or turn them off with `styles={false}` and serve `kitStyles` from your own stylesheet. Generic blocks set no inline styles.
 - Actions with effects run through your bindings, with the person's own session, so Uitive can do nothing the person couldn't.
 
 ## The browser extension
 
-The extension prototype applies Uitive to sites it doesn't own. Page text never reaches a planner: only the structure it found. It reads data through official APIs with the person's own key, never by replaying a site's internal requests, keeps everything on the device, and "Forget everything" deletes it all. Its README has the details: [apps/extension/README.md](../apps/extension/README.md).
+The extension prototype applies Uitive to sites it doesn't own. Page text never reaches a planner: only the structure it found, and its service worker checks every request field by field, within a rate and a monthly token budget, before a model sees it. It reads data through official APIs with the person's own key, never by replaying a site's internal requests, keeps everything on the device, and "Forget everything" deletes it all, stops the extension on every site and gives back every site's access. Its README has the details: [apps/extension/README.md](../apps/extension/README.md).

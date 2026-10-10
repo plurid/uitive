@@ -3,7 +3,7 @@
 The handler that serves Uitive's model planner: a Fetch-standard function, with limits and streaming progress, that holds the contract and the key so the browser never sees either. The client's `remotePlanner` calls it.
 
 ```sh
-pnpm add @plurid/uitive-server zod
+pnpm add @plurid/uitive-core @plurid/uitive-server zod
 ```
 
 Create the handler with the contract, a planner and a way to tell who may ask:
@@ -18,8 +18,9 @@ export const handler = createUitiveHandler({
   contract: shop,
   // Without a key, as in development, the deterministic planner answers plain commands.
   planner: model ? modelPlanner({ model }) : heuristicPlanner(),
-  // Planning spends money: only signed-in people may ask. The default allows localhost only.
-  authorize: (request) => /(^|;\s*)session=/.test(request.headers.get('cookie') ?? ''),
+  // Planning spends money: only signed-in people may ask. Use the application's own session
+  // check, the one its API makes; there is no default.
+  authorize: async (request) => (await getSession(request)) !== undefined,
 });
 ```
 
@@ -43,8 +44,8 @@ In Express, Fastify or `node:http`, in CommonJS or ES modules, `toNodeListener` 
 createServer(toNodeListener(handler)).listen(8787);
 ```
 
-- **`authorize` first**: planning spends money, so by default only requests to localhost may plan. In production, check the session.
-- Requests are limited to 20 a minute per client and 128 KiB each, and bodies are never logged.
+- **`authorize` first**: planning spends money, so every handler says who may plan, with the application's own session check; there is no default.
+- It takes only same-site JSON, checks every request's shape, limits requests to 20 a minute per client and 128 KiB each, and never logs bodies. The browser hears only what failed; the details go to `onError`.
 - Clients that accept `application/x-ndjson` get progress lines, then the result.
 - It re-exports [`@plurid/uitive-planner`](https://github.com/plurid/uitive/blob/master/packages/planner/README.md), with Anthropic's SDK included for `anthropic()`; OpenAI-compatible servers and Gemini need nothing more.
 

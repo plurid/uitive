@@ -22,7 +22,7 @@ export function assertIds(domain: string, ids: readonly string[], pattern = ID_P
 }
 
 /** Maps a value to the canonical ID it names, comparing case-insensitively. */
-export function canonicaliser(ids: readonly string[]): (value: string) => string | undefined {
+export function canonicalizer(ids: readonly string[]): (value: string) => string | undefined {
   const byFolded = new Map(ids.map((id) => [id.toLowerCase(), id]));
   return (value) => byFolded.get(value.trim().toLowerCase());
 }

@@ -3,7 +3,8 @@ import { rowParam } from './action.js';
 import type { ActionSpec, AnyContract, AnyPageSpec, BlockSpec } from './contract.js';
 import type { Field } from './field.js';
 import { TEXT_LENGTH, TITLE_LENGTH } from './limits.js';
-import { NONE, type Query } from './query.js';
+import { currencyField, NONE, type Query } from './query.js';
+import { routeLabel } from './route.js';
 import type { FieldPath } from './source.js';
 import { parseValue } from './values.js';
 
@@ -170,7 +171,10 @@ export interface NoteProps {
 
 /** Links to the contract's routes, each with its own label. */
 export interface LinksProps {
-  /** The links: a label, a route, and the row's key when the route is about one. */
+  /**
+   * The links: a label, or empty for the route's own, a route, and for a route about one row, its
+   * key or `$current`, the page's own row. Planners, who never see rows, write only `$current`.
+   */
   items: readonly { label: string; route: string; entity: string }[];
 }
 
@@ -478,6 +482,19 @@ export function checkGeneric(name: GenericName, props: unknown, scope: GenericSc
       ) {
         fail('stacks bars or areas, and needs a split');
       }
+      // A pie's slices and a stack's layers add up, and amounts in two currencies never do.
+      const { measure, of } = source.aggregate;
+      const measured = of === NONE ? undefined : contract.path(of);
+      const currency =
+        measure === 'count' || measure === 'distinct' || !measured
+          ? undefined
+          : currencyField(measured);
+      if (currency !== undefined && value.kind === 'pie' && source.aggregate.by === currency) {
+        fail('would add amounts in different currencies: show them as bars');
+      }
+      if (currency !== undefined && value.stacked && source.aggregate.split === currency) {
+        fail('would stack amounts in different currencies: leave them side by side');
+      }
       return { data: value.data.trim(), kind: value.kind, stacked: value.stacked };
     }
     case 'timeline': {
@@ -540,10 +557,20 @@ export function checkGeneric(name: GenericName, props: unknown, scope: GenericSc
       return {
         items: value.items.map((item) => {
           const route = contract.route(item.route) ?? fail(`no route "${item.route}"`);
-          const entity = item.entity.trim();
+          const written = item.entity.trim();
+          const entity = written.toLowerCase() === '$current' ? '$current' : written;
           const needs = contract.routes[route]?.entity;
           if (needs !== undefined && entity === '') fail(`${route} needs the ${needs} to open`);
-          return { label: text(item.label, TITLE_LENGTH, 'link label'), route, entity };
+          if (entity === '.' || entity === '..') fail(`"${entity}" can't name a row`);
+          if (entity === '$current' && (needs === undefined || needs !== scope.spec.entity)) {
+            fail(`$current is the page's own row, and ${route} shows ${needs ?? 'no row'}`);
+          }
+          // Planners never see rows, so a row key they write is made up.
+          if (scope.planned && entity !== '' && entity !== '$current') {
+            fail("names a row only as $current, the page's own row");
+          }
+          const label = text(item.label, TITLE_LENGTH, 'link label');
+          return { label: label === '' ? routeLabel(contract, route) : label, route, entity };
         }),
       };
     }

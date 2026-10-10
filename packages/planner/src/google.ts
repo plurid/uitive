@@ -1,10 +1,11 @@
 import type { FetchLike } from '@plurid/uitive-core';
 import { withoutConst } from './answer.js';
-import { failure, readEvents } from './events.js';
+import { failure, parseEvent, readEvents, streamFailure } from './events.js';
 import {
   costOf,
   deadline,
   environment,
+  interrupted,
   PlannerError,
   type Model,
   type ModelPrices,
@@ -36,6 +37,7 @@ export interface GoogleOptions {
 
 interface Chunk {
   modelVersion?: string;
+  error?: unknown;
   candidates?: {
     content?: { parts?: { text?: string; thought?: boolean }[] };
     finishReason?: string;
@@ -108,7 +110,7 @@ export function google(options: GoogleOptions): Model {
           },
         );
       } catch (error) {
-        throw new PlannerError(`Gemini couldn't be reached: ${(error as Error).message}`, 502);
+        throw interrupted(error, call.signal, 'Gemini');
       }
       if (!response.ok) throw await failure(response, 'Gemini');
 
@@ -118,6 +120,7 @@ export function google(options: GoogleOptions): Model {
       let model = options.model;
       let usage: Chunk['usageMetadata'];
       const take = (chunk: Chunk) => {
+        if (chunk.error !== undefined) throw streamFailure(chunk.error, 'Gemini');
         model = chunk.modelVersion ?? model;
         if (chunk.promptFeedback?.blockReason) blocked = true;
         const candidate = chunk.candidates?.[0];
@@ -129,10 +132,14 @@ export function google(options: GoogleOptions): Model {
         if (candidate?.finishReason) finish = candidate.finishReason;
         if (chunk.usageMetadata) usage = chunk.usageMetadata;
       };
-      if (response.body) {
-        await readEvents(response.body, (data) => take(JSON.parse(data) as Chunk));
-      } else {
-        take((await response.json()) as Chunk);
+      try {
+        if (response.body) {
+          await readEvents(response.body, (data) => take(parseEvent(data, 'Gemini') as Chunk));
+        } else {
+          take((await response.json()) as Chunk);
+        }
+      } catch (error) {
+        throw interrupted(error, call.signal, 'Gemini');
       }
 
       const cached = usage?.cachedContentTokenCount ?? 0;

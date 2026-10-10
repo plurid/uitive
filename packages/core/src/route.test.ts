@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { payments } from './__fixtures__/payments.js';
 import { action, defineApp, page } from './contract.js';
 import { ui } from './page.js';
-import { buildPath, entityRoute, matchRoute, route } from './route.js';
+import { buildPath, entityRoute, matchRoute, route, routeLabel } from './route.js';
 import { source } from './source.js';
 
 describe('routes', () => {
@@ -38,6 +38,39 @@ describe('routes', () => {
     expect(entityRoute(payments, 'customers')).toBe('customer');
     expect(entityRoute(payments, 'disputes')).toBeUndefined();
     expect(payments.route('PAYMENT')).toBe('payment');
+  });
+
+  it('never build a path a param climbs out of', () => {
+    expect(buildPath(payments, 'payment', { id: '..' })).toBeUndefined();
+    expect(buildPath(payments, 'payment', { id: '.' })).toBeUndefined();
+    expect(buildPath(payments, 'payment', { id: 'a..b' })).toBe('/payments/a..b');
+    expect(buildPath(payments, 'constructor')).toBeUndefined();
+  });
+
+  it('label links by the route, else its page, else its ID', () => {
+    const labeled = defineApp({
+      id: 'labeled',
+      description: 'Labeled routes',
+      actions: { open: action({ label: 'Open', description: 'Open' }) },
+      regions: { main: { label: 'Main', description: 'Main' } },
+      routes: {
+        home: route({ path: '/', page: 'home' }),
+        help: route({ path: '/help', label: 'Get help' }),
+        about: route({ path: '/about' }),
+      },
+      surfaces: {
+        home: page({})({
+          label: 'Home page',
+          description: 'Home',
+          standard: () => ui.page(ui.region('main')),
+        }),
+      },
+    });
+    expect(['home', 'help', 'about'].map((id) => routeLabel(labeled, id))).toEqual([
+      'Home page',
+      'Get help',
+      'about',
+    ]);
   });
 
   it('reject routes that point at nothing', () => {

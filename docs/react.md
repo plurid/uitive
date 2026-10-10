@@ -12,7 +12,7 @@
 export function Admin() {
   return (
     <UitiveProvider client={uitive} kit={kit}>
-      {/* Asks before anything changes data; without it, generated pages can't write at all. */}
+      {/* Buttons and destructive runs wait for it; a form showing every value is the yes. */}
       <Confirmations />
       <OrdersPage />
     </UitiveProvider>
@@ -22,6 +22,7 @@ export function Admin() {
 
 - `kit` is what generic blocks are drawn with; it defaults to semantic HTML. See [The kit](#the-kit).
 - `styles` adds the default kit's styles, which kits built with `createKit` still use for layout. Turn it off when your design system styles everything.
+- `nonce` goes on the kit's style element, for a Content Security Policy that allows inline styles only with a nonce: see [Privacy and security](privacy-and-security.md#in-the-page).
 - The provider keeps the person's state across tab switches and visits: usage is saved whenever the page is hidden, and a new session starts when they come back after a while, which is when planned changes may apply.
 
 ## Hooks
@@ -47,7 +48,7 @@ Every hook takes the client first.
 | [`useSnapshot`](api/react.md#usesnapshot)                                      | Everything the client holds, for panels; it changes with every use                                                |
 | [`useLifecycle`](api/react.md#uselifecycle)                                    | What the provider does for state across visits, for a client used without it                                      |
 
-Server rendering draws the standard layout, so hydration never mismatches; the person's own interface follows on the client.
+Server rendering draws the standard layout and the state of someone new, with no pages of their own and nothing pending, so hydration never mismatches; the person's own interface follows on the client.
 
 ## Lists and choices
 
@@ -70,7 +71,7 @@ export function OrdersPage() {
 
 - `regions` gives each region its component: usually the existing page.
 - `blocks` gives each of the application's own blocks its component, typed by the block's props with `BlockComponents`: see [Pages](pages.md#your-own-blocks).
-- `context` is the page's context value, and `current` the row it is about; by default, the row the location names.
+- `context` is the page's context value, and `current` the row it is about; by default, the row the location names. Blocks whose queries name `$current` show as loading until the row is known.
 - Each block sits in a wrapper with `data-block` and `data-element` attributes, and the page and its sections carry `data-layout`, for styling; `className` replaces the page's `uitive-page` class.
 
 ## Routers
@@ -89,7 +90,7 @@ With Next.js, `useUitiveRouter(uitive, { path: usePathname(), navigate: useRoute
 
 ## Confirmations
 
-`<Confirmations />` asks before a generated page changes data: what the action does and to what, and for a destructive one, the phrase to type. Mount it once inside the provider; without it, generated pages can't write at all. For a confirmation of your own, `useConfirmation` gives the waiting run and the means to answer it.
+`<Confirmations />` asks before a generated page changes data: what the action does, every param it will run with, money in its own currency, and for a destructive one, the phrase to type. Mount it once inside the provider. Buttons and destructive runs wait for it, and without it they are refused. A generated form that shows every value it will send, parsed and with its currency, counts as the yes, so submitting it runs a write at once; one that can't show a value, such as the page's row before it is known, waits for `<Confirmations />` instead. A block runs one action at a time, so pressing again while a run is in flight does nothing. For a confirmation of your own, `useConfirmation` gives the waiting run and the means to answer it.
 
 ## The kit
 
@@ -135,6 +136,8 @@ export const kit = createKit({
 | confirmations, run forms | `Dialog`, `Field`, `Button`, `Value`                                          |
 
 - Blocks have no container of their own: map `Section` to your card or panel when tables and lists should sit inside one.
+- The default `Dialog` is a native modal `<dialog>`: it takes focus when it opens, keeps it inside, closes on Escape and gives focus back when it closes. A `Dialog` of your own should do the same.
+- The default `Tabs` move with the arrow keys, Home and End, with one tab stop for the list. The default `Chart` never stacks or totals amounts in different currencies (a pie of several currencies shows as bars), and offers its figures as a visually hidden table; `ChartPoint.currency` says which currency a point is in.
 - `Notice` says how a run ended. Map it to your toast: each run mounts a new one, so it can show itself when it mounts and render nothing.
 - `values` changes how one kind of value shows everywhere, such as `money`, or one source's references, such as `'ref:customers'`.
 - The default kit reads `--uitive-accent`, `--uitive-on-accent`, `--uitive-surface`, `--uitive-text`, `--uitive-border`, `--uitive-radius`, `--uitive-gap`, `--uitive-good`, `--uitive-bad`, `--uitive-badge` and `--uitive-dialog`, so a theme can restyle it without replacing parts.
@@ -145,5 +148,7 @@ Every part and its props are in [api/react.md](api/react.md#kit).
 
 `UitiveBanner` says what just changed and why, with Revert, and Keep for changes the person didn't make, and answers commands, refusals included. `UitiveYourInterface` lists every change the person owns, with export, import, freeze and reset. `UitiveDebug` shows usage, requests and the planning loop, for development. Each takes the client, and registers its element the first time it renders.
 
-- The banner floats at the bottom right; `docked` puts it in the page's flow, such as in your notification area. "Your interface" is a panel, for a settings page or a side panel.
+- The banner floats at the bottom right; `docked` puts it in the page's flow, such as in your notification area. "Your interface" is a panel, for a settings page or a side panel. `collapsed` starts the debug panel folded.
+- `className` and these flags are set on the element directly, so React 18 and 19 render them alike.
+- Bundlers leave `UitiveDebug` and its panel out of builds that never render it.
 - They render in shadow roots, styled with `--uitive-accent`, `--uitive-surface`, `--uitive-text`, `--uitive-muted`, `--uitive-border`, `--uitive-radius` and `--uitive-font`, with `::part(content)` and `::part(heading)` for more.

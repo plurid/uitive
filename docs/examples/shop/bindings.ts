@@ -22,7 +22,13 @@ export const bindings: Bindings<typeof shop> = {
         pagination: { kind: 'offset', param: 'offset' },
         item: { path: '/orders/{id}', row: '/order' },
       },
-      customers: { path: '/customers', rows: '/customers', search: 'q' },
+      customers: {
+        path: '/customers',
+        rows: '/customers',
+        search: 'q',
+        filters: { 'id:in': 'id' },
+        pagination: { kind: 'offset', param: 'offset' },
+      },
     },
   }),
   perform: restPerform({
@@ -33,5 +39,16 @@ export const bindings: Bindings<typeof shop> = {
       'orders.cancel': { method: 'POST', path: '/orders/{order}/cancel' },
     },
   }),
+  // Who is signed in, for `$me`, and where they are, for "today" and time buckets.
+  context: () => ({
+    me: signedIn(),
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  }),
 };
 // #endregion
+
+/** The signed-in person's ID, as the page serving the admin writes it; none outside a page. */
+function signedIn(): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  return document.querySelector<HTMLMetaElement>('meta[name="user"]')?.content;
+}

@@ -7,7 +7,7 @@ The agent kit as a command-line tool and a library: detection, set-up, sources f
 Install: `pnpm add uitive`. Guides: [Coding agents](../coding-agents.md).
 
 - [Running the CLI](#running-the-cli): [`run`](#run), [`RunContext`](#runcontext), [`Writable`](#writable)
-- [Setting up](#setting-up): [`detect`](#detect), [`detectText`](#detecttext), [`FOLDER`](#folder), [`folderOf`](#folderof), [`init`](#init), [`initText`](#inittext), [`SKILL`](#skill), [`Detected`](#detected), [`Detection`](#detection), [`InitOptions`](#initoptions), [`InitResult`](#initresult)
+- [Setting up](#setting-up): [`detect`](#detect), [`detectText`](#detecttext), [`FOLDER`](#folder), [`folderOf`](#folderof), [`init`](#init), [`initText`](#inittext), [`SKILL`](#skill), [`within`](#within), [`Detected`](#detected), [`Detection`](#detection), [`DetectOptions`](#detectoptions), [`InitOptions`](#initoptions), [`InitResult`](#initresult)
 - [API descriptions](#api-descriptions): [`curate`](#curate), [`CURATE_ACTIONS`](#curate_actions), [`CURATE_SOURCES`](#curate_sources), [`CURATION`](#curation), [`curationSchema`](#curationschema), [`emit`](#emit), [`GENERATED`](#generated), [`generateSources`](#generatesources), [`inventory`](#inventory), [`kebab`](#kebab), [`parseCuration`](#parsecuration), [`picksOf`](#picksof), [`plain`](#plain), [`readSpec`](#readspec), [`singular`](#singular), [`survey`](#survey), [`surveySpec`](#surveyspec), [`surveyText`](#surveytext), [`ApiAction`](#apiaction), [`ApiField`](#apifield), [`ApiInventory`](#apiinventory), [`ApiParam`](#apiparam), [`ApiSource`](#apisource), [`Curation`](#curation-type), [`CurationInput`](#curationinput), [`EmitOptions`](#emitoptions), [`GenerateSourcesOptions`](#generatesourcesoptions), [`GenerateSourcesResult`](#generatesourcesresult), [`InventoryOptions`](#inventoryoptions), [`Skipped`](#skipped), [`SpecOptions`](#specoptions), [`Survey`](#survey-type), [`SurveySource`](#surveysource)
 - [Native blocks](#native-blocks): [`BLOCKS`](#blocks), [`emitBlocks`](#emitblocks), [`generateBlocks`](#generateblocks), [`readBlocks`](#readblocks), [`BlockProp`](#blockprop), [`BlocksResult`](#blocksresult), [`ComponentBlock`](#componentblock), [`GenerateBlocksOptions`](#generateblocksoptions)
 - [Discovering an application](#discovering-an-application): [`discover`](#discover), [`DISCOVERY`](#discovery), [`DiscoverOptions`](#discoveroptions), [`DiscoverResult`](#discoverresult)
@@ -53,13 +53,14 @@ Source: [`detect.ts`](../../packages/cli/src/detect.ts), [`folder.ts`](../../pac
 
 ### detect
 
-What a project uses: everything `init` needs to set Uitive up to fit.
+What a project uses: everything `init` needs to set Uitive up to fit. With a boundary, nothing
+above or outside it is read.
 
 ```ts
-function detect(cwd?: string): Promise<Detection>;
+function detect(cwd?: string, options?: DetectOptions): Promise<Detection>;
 ```
 
-Uses: [`Detection`](#detection).
+Uses: [`Detection`](#detection), [`DetectOptions`](#detectoptions).
 
 ### detectText
 
@@ -82,7 +83,8 @@ const FOLDER = 'uitive';
 ### folderOf
 
 Where a project keeps Uitive's files: `uitive.dir` in its package.json, which
-`init --dir` writes, else `uitive`. Relative to the project, with forward slashes.
+`init --dir` writes, else `uitive`. Relative to the project, with forward slashes. A folder
+outside the project, absolute or through `..`, is refused.
 
 ```ts
 function folderOf(cwd: string): Promise<string>;
@@ -93,7 +95,7 @@ function folderOf(cwd: string): Promise<string>;
 Sets Uitive up in a project: packages, a folder (`src/uitive/` or `uitive/`)
 whose contract starts with every page as a region, sources generated from an API description
 when one is small enough, and the coding agents' MCP servers and skill, at the repository's
-root. Never overwrites a file.
+root. Never overwrites a file. With a boundary, nothing above or outside it is read or written.
 
 ```ts
 function init(options?: InitOptions): Promise<InitResult>;
@@ -120,6 +122,15 @@ Code plugin's skill.
 const SKILL: string;
 ```
 
+### within
+
+Whether a path stays inside a folder once symbolic links resolve, so that reading or writing it
+can't reach anything outside. A relative path is taken from the folder.
+
+```ts
+function within(folder: string, path: string): Promise<boolean>;
+```
+
 ### Detected
 
 Something detection found, such as a framework, with its version.
@@ -136,37 +147,46 @@ descriptions, coding agents and workspace.
 
 Uses: [`Detected`](#detected).
 
-| Property            | Type                                                                                  | Description                                                                     |
-| ------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `root`              | `string`                                                                              | The package's folder, where Uitive is set up.                                   |
-| `name`              | `string`                                                                              | The package's name.                                                             |
-| `packageManager`    | `'pnpm' \| 'yarn' \| 'npm' \| 'bun'`                                                  | The package manager its lockfile shows.                                         |
-| `typescript`        | `boolean`                                                                             | Whether it uses TypeScript.                                                     |
-| `ui`                | `Detected \| null`                                                                    | Its interface library, such as React.                                           |
-| `framework`         | `Detected \| null`                                                                    | Its framework, such as Next.js or Vite.                                         |
-| `router`            | `Detected \| null`                                                                    | Its router, such as React Router.                                               |
-| `designSystems`     | `Detected[]`                                                                          | Component libraries and styling, such as `@medusajs/ui` or `shadcn`.            |
-| `openapi`           | `string[]`                                                                            | API descriptions found in the project, relative to its root.                    |
-| `agents`            | `('claude-code' \| 'cursor' \| 'vscode' \| 'codex')[]`                                | Coding agents the project is set up for, so `init` can configure them.          |
-| `uitive`            | `boolean`                                                                             | Whether Uitive is already set up.                                               |
-| `packageManagerPin` | `string \| null`                                                                      | The pinned package manager, such as `yarn@1.22.22`, from `packageManager`.      |
-| `repository`        | `string`                                                                              | The repository's root, where coding agents run: the nearest folder with `.git`. |
-| `workspaces`        | `{ path: string; name: string; ui: Detected \| null; framework: Detected \| null }[]` | For a workspace root: its packages with an interface, where Uitive belongs.     |
-| `server`            | `boolean`                                                                             | Whether the application has its own server, where the model planner can run.    |
+| Property            | Type                                                                                  | Description                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `root`              | `string`                                                                              | The package's folder, where Uitive is set up.                                                                                            |
+| `name`              | `string`                                                                              | The package's name.                                                                                                                      |
+| `packageManager`    | `'pnpm' \| 'yarn' \| 'npm' \| 'bun'`                                                  | The package manager its lockfile shows.                                                                                                  |
+| `typescript`        | `boolean`                                                                             | Whether it uses TypeScript.                                                                                                              |
+| `ui`                | `Detected \| null`                                                                    | Its interface library, such as React.                                                                                                    |
+| `framework`         | `Detected \| null`                                                                    | Its framework, such as Next.js or Vite.                                                                                                  |
+| `router`            | `Detected \| null`                                                                    | Its router, such as React Router.                                                                                                        |
+| `designSystems`     | `Detected[]`                                                                          | Component libraries and styling, such as `@medusajs/ui` or `shadcn`.                                                                     |
+| `openapi`           | `string[]`                                                                            | API descriptions found in the project, relative to its root.                                                                             |
+| `agents`            | `('claude-code' \| 'cursor' \| 'vscode' \| 'codex')[]`                                | Coding agents the project is set up for, so `init` can configure them.                                                                   |
+| `uitive`            | `boolean`                                                                             | Whether Uitive is already set up.                                                                                                        |
+| `packageManagerPin` | `string \| null`                                                                      | The pinned package manager, such as `yarn@1.22.22`, from `packageManager`; nothing unless it names npm, pnpm, yarn or bun and a version. |
+| `repository`        | `string`                                                                              | The repository's root, where coding agents run: the nearest folder with `.git`. With a boundary and no `.git` inside it, the boundary.   |
+| `workspaces`        | `{ path: string; name: string; ui: Detected \| null; framework: Detected \| null }[]` | For a workspace root: its packages with an interface, where Uitive belongs.                                                              |
+| `server`            | `boolean`                                                                             | Whether the application has its own server, where the model planner can run.                                                             |
+
+### DetectOptions
+
+What detection takes besides the folder.
+
+| Property    | Type     | Description                                                                                                                                        |
+| ----------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `boundary?` | `string` | A folder detection never reads above or outside, such as the root an MCP server is confined to. Without one, it looks up to the repository's root. |
 
 ### InitOptions
 
 What `init` takes: the project, where its files go, the API description, and how to install.
 
-| Property    | Type      | Default                                                                          | Description                                                                                                                                                                          |
-| ----------- | --------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cwd?`      | `string`  | `process.cwd()`                                                                  | The project's root.                                                                                                                                                                  |
-| `openapi?`  | `string`  |                                                                                  | The API description to generate from; else the first one found.                                                                                                                      |
-| `install?`  | `boolean` | `true`                                                                           | Installs the packages with the project's package manager.                                                                                                                            |
-| `agents?`   | `boolean` | `true`                                                                           | Configures the coding agents found: MCP servers and the integration skill.                                                                                                           |
-| `mcp?`      | `string`  | 'npx -y                                                                          | How agents start the MCP server.                                                                                                                                                     |
-| `packages?` | `string`  |                                                                                  | A folder of package tarballs (`pnpm pack`) to install from, such as a local build.                                                                                                   |
-| `dir?`      | `string`  | the recorded folder, else 'src/uitive' when there is a src folder, else 'uitive' | Where Uitive's files go, relative to the project, such as `app/uitive` for a build that compiles only `app`. Recorded in package.json as `uitive.dir`, where every command reads it. |
+| Property    | Type      | Default                                                                          | Description                                                                                                                                                                                                                                                                                  |
+| ----------- | --------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cwd?`      | `string`  | `process.cwd()`                                                                  | The project's root.                                                                                                                                                                                                                                                                          |
+| `openapi?`  | `string`  |                                                                                  | The API description to generate from; else the first one found.                                                                                                                                                                                                                              |
+| `install?`  | `boolean` | `true`                                                                           | Installs the packages with the project's package manager.                                                                                                                                                                                                                                    |
+| `agents?`   | `boolean` | `true`                                                                           | Configures the coding agents found: MCP servers and the integration skill.                                                                                                                                                                                                                   |
+| `mcp?`      | `string`  | 'npx -y                                                                          | How agents start the MCP server: a command quoted as a shell would read it, or a JSON array of its words.                                                                                                                                                                                    |
+| `packages?` | `string`  |                                                                                  | A folder of package tarballs (`pnpm pack`) to install from, such as a local build.                                                                                                                                                                                                           |
+| `dir?`      | `string`  | the recorded folder, else 'src/uitive' when there is a src folder, else 'uitive' | Where Uitive's files go, relative to the project, such as `app/uitive` for a build that compiles only `app`. Recorded in package.json as `uitive.dir`, where every command reads it.                                                                                                         |
+| `boundary?` | `string`  |                                                                                  | A folder init never reads or writes above or outside, such as the root an MCP server is confined to. The coding agents' configuration goes at the nearest repository root inside it, else at the boundary itself; anything that would land outside is reported in `next` instead of written. |
 
 ### InitResult
 
@@ -725,7 +745,7 @@ What `generate blocks` takes: the components, where to write, and whether only t
 | `components` | `readonly string[]` |                                                      | `file#Component` for each component.                        |
 | `cwd?`       | `string`            | `process.cwd()`                                      | The project's root.                                         |
 | `out?`       | `string`            | 'blocks.generated.ts' in the project's Uitive folder | Where to write.                                             |
-| `check?`     | `boolean`           |                                                      | Reports whether the file is up to date, without writing it. |
+| `check?`     | `boolean`           | `false`                                              | Reports whether the file is up to date, without writing it. |
 
 ## Discovering an application
 
@@ -735,7 +755,8 @@ Source: [`discover.ts`](../../packages/cli/src/discover.ts)
 
 Crawls a running application's pages, same origin only, following links but never pressing
 anything, and proposes routes, regions, lists and button-to-action matches from what assistive
-technology sees. Rows are never read.
+technology sees. Rows are never read, and the browser never navigates to another origin, not
+even through a redirect.
 
 ```ts
 function discover(options: DiscoverOptions): Promise<DiscoverResult>;
@@ -772,11 +793,12 @@ What `discover` did: where it wrote, the pages it visited, and the discovery.
 
 Uses: [`Discovery`](adapter.md#discovery).
 
-| Property    | Type        | Description                      |
-| ----------- | ----------- | -------------------------------- |
-| `file`      | `string`    | Where the discovery was written. |
-| `visited`   | `string[]`  | The URLs visited, in order.      |
-| `discovery` | `Discovery` | What the pages suggest.          |
+| Property    | Type                                | Description                                                               |
+| ----------- | ----------------------------------- | ------------------------------------------------------------------------- |
+| `file`      | `string`                            | Where the discovery was written.                                          |
+| `visited`   | `string[]`                          | The URLs visited, in order.                                               |
+| `skipped`   | `{ url: string; reason: string }[]` | Pages that couldn't be read, and why, such as a redirect to another site. |
+| `discovery` | `Discovery`                         | What the pages suggest.                                                   |
 
 ## Checking
 
@@ -793,8 +815,8 @@ const BINDINGS = 'uitive/bindings.ts';
 ### check
 
 Checks an integration: the contract loads and validates, its JSON round-trips, every schema a
-request can need fits structured outputs, labels find what they name, and bindings exist for
-what the contract declares.
+request can need fits structured outputs, and bindings exist for what the contract declares.
+Labels that two actions share, or that don't find their source, are warnings.
 
 ```ts
 function check(options?: CheckOptions): Promise<CheckResult>;

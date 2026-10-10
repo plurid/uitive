@@ -79,4 +79,59 @@ describe.skipIf(!chrome)('discover', () => {
       server.close();
     }
   }, 60_000);
+
+  it('sees shut menus, reads pages that keep polling, and never follows a redirect elsewhere', async () => {
+    const elsewhere: string[] = [];
+    const other = createServer((request, response) => {
+      elsewhere.push(request.url ?? '/');
+      response.writeHead(200, { 'content-type': 'text/html' }).end(layout('Elsewhere', ''));
+    });
+    await new Promise<void>((done) => other.listen(0, '127.0.0.1', done));
+    const away = `http://127.0.0.1:${(other.address() as AddressInfo).port}/`;
+    const server = createServer((request, response) => {
+      const path = request.url ?? '/';
+      if (path === '/away') {
+        response.writeHead(302, { location: away }).end();
+        return;
+      }
+      if (path === '/hop') {
+        response.writeHead(302, { location: '/away' }).end();
+        return;
+      }
+      if (path === '/ping') {
+        response.writeHead(200).end('pong');
+        return;
+      }
+      const body =
+        path === '/'
+          ? layout(
+              'Home',
+              '<a href="/away">Partner</a> <a href="/hop">Hop</a> <a href="/live">Live</a>' +
+                '<button aria-haspopup="menu" aria-expanded="false">Add new</button>',
+            )
+          : path === '/live'
+            ? layout('Live', "<script>setInterval(() => fetch('/ping'), 100)</script>")
+            : undefined;
+      response
+        .writeHead(body ? 200 : 404, { 'content-type': 'text/html' })
+        .end(body ?? 'Not found');
+    });
+    await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+    const { port } = server.address() as AddressInfo;
+    const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
+    await writeFile(join(cwd, 'package.json'), '{}');
+    try {
+      const result = await discover({ url: `http://127.0.0.1:${port}/`, cwd, chrome: true });
+      expect(elsewhere).toEqual([]);
+      expect(result.skipped).toContainEqual({
+        url: `http://127.0.0.1:${port}/away`,
+        reason: 'it leads to another site',
+      });
+      expect(result.visited.map((url) => new URL(url).pathname)).toContain('/live');
+      expect(result.discovery.menus).toEqual([{ route: 'home', buttons: ['Add new'] }]);
+    } finally {
+      server.close();
+      other.close();
+    }
+  }, 60_000);
 });

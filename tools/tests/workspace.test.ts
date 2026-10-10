@@ -1,4 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const root = new URL('../../', import.meta.url);
@@ -18,7 +20,7 @@ describe('workspace', () => {
     // The CLI is the one unscoped package: `npx uitive` runs the package named `uitive`.
     expect(manifest.name).toBe(name === 'cli' ? 'uitive' : `@plurid/uitive-${name}`);
     expect(manifest.type).toBe('module');
-    // `default` lets CommonJS servers require the package, which Node 22 and later can.
+    // `default` lets CommonJS servers require the package, which Node 22.12 and later can.
     expect(manifest.exports['.']).toEqual({
       types: './dist/index.d.ts',
       import: './dist/index.js',
@@ -46,6 +48,18 @@ describe('workspace', () => {
 
   it('keeps the legacy code out of the workspace', () => {
     expect(listed.some((path) => path.startsWith('legacy'))).toBe(false);
+  });
+
+  it('turns file URLs into paths with fileURLToPath, which decodes them', () => {
+    // A URL's pathname keeps %20 for spaces and gives /C:/ on Windows: wrong as a file path.
+    const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
+      cwd: fileURLToPath(root),
+      encoding: 'utf8',
+    })
+      .split('\n')
+      .filter((path) => /\.(ts|tsx|mjs|js)$/.test(path) && !path.startsWith('legacy/'))
+      .filter((path) => existsSync(new URL(path, root)));
+    expect(files.filter((path) => /import\.meta\.url\)\.pathname/.test(read(path)))).toEqual([]);
   });
 
   it('gives the CLI the command its package is named after', () => {

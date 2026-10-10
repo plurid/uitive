@@ -1,5 +1,13 @@
 'use client';
-import { useId, useState, type ComponentType, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ComponentType,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { formatValue, humanize, type Field } from '@plurid/uitive-core';
 
 /** One column of a kit `Table`: the key its cells are under, its header, and how it aligns. */
@@ -46,12 +54,14 @@ export interface ListItem {
 
 /** One point of a chart series. */
 export interface ChartPoint {
-  /** A time in milliseconds, or a category. */
+  /** A time in milliseconds, or a category; points with the same `x` line up across series. */
   x: number | string;
   /** The point's label, as people read it. */
   label: string;
-  /** Its value. */
+  /** Its value; money in major units. */
   y: number;
+  /** For money: the currency the value is in. Amounts in different currencies are never added. */
+  currency?: string;
 }
 
 /** One series of a kit `Chart`, such as one value of a split. */
@@ -121,7 +131,10 @@ export interface Kit {
     /** The number counts what loaded, so the true figure is at least this. */
     partial?: boolean;
   }>;
-  /** Series drawn as lines, bars, areas or a pie. */
+  /**
+   * Series drawn as lines, bars, areas or a pie. A chart never stacks or totals amounts in
+   * different currencies, and offers its figures to assistive technology as well as a picture.
+   */
   Chart: ComponentType<{
     kind: 'line' | 'bar' | 'area' | 'pie';
     series: readonly ChartSeries[];
@@ -151,7 +164,10 @@ export interface Kit {
     label?: string;
     required?: boolean;
   }>;
-  /** A modal with a title, for confirmations and the forms of actions run from a row. */
+  /**
+   * A modal with a title, for confirmations and the forms of actions run from a row. It takes focus
+   * when it opens, keeps it inside, closes on Escape and gives focus back when it closes.
+   */
   Dialog: ComponentType<{ title: string; children?: ReactNode; onClose: () => void }>;
   /**
    * What happened when an action ran from a generated page. Map it to the design system's toast or
@@ -170,26 +186,70 @@ function Tabs({
   tabs: readonly { id: string; title: string; content: ReactNode }[];
 }) {
   const [active, setActive] = useState(0);
-  const current = tabs[Math.min(active, tabs.length - 1)];
+  const base = useId();
+  const list = useRef<HTMLDivElement>(null);
+  const selected = Math.min(active, tabs.length - 1);
+  const current = tabs[selected];
+  const keys: Record<string, (index: number, last: number) => number> = {
+    ArrowRight: (index, last) => (index === last ? 0 : index + 1),
+    ArrowDown: (index, last) => (index === last ? 0 : index + 1),
+    ArrowLeft: (index, last) => (index === 0 ? last : index - 1),
+    ArrowUp: (index, last) => (index === 0 ? last : index - 1),
+    Home: () => 0,
+    End: (_, last) => last,
+  };
+  const onKeyDown = (event: KeyboardEvent) => {
+    const move = keys[event.key];
+    if (!move) return;
+    event.preventDefault();
+    const next = move(selected, tabs.length - 1);
+    setActive(next);
+    list.current?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus();
+  };
   return (
     <div className="uitive-tabs">
       {label && <h2 className="uitive-section-title">{label}</h2>}
-      <div role="tablist" aria-label={label || undefined}>
+      <div ref={list} role="tablist" aria-label={label || undefined} onKeyDown={onKeyDown}>
         {tabs.map((tab, index) => (
           <button
             key={tab.id}
+            id={`${base}-tab-${index}`}
             type="button"
             role="tab"
-            aria-selected={tab === current}
+            aria-selected={index === selected}
+            aria-controls={`${base}-panel`}
+            // One tab stop for the list; arrows move between tabs.
+            tabIndex={index === selected ? 0 : -1}
             onClick={() => setActive(index)}
           >
             {tab.title}
           </button>
         ))}
       </div>
-      {current && <div role="tabpanel">{current.content}</div>}
+      {current && (
+        <div
+          id={`${base}-panel`}
+          role="tabpanel"
+          aria-labelledby={`${base}-tab-${selected}`}
+          tabIndex={0}
+        >
+          {current.content}
+        </div>
+      )}
     </div>
   );
+}
+
+/** A chart's figure as people read it, money in its currency. */
+function figure(point: ChartPoint): string {
+  const number = new Intl.NumberFormat().format(point.y);
+  if (point.currency === undefined) return number;
+  const code = point.currency.toUpperCase();
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: code }).format(point.y);
+  } catch {
+    return `${number} ${code}`;
+  }
 }
 
 function Chart({
@@ -205,11 +265,56 @@ function Chart({
 }) {
   const width = 320;
   const height = 140;
-  const xs = [...new Set(series.flatMap((entry) => entry.points.map((point) => point.label)))];
+  // Keyed by x, so buckets that share a label, such as the same hour on two days, stay apart.
+  const byX = new Map<string, ChartPoint>();
+  for (const entry of series) {
+    for (const point of entry.points) {
+      if (!byX.has(String(point.x))) byX.set(String(point.x), point);
+    }
+  }
+  const columns = [...byX.values()];
+  if (columns.every((column) => typeof column.x === 'number')) {
+    columns.sort((a, b) => (a.x as number) - (b.x as number));
+  }
+  const xs = columns.map((column) => String(column.x));
   if (xs.length === 0) return <Status state="empty" />;
-  const at = (entry: ChartSeries, x: string) =>
-    entry.points.find((point) => point.label === x)?.y ?? 0;
-  if (kind === 'pie') {
+  const pointAt = (entry: ChartSeries, x: string) =>
+    entry.points.find((point) => String(point.x) === x);
+  const at = (entry: ChartSeries, x: string) => pointAt(entry, x)?.y ?? 0;
+  const currencies = new Set(
+    series.flatMap((entry) => entry.points.map((point) => point.currency?.toUpperCase() ?? '')),
+  );
+  // Amounts in different currencies are never added together: never stacked, never shares.
+  const mixed = currencies.size > 1;
+  const stack = Boolean(stacked) && !mixed;
+  const shape = kind === 'pie' && mixed ? 'bar' : kind;
+  const figures = (
+    <table className="uitive-hidden">
+      {label && <caption>{label}</caption>}
+      <thead>
+        <tr>
+          <td />
+          {series.map((entry, which) => (
+            <th key={which} scope="col">
+              {entry.name || 'Value'}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {columns.map((column, index) => (
+          <tr key={xs[index]}>
+            <th scope="row">{column.label}</th>
+            {series.map((entry, which) => {
+              const point = pointAt(entry, xs[index] as string);
+              return <td key={which}>{point ? figure(point) : ''}</td>;
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+  if (shape === 'pie') {
     const first = series[0];
     const total = first?.points.reduce((sum, point) => sum + Math.max(0, point.y), 0) ?? 0;
     let angle = -Math.PI / 2;
@@ -223,18 +328,19 @@ function Chart({
             const large = sweep > Math.PI ? 1 : 0;
             const path = `M0 0 L${50 * Math.cos(start)} ${50 * Math.sin(start)} A50 50 0 ${large} 1 ${50 * Math.cos(angle)} ${50 * Math.sin(angle)} Z`;
             return (
-              <path key={point.label} d={path} data-series={index}>
-                <title>{`${point.label}: ${point.y}`}</title>
+              <path key={String(point.x)} d={path} data-series={index}>
+                <title>{`${point.label}: ${figure(point)}`}</title>
               </path>
             );
           })}
         </svg>
         <figcaption>{first?.points.map((point) => point.label).join(', ')}</figcaption>
+        {figures}
       </figure>
     );
   }
   const totals = xs.map((x) =>
-    stacked
+    stack
       ? series.reduce((sum, entry) => sum + at(entry, x), 0)
       : Math.max(...series.map((entry) => at(entry, x))),
   );
@@ -242,32 +348,34 @@ function Chart({
   const step = width / xs.length;
   const y = (value: number) => height - (value / top) * (height - 8);
   return (
-    <figure className="uitive-chart" data-kind={kind}>
+    <figure className="uitive-chart" data-kind={shape}>
       <svg
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label={label}
         preserveAspectRatio="none"
       >
-        {kind === 'bar'
+        {shape === 'bar'
           ? xs.flatMap((x, index) => {
               let base = 0;
               return series.map((entry, which) => {
-                const value = at(entry, x);
-                const barWidth = stacked ? step * 0.7 : (step * 0.7) / series.length;
-                const left = index * step + step * 0.15 + (stacked ? 0 : which * barWidth);
-                const bottom = stacked ? base : 0;
-                if (stacked) base += value;
+                const point = pointAt(entry, x);
+                const value = point?.y ?? 0;
+                const barWidth = stack ? step * 0.7 : (step * 0.7) / series.length;
+                const left = index * step + step * 0.15 + (stack ? 0 : which * barWidth);
+                const bottom = stack ? base : 0;
+                if (stack) base += value;
+                const name = entry.name ? `${entry.name}, ` : '';
                 return (
                   <rect
-                    key={`${x}.${entry.name}`}
+                    key={`${x}.${which}`}
                     x={left}
                     y={y(bottom + value)}
                     width={barWidth}
                     height={Math.max(0, y(bottom) - y(bottom + value))}
                     data-series={which}
                   >
-                    <title>{`${entry.name ? `${entry.name}, ` : ''}${x}: ${value}`}</title>
+                    <title>{`${name}${columns[index]?.label ?? x}: ${point ? figure(point) : 0}`}</title>
                   </rect>
                 );
               });
@@ -276,21 +384,22 @@ function Chart({
               const points = xs
                 .map((x, index) => `${index * step + step / 2},${y(at(entry, x))}`)
                 .join(' ');
-              return kind === 'area' ? (
+              return shape === 'area' ? (
                 <polygon
-                  key={entry.name}
+                  key={which}
                   points={`${step / 2},${height} ${points} ${(xs.length - 0.5) * step},${height}`}
                   data-series={which}
                 />
               ) : (
-                <polyline key={entry.name} points={points} fill="none" data-series={which} />
+                <polyline key={which} points={points} fill="none" data-series={which} />
               );
             })}
       </svg>
       <figcaption>
-        <span>{xs[0]}</span>
-        <span>{xs[xs.length - 1]}</span>
+        <span>{columns[0]?.label}</span>
+        <span>{columns[columns.length - 1]?.label}</span>
       </figcaption>
+      {figures}
     </figure>
   );
 }
@@ -374,6 +483,63 @@ function FieldInput({
         />
       )}
     </div>
+  );
+}
+
+const FOCUSABLE =
+  'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+
+/**
+ * A native modal dialog: it holds focus while open, keeps the rest of the page inert and closes on
+ * Escape; focus goes back where it was when it closes.
+ */
+function Dialog({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children?: ReactNode;
+  onClose: () => void;
+}) {
+  const id = useId();
+  const ref = useRef<HTMLDialogElement>(null);
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    const opener = dialog.ownerDocument.activeElement as HTMLElement | null;
+    if (!dialog.open) {
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+    }
+    if (!dialog.contains(dialog.ownerDocument.activeElement)) {
+      dialog.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    }
+    return () => {
+      if (dialog.open && typeof dialog.close === 'function') dialog.close();
+      if (opener?.isConnected) opener.focus();
+    };
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="uitive-dialog"
+      aria-labelledby={id}
+      onCancel={(event) => {
+        // Escape closes it through its owner, which unmounts it.
+        event.preventDefault();
+        close.current();
+      }}
+    >
+      <h2 id={id} className="uitive-dialog-title">
+        {title}
+      </h2>
+      {children}
+    </dialog>
   );
 }
 
@@ -523,22 +689,7 @@ export const defaultKit: Kit = {
     </a>
   ),
   Field: FieldInput,
-  Dialog: ({ title, children, onClose }) => {
-    const id = useId();
-    return (
-      <div
-        className="uitive-dialog-backdrop"
-        onKeyDown={(event) => event.key === 'Escape' && onClose()}
-      >
-        <div className="uitive-dialog" role="dialog" aria-modal="true" aria-labelledby={id}>
-          <h2 id={id} className="uitive-dialog-title">
-            {title}
-          </h2>
-          {children}
-        </div>
-      </div>
-    );
-  },
+  Dialog,
   Status,
 };
 
@@ -608,12 +759,13 @@ export const kitStyles = `
 .uitive-button:disabled { opacity: 0.5; cursor: not-allowed; }
 .uitive-field { display: grid; gap: 4px; } .uitive-field[data-type='bool'] { display: flex; align-items: center; gap: 8px; }
 .uitive-field input, .uitive-field select { font: inherit; padding: 6px 8px; border-radius: var(--uitive-radius, 8px); border: 1px solid var(--uitive-border, rgba(127, 127, 127, 0.4)); background: transparent; color: inherit; }
-.uitive-dialog-backdrop { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.4); z-index: 1000; }
-.uitive-dialog { display: grid; gap: 12px; min-width: min(420px, 92vw); max-width: 92vw; padding: 20px; border-radius: var(--uitive-radius, 8px); background: var(--uitive-dialog, Canvas); color: var(--uitive-text, CanvasText); }
+.uitive-dialog { min-width: min(420px, 92vw); max-width: 92vw; padding: 20px; border: 1px solid var(--uitive-border, rgba(127, 127, 127, 0.3)); border-radius: var(--uitive-radius, 8px); background: var(--uitive-dialog, Canvas); color: var(--uitive-text, CanvasText); }
+.uitive-dialog[open] { display: grid; gap: 12px; }
+.uitive-dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
 .uitive-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
-.uitive-params { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; } .uitive-params dt { opacity: 0.7; } .uitive-params dd { margin: 0; }
+.uitive-params { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; } .uitive-params > div { display: contents; } .uitive-params dt { opacity: 0.7; } .uitive-params dd { margin: 0; }
 .uitive-status { padding: 12px; opacity: 0.75; } .uitive-status[data-state='error'] { color: var(--uitive-bad, firebrick); opacity: 1; }
-.uitive-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.uitive-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .uitive-tabs [role='tablist'] { display: flex; gap: 4px; margin-bottom: 8px; }
 .uitive-tabs [role='tab'] { font: inherit; padding: 4px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: inherit; cursor: pointer; }
 .uitive-tabs [role='tab'][aria-selected='true'] { border-bottom-color: var(--uitive-accent, currentColor); }

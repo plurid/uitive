@@ -1,6 +1,6 @@
 /** What `uitive init` writes, as code that compiles in the host project from the start. */
 
-const quote = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+import { oneLine, quote } from './code.js';
 
 export interface ContractTemplate {
   id: string;
@@ -48,7 +48,7 @@ import { endpoints } from './api.generated${extension}';
 import type { contract } from './contract${extension}';
 
 // Calls the API as the signed-in person, with the application's own session: never a stored key.
-// The description names ${server || 'no server'}; leave \`base\` empty when the API shares this origin.
+// The description names ${oneLine(server) || 'no server'}; leave \`base\` empty when the API shares this origin.
 const base = '';
 // Add what the application's API client adds to its requests, such as a CSRF token.
 const headers = (): Record<string, string> => ({});
@@ -110,6 +110,10 @@ const model = environmentModel();
 export const handler = createUitiveHandler({
   contract,
   planner: model ? modelPlanner({ model }) : heuristicPlanner(),
+  // Planning spends money, so only signed-in people may ask: replace this with the application's
+  // own check of the person's session, the one its API makes. Until then it allows requests only
+  // outside production, so local development works and a deployed handler refuses everyone.
+  authorize: () => process.env.NODE_ENV !== 'production',
 });
 `;
 

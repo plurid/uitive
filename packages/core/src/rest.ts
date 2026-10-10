@@ -1,6 +1,7 @@
 import type { Perform } from './action.js';
 import { matchStored } from './data.js';
 import type { BindingContext, Fetch, FetchRequest, Stored } from './data.js';
+import { pathSegment } from './route.js';
 
 /** What a REST binding reads from a response: the platform's `Response` fits. */
 export interface HttpResponse {
@@ -47,7 +48,10 @@ export interface RestSource {
     | { kind: 'offset'; param: string }
     | { kind: 'page'; param: string }
     | { kind: 'none' };
-  /** A JSON pointer to a boolean saying whether more rows exist, such as `/has_more`. */
+  /**
+   * A JSON pointer to a boolean saying whether more rows exist, such as `/has_more`. Without it,
+   * a cursor's `next` pointer says so, and otherwise a page shorter than the limit is the last.
+   */
   more?: string;
   /** Sorting: the parameter, and how a field and direction are written. */
   sort?: { param: string; format: 'field:direction' | '-field' };
@@ -145,16 +149,20 @@ type Row = Record<string, unknown>;
  */
 export function restFetch(config: RestFetchConfig): Fetch {
   return async (request: FetchRequest, context) => {
-    const spec = config.sources[request.source];
+    const spec = Object.hasOwn(config.sources, request.source)
+      ? config.sources[request.source]
+      : undefined;
     if (!spec) throw new Error(`No endpoint for ${request.source}`);
     const headers = { accept: 'application/json', ...(await config.headers?.(context)) };
-    const get = async (path: string) => {
+    const get = async (path: string, item = false) => {
       const response = await send(config)(`${config.base}${path}`, {
         method: 'GET',
         headers,
         credentials: config.credentials ?? 'same-origin',
         ...(request.signal === undefined ? {} : { signal: request.signal }),
       });
+      // A row that is gone is a row that isn't there, not a failed read.
+      if (item && response.status === 404) return undefined;
       if (!response.ok) throw new Error(`${request.source}: the API answered ${response.status}`);
       return response.json();
     };
@@ -175,7 +183,9 @@ export function restFetch(config: RestFetchConfig): Fetch {
       const item = spec.item;
       const found = await Promise.all(
         byKey.values.slice(0, request.limit).map(async (value) => {
-          const body = await get(item.path.replace(/\{[^}]+\}/, encodeURIComponent(text(value))));
+          const segment = pathSegment(text(value));
+          if (segment === undefined) return [];
+          const body = await get(item.path.replace(/\{[^}]+\}/, segment), true);
           const row = pointer(body, item.row ?? '');
           return row !== null && typeof row === 'object' ? [row as Row] : [];
         }),
@@ -191,33 +201,35 @@ export function restFetch(config: RestFetchConfig): Fetch {
     const size = spec.limit ?? 'limit';
     const params: [string, string][] = Object.entries(spec.query ?? {});
     if (size !== '') params.push([size, String(request.limit)]);
+    // Core counts on whatever it pushed down being applied, so nothing pushed is dropped.
     for (const filter of request.filter) {
-      if (filter.op === 'between') {
-        const [low, high] = filter.values;
-        const gte = spec.filters?.[`${filter.field}:gte`];
-        const lte = spec.filters?.[`${filter.field}:lte`];
-        if (gte && low !== undefined) params.push([gte, text(low)]);
-        if (lte && high !== undefined) params.push([lte, text(high)]);
-        continue;
-      }
       const name = spec.filters?.[`${filter.field}:${filter.op}`];
-      if (!name) throw new Error(`${request.source} can't filter ${filter.field} by ${filter.op}`);
-      if (spec.repeat?.includes(name)) {
-        for (const value of filter.values) params.push([name, text(value)]);
+      const [low, high] = filter.values;
+      const gte = spec.filters?.[`${filter.field}:gte`];
+      const lte = spec.filters?.[`${filter.field}:lte`];
+      if (name) {
+        if (spec.repeat?.includes(name)) {
+          for (const value of filter.values) params.push([name, text(value)]);
+        } else {
+          params.push([name, filter.values.map(text).join(',')]);
+        }
+      } else if (filter.op === 'between' && gte && lte && low !== undefined && high !== undefined) {
+        params.push([gte, text(low)], [lte, text(high)]);
       } else {
-        params.push([name, filter.values.map(text).join(',')]);
+        throw new Error(`${request.source} can't filter ${filter.field} by ${filter.op}`);
       }
     }
-    if (spec.sort) {
-      for (const order of request.sort) {
-        params.push([
-          spec.sort.param,
-          spec.sort.format === '-field'
-            ? `${order.direction === 'desc' ? '-' : ''}${order.field}`
-            : `${order.field}:${order.direction}`,
-        ]);
-      }
+    if (request.sort.length > 0 && !spec.sort) throw new Error(`${request.source} can't sort`);
+    for (const order of request.sort) {
+      const sort = spec.sort as NonNullable<RestSource['sort']>;
+      params.push([
+        sort.param,
+        sort.format === '-field'
+          ? `${order.direction === 'desc' ? '-' : ''}${order.field}`
+          : `${order.field}:${order.direction}`,
+      ]);
     }
+    if (request.search && !spec.search) throw new Error(`${request.source} can't search`);
     if (request.search && spec.search) params.push([spec.search, request.search]);
     const pagination = spec.pagination ?? { kind: 'none' };
     if (request.cursor !== undefined && pagination.kind !== 'none') {
@@ -227,8 +239,17 @@ export function restFetch(config: RestFetchConfig): Fetch {
     const body = await get(`${spec.path}${params.length === 0 ? '' : `?${encode(params)}`}`);
     const found = pointer(body, spec.rows ?? '');
     const rows = lift(Array.isArray(found) ? (found as Row[]) : []);
+    // An API may cap its pages below the limit asked for, so its own word on more rows wins.
+    const pointed =
+      pagination.kind === 'cursor' && pagination.next !== undefined
+        ? pointer(body, pagination.next)
+        : undefined;
     const more =
-      spec.more === undefined ? rows.length >= request.limit : pointer(body, spec.more) === true;
+      spec.more !== undefined
+        ? pointer(body, spec.more) === true
+        : pagination.kind === 'cursor' && pagination.next !== undefined
+          ? pointed !== undefined && pointed !== null && pointed !== ''
+          : rows.length >= request.limit;
     let next: string | undefined;
     if (more && rows.length > 0) {
       if (pagination.kind === 'cursor') {
@@ -250,14 +271,19 @@ export function restFetch(config: RestFetchConfig): Fetch {
 /** A perform binding over REST endpoints: path placeholders from params, the rest as the body. */
 export function restPerform(config: RestPerformConfig): Perform {
   return async (params, context) => {
-    const spec = config.actions[context.action];
+    const spec = Object.hasOwn(config.actions, context.action)
+      ? config.actions[context.action]
+      : undefined;
     if (!spec) throw new Error(`No endpoint for ${context.action}`);
     const remaining: Row = { ...(params as Row) };
     const path = spec.path.replace(/\{([^}]+)\}/g, (_, name: string) => {
       const value = remaining[name];
       delete remaining[name];
       if (value === undefined || value === null) throw new Error(`${context.action} needs ${name}`);
-      return encodeURIComponent(String(value));
+      const segment = pathSegment(String(value));
+      if (segment === undefined)
+        throw new Error(`${context.action} can't use "${value}" as ${name}`);
+      return segment;
     });
     const form = (spec.body ?? 'json') === 'form';
     const entries = Object.entries(remaining).filter(

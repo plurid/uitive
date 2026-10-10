@@ -9,4 +9,7 @@ const model = environmentModel();
 export const handler = createUitiveHandler({
   contract: cloud,
   planner: model ? modelPlanner({ model }) : heuristicPlanner(),
+  // A demonstration with no sign-in: it plans only outside production. An application checks the
+  // person's session here, as its own API does.
+  authorize: () => process.env.NODE_ENV !== 'production',
 });

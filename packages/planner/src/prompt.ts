@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import {
   actionsInScope,
-  genericFor,
   type AnyContract,
   type AnyPageSpec,
   type Field,
@@ -9,6 +8,7 @@ import {
   type PlanRequest,
   type Subset,
 } from '@plurid/uitive-core';
+import { offeredBlocks, type SchemaOptions } from './schema.js';
 
 /** The frozen part of every request: how to work. */
 export const RULES = `You adapt the interface of one application for one person, strictly within the application's contract below. You never write code or markup: you return operations, which the application validates against its own rules and applies.
@@ -26,7 +26,7 @@ How to work:
 - When nothing in the contract can do what they ask, return status "unsupported". When the request fits several different things, return status "ambiguous" with their labels as candidates. Otherwise return "done".
 - The note is at most one short plain sentence, without numbers, or empty.`;
 
-const pretty = (value: unknown) => JSON.stringify(value);
+const quote = (value: unknown) => JSON.stringify(value);
 
 /** A compact, deterministic description of a zod schema for people and models. */
 function describeSchema(schema: z.ZodType, actions: ReadonlySet<string>): string {
@@ -38,11 +38,11 @@ function describeSchema(schema: z.ZodType, actions: ReadonlySet<string>): string
         const named = values.filter((value) => actions.has(value)).length;
         const extra = values.filter((value) => !actions.has(value));
         if (named === values.length - extra.length && named > values.length / 2) {
-          return extra.length > 0 ? `${extra.map(pretty).join(' | ')} | action ID` : 'action ID';
+          return extra.length > 0 ? `${extra.map(quote).join(' | ')} | action ID` : 'action ID';
         }
         return `one of ${values.length}: ${values.join(', ')}`;
       }
-      return values.map(pretty).join(' | ');
+      return values.map(quote).join(' | ');
     }
     if (node.type === 'array') {
       const item = render((node.items ?? {}) as Record<string, unknown>);
@@ -61,9 +61,19 @@ function describeSchema(schema: z.ZodType, actions: ReadonlySet<string>): string
 
 /**
  * The application's contract as text: stable across users, so it caches. For large contracts,
- * a subset scopes the sources described to those chosen for the request.
+ * a subset scopes the sources described to those chosen for the request. It names the blocks the
+ * schema for the same subset and `native` offers, and no others.
  */
-export function contractText(contract: AnyContract, subset?: Subset): string {
+export function contractText(
+  contract: AnyContract,
+  subset?: Subset,
+  options: Pick<SchemaOptions, 'native'> = {},
+): string {
+  const offered = offeredBlocks(contract, {
+    ...(subset === undefined ? {} : { subset }),
+    ...(options.native === undefined ? {} : { native: options.native }),
+  });
+  const own = new Set(offered.own);
   const actions = new Set(contract.actionIds);
   const lines: string[] = [`# Application: ${contract.id}`, contract.description, ''];
 
@@ -165,9 +175,11 @@ export function contractText(contract: AnyContract, subset?: Subset): string {
           : `, keyed by ${page.context} or * for every ${page.context}`;
       const about = page.entity === undefined ? '' : ` About one ${page.entity} row.`;
       lines.push(`## ${id} (page${keyed}): ${page.label}. ${page.description}${about}`);
-      const own = Object.keys(page.blocks).sort();
+      const its = Object.keys(page.blocks)
+        .filter((name) => own.has(name))
+        .sort();
       lines.push(
-        `At most ${page.maxElements ?? 40} elements, ${page.maxDepth ?? 4} levels deep. Blocks: section, tabs${Object.keys(contract.regions).length > 0 ? ', region' : ''}${own.length > 0 ? `, ${own.join(', ')}` : ''}`,
+        `At most ${page.maxElements ?? 40} elements, ${page.maxDepth ?? 4} levels deep. Blocks: section, tabs${Object.keys(contract.regions).length > 0 ? ', region' : ''}${its.length > 0 ? `, ${its.join(', ')}` : ''}`,
       );
     }
   }
@@ -184,23 +196,19 @@ export function contractText(contract: AnyContract, subset?: Subset): string {
     lines.push('');
   }
 
-  const generic = new Set<GenericName>(
-    contract.surfaceIds.flatMap((id) => {
-      const spec = contract.surfaces[id];
-      return spec?.kind === 'page' ? genericFor(contract, spec) : [];
-    }),
-  );
-  if (generic.size > 0) {
+  if (offered.generic.length > 0) {
     lines.push('# Generic blocks, as name: what it shows. Props');
-    for (const name of generic) lines.push(`${name}: ${GENERIC_TEXT[name]}`);
+    for (const name of offered.generic) lines.push(`${name}: ${GENERIC_TEXT[name]}`);
     lines.push('');
   }
 
   const blocks = new Map<string, AnyPageSpec['blocks'][string]>();
   for (const id of contract.surfaceIds) {
     const spec = contract.surfaces[id];
-    if (spec?.kind === 'page')
-      for (const [name, block] of Object.entries(spec.blocks)) blocks.set(name, block);
+    if (spec?.kind !== 'page') continue;
+    for (const [name, block] of Object.entries(spec.blocks)) {
+      if (own.has(name)) blocks.set(name, block);
+    }
   }
   if (blocks.size > 0) {
     lines.push('# Blocks, as name: label. What it shows. Props');
@@ -237,7 +245,7 @@ const GENERIC_TEXT: Record<GenericName, string> = {
     'buttons. Props: list (a list surface or none); items ({action, set}); size (small|regular|large)',
   note: 'a short note. Props: title; text',
   links:
-    "links to the application's pages. Props: items ({label, route, entity: the row key for routes about one row})",
+    "links to the application's pages. Props: items ({label, route, entity}). Entity is empty, except for a route about one row: link to it only from a page about that route's source, with entity $current. You never see rows, so never write a row key",
 };
 
 /** The part of every request that changes: what was asked, what is on screen, how it is used. */
@@ -245,30 +253,27 @@ export function requestText(request: PlanRequest): string {
   const lines: string[] = [`Kind: ${request.kind}`];
   if (request.text !== undefined) lines.push(`Request: ${JSON.stringify(request.text)}`);
   if (request.goal !== undefined) lines.push(`Stated goal: ${JSON.stringify(request.goal)}`);
+  // Everything the client wrote is quoted as data, like the request itself.
   const contexts = Object.entries(request.contexts);
-  lines.push(
-    `Context now: ${contexts.length === 0 ? 'none' : contexts.map(([name, value]) => `${name} = ${value}`).join(', ')}`,
-  );
+  lines.push(`Context now: ${contexts.length === 0 ? 'none' : quote(request.contexts)}`);
 
-  if (request.route !== undefined) lines.push(`Route now: ${request.route}`);
+  if (request.route !== undefined) lines.push(`Route now: ${quote(request.route)}`);
   const environment = request.environment;
   if (environment !== undefined) {
-    const missing = Object.entries(environment.anchors)
-      .filter(([, state]) => state !== 'found')
-      .map(([name, state]) => `${name} (${state})`);
-    const sources = Object.entries(environment.sources).map(([name, state]) => `${name} ${state}`);
+    const missing = Object.entries(environment.anchors).filter(([, state]) => state !== 'found');
+    const sources = Object.entries(environment.sources);
     lines.push(
-      `Page found: route ${environment.route ?? 'unknown'}; anchors not found: ${missing.length === 0 ? 'none' : missing.join(', ')}; data: ${sources.length === 0 ? 'none' : sources.join(', ')}; unmapped ${environment.unmapped.links} links, ${environment.unmapped.buttons} buttons, ${environment.unmapped.tables} tables`,
+      `Page found: route ${quote(environment.route ?? 'unknown')}; anchors not found: ${missing.length === 0 ? 'none' : quote(Object.fromEntries(missing))}; data: ${sources.length === 0 ? 'none' : quote(environment.sources)}; unmapped ${environment.unmapped.links} links, ${environment.unmapped.buttons} buttons, ${environment.unmapped.tables} tables`,
     );
   }
 
   const state = request.state;
   lines.push(
-    `Their own pages: ${state.userPages.length === 0 ? 'none' : state.userPages.map((entry) => `${entry.slug} (${JSON.stringify(entry.title)})`).join(', ')}`,
+    `Their own pages: ${state.userPages.length === 0 ? 'none' : state.userPages.map((entry) => `${quote(entry.slug)} (${quote(entry.title)})`).join(', ')}`,
   );
   if (state.userPage !== undefined) {
     lines.push(
-      `Their page in view (${state.userPage.slug}): ${JSON.stringify(state.userPage.value)}`,
+      `Their page in view (${quote(state.userPage.slug)}): ${quote(state.userPage.value)}`,
     );
   }
   if (state.pages.length > 0) {
@@ -293,7 +298,7 @@ export function requestText(request: PlanRequest): string {
   const collections = Object.entries(state.collections);
   if (collections.length > 0) {
     lines.push(
-      `Collections: ${collections.map(([key, titles]) => `${key}: ${titles.length ? titles.join('; ') : 'empty'}`).join(' | ')}`,
+      `Collections: ${collections.map(([key, titles]) => `${key}: ${titles.length ? quote(titles) : 'empty'}`).join(' | ')}`,
     );
   }
   lines.push(
@@ -312,7 +317,7 @@ export function requestText(request: PlanRequest): string {
   if (rows.length === 0) lines.push('no usage yet');
   for (const row of rows.slice(0, 120)) {
     lines.push(
-      `${row.surface} | ${row.context ?? '-'} | ${row.action} | ${row.place}${row.pinned ? ' (pinned)' : ''} | ${row.uses} | ${row.activeSessions} | ${row.viaOverflow} | ${row.idleSessions}`,
+      `${quote(row.surface)} | ${row.context === undefined ? '-' : quote(row.context)} | ${quote(row.action)} | ${row.place}${row.pinned ? ' (pinned)' : ''} | ${row.uses} | ${row.activeSessions} | ${row.viaOverflow} | ${row.idleSessions}`,
     );
   }
   return lines.join('\n');

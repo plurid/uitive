@@ -98,7 +98,8 @@ startUitive(uitive);
 ## How markup adapts
 
 - **Items moved out are hidden** by one stylesheet, never removed, so the application's framework keeps its nodes. `<uitive-more list="…">` lists them; choosing one clicks the hidden original, so the application's own handler runs. When the original isn't in the page, `<uitive-more>` emits `uitive-open` with `detail.list` and `detail.action`, for the application to run.
-- **Reordered lists** set CSS `order` on the container's children, which needs a flex or grid container. Otherwise the list can't reorder, and `onProblem` hears of it once (by default, `console.warn`).
+- **Reordered lists** set CSS `order` on the container's children, which needs a flex or grid container. Otherwise the list can't reorder, and `onProblem` hears of it once (by default, `console.warn`). A container that is hidden at first, such as a closed menu's, gets its order anyway and is judged once it shows.
+- **Order is visual only.** CSS `order` changes where items appear, not where they are in the markup, so keyboard focus and screen readers still follow the markup's order. That is the price of never moving the framework's nodes. Hiding items has no such cost, and the default capacity of every item moves nothing, so a page looks and reads as before until someone reorders it; for lists where focus order matters, draw them yourself from `client.surface(list)`, as below.
 - **Clicks on items record use**, reached directly. Pass `record: false` when the application records use itself.
 - **Shadow roots**: markup inside one, such as a Lit component's, adapts with `root` set to that shadow root, through `adaptMarkup(client, { root })`.
 
@@ -141,11 +142,13 @@ return uitive.subscribe(draw);
 - Every element emits `uitive-error` (`detail.error`) when something it runs fails. Events bubble out of the shadow root.
 - Each element uses the client `startUitive` gave every element, or its own `client` property when set.
 - `<uitive-debug>` comes from `@plurid/uitive-dom/debug`, registered by `defineDebugElement()`, so production pages don't load it.
+- `<uitive-more>` moves focus to its first item when it opens; the arrow keys, Home and End move between items, and Escape closes it.
+- The elements style their shadow roots with constructed stylesheets, which a strict `style-src` policy allows.
 - Without `startUitive`, `defineElements()` registers the elements, and `UitiveElement.useClient(client)` gives them the client.
 
 ## Confirmations
 
-Place `<uitive-confirm>` once. While it is in the page, actions with effects that the application runs through `client.perform` wait for the person's answer: one step for a write, a typed phrase for a destructive run. Without it, they are refused. The application's own controls, which ask in their own way, pass `{ origin: 'native' }` to `perform`, so their runs count as use without asking twice.
+Place `<uitive-confirm>` once. While it is in the page, actions with effects that the application runs through `client.perform` wait for the person's answer: one step for a write, a typed phrase for a destructive run. Without it, they are refused. It asks in a modal dialog that shows every param, money in its own currency, holds focus while it is open, cancels on Escape and gives focus back when the run is answered. The application's own controls, which ask in their own way, pass `{ origin: 'native' }` to `perform`, so their runs count as use without asking twice.
 
 ## Styling
 

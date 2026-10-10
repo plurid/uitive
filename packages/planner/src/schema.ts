@@ -157,8 +157,8 @@ export function outputSchema(
     });
     // One inline union over every block: the schema holds a single union however many there are.
     const variants: Json[] = [
-      element('section', propsSchema(builtInBlocks.section.props, defs)),
-      element('tabs', propsSchema(builtInBlocks.tabs.props, defs)),
+      element('section', propsSchema('section', builtInBlocks.section.props, defs)),
+      element('tabs', propsSchema('tabs', builtInBlocks.tabs.props, defs)),
     ];
     if (words.regions.length > 0) {
       variants.push(
@@ -170,27 +170,12 @@ export function outputSchema(
         }),
       );
     }
-    const seen = new Set<string>();
-    for (const id of words.pages) {
-      const spec = contract.surfaces[id] as AnyPageSpec;
-      for (const [name, block] of Object.entries(spec.blocks).sort(([a], [b]) =>
-        a.localeCompare(b),
-      )) {
-        if (seen.has(name)) continue;
-        seen.add(name);
-        if (options.native !== false) variants.push(element(name, propsSchema(block.props, defs)));
-      }
+    const offered = offer(contract, words, defs, options);
+    for (const [name, block] of offered.own) {
+      variants.push(element(name, propsSchema(name, block.props, defs)));
     }
-    const sources = subset?.sources ?? contract.sourceIds;
-    const offered = new Set<GenericName>(
-      words.pages.flatMap((id) => genericFor(contract, contract.surfaces[id] as AnyPageSpec)),
-    );
-    const withData = sources.length > 0 && [...offered].some((name) => DATA_BLOCKS.includes(name));
-    if (withData) queryDefs(contract, defs, sources);
-    for (const name of [...offered].filter((entry) => !seen.has(entry))) {
-      if (DATA_BLOCKS.includes(name) && !withData) continue;
-      variants.push(element(name, genericProps(name, contract, words, defs, subset)));
-    }
+    for (const { name, props } of offered.generic) variants.push(element(name, props));
+    const withData = offered.data;
     add('pages', {
       type: 'array',
       items: {
@@ -248,6 +233,79 @@ export function outputSchema(
   };
 }
 
+interface Offered {
+  /** The application's own blocks offered, by name. */
+  own: [string, AnyPageSpec['blocks'][string]][];
+  /** The generic blocks offered, with their props' schemas. */
+  generic: { name: GenericName; props: Json }[];
+  /** Whether pages may name queries: some source is in scope and a block shows data. */
+  data: boolean;
+}
+
+/**
+ * What pages may be built from, besides sections, tabs and regions: the application's own blocks,
+ * unless `native` is false, and the generic blocks its pages allow that the scope can feed. A
+ * generic block that would name nothing, such as a form when no action in scope takes params, is
+ * left out.
+ */
+function offer(
+  contract: AnyContract,
+  words: Vocabulary,
+  defs: Json,
+  options: SchemaOptions,
+): Offered {
+  const offered: Offered = { own: [], generic: [], data: false };
+  const seen = new Set<string>();
+  for (const id of words.pages) {
+    const spec = contract.surfaces[id] as AnyPageSpec;
+    for (const [name, block] of Object.entries(spec.blocks).sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
+      if (seen.has(name)) continue;
+      seen.add(name);
+      if (options.native !== false) offered.own.push([name, block]);
+    }
+  }
+  const sources = options.subset?.sources ?? contract.sourceIds;
+  const allowed = new Set<GenericName>(
+    words.pages.flatMap((id) => genericFor(contract, contract.surfaces[id] as AnyPageSpec)),
+  );
+  offered.data = sources.length > 0 && [...allowed].some((name) => DATA_BLOCKS.includes(name));
+  if (offered.data) queryDefs(contract, defs, sources);
+  // A page's own block of the same name replaces the generic one, offered or not.
+  for (const name of [...allowed].filter((entry) => !seen.has(entry))) {
+    if (DATA_BLOCKS.includes(name) && !offered.data) continue;
+    const props = genericProps(name, contract, words, defs, options.subset);
+    if (!emptyEnum(props)) offered.generic.push({ name, props });
+  }
+  return offered;
+}
+
+/**
+ * The blocks a request's schema offers pages besides sections, tabs and regions, by name: the
+ * application's own, unless `native` is false, and the generic blocks its scope can feed. The
+ * prompt describes these, so it never names a block the schema leaves out.
+ */
+export function offeredBlocks(
+  contract: AnyContract,
+  options: SchemaOptions = {},
+): { own: string[]; generic: GenericName[] } {
+  const offered = offer(contract, vocabulary(contract), {}, options);
+  return {
+    own: offered.own.map(([name]) => name),
+    generic: offered.generic.map((entry) => entry.name),
+  };
+}
+
+/** Whether a schema holds an enum with no values, which no answer could satisfy. */
+function emptyEnum(node: unknown): boolean {
+  if (Array.isArray(node)) return node.some(emptyEnum);
+  if (node === null || typeof node !== 'object') return false;
+  const object = node as Json;
+  if (Array.isArray(object.enum) && object.enum.length === 0) return true;
+  return Object.values(object).some(emptyEnum);
+}
+
 const enumOf = (values: readonly string[]): Json => ({ type: 'string', enum: [...values] });
 const object = (properties: Json): Json => ({
   type: 'object',
@@ -289,13 +347,11 @@ function genericProps(
   defs: Json,
   subset: Subset | undefined,
 ): Json {
-  // In a subset, actions tied to a source come only with that source's area.
-  const tied = (id: string) =>
-    rowParam(contract.params(id)) !== undefined ||
-    (contract.actions[id]?.invalidates ?? []).length > 0;
+  // In a subset, only the actions in scope run: list items, its areas' and those its words name.
+  const inScope = subset === undefined ? undefined : new Set(actionsInScope(contract, subset));
   const runs = contract.actionIds
     .filter((id) => contract.actions[id]?.effect !== undefined)
-    .filter((id) => subset === undefined || subset.actions.includes(id) || !tied(id))
+    .filter((id) => inScope === undefined || inScope.has(id))
     .sort();
   const rowActions = runs.filter((id) => rowParam(contract.params(id)) !== undefined);
   const params = runs.flatMap((id) => contract.params(id).map((entry) => `${id}:${entry.name}`));
@@ -363,7 +419,11 @@ function genericProps(
           object({
             label: { type: 'string' },
             route: enumOf(contract.routeIds),
-            entity: { type: 'string', description: 'The row key, for routes about one row' },
+            entity: {
+              type: 'string',
+              description:
+                "$current for a route about one row, on a page about that route's source; else empty. Never a row key",
+            },
           }),
         ),
       });
@@ -372,21 +432,67 @@ function genericProps(
 
 /**
  * A block's props as JSON Schema, every field required, with large enums hoisted into `$defs`
- * so each appears once in the grammar however many blocks use it.
+ * so each appears once in the grammar however many blocks use it. Props structured outputs can't
+ * take (records, unions and nullable values) fail here, so `uitive check` reports them.
  */
-function propsSchema(schema: z.ZodType, defs: Json): Json {
+function propsSchema(block: string, schema: z.ZodType, defs: Json): Json {
   const json = z.toJSONSchema(schema, { target: 'draft-2020-12', unrepresentable: 'any' }) as Json;
   delete json.$schema;
-  return hoist(json, defs) as Json;
+  const problems: string[] = [];
+  const hoisted = hoist(json, defs, '', problems) as Json;
+  if (problems.length > 0) {
+    throw new Error(
+      `Block ${block} has props models can't be given: ${problems.join('; ')}. Use an enum, an empty string or 'none' for no value, and an array of objects for a record`,
+    );
+  }
+  return hoisted;
 }
 
-function hoist(node: unknown, defs: Json): unknown {
-  if (Array.isArray(node)) return node.map((entry) => hoist(entry, defs));
+/** Bounds structured outputs don't support; policy enforces them when it checks the props. */
+const BOUNDS = new Set([
+  'minimum',
+  'maximum',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'minLength',
+  'maxLength',
+  'minItems',
+  'maxItems',
+  'pattern',
+]);
+
+function hoist(node: unknown, defs: Json, path: string, problems: string[]): unknown {
+  if (Array.isArray(node)) return node.map((entry) => hoist(entry, defs, path, problems));
   if (node === null || typeof node !== 'object') return node;
-  const entries = Object.entries(node as Json).map(
-    ([key, value]) => [key, hoist(value, defs)] as const,
-  );
-  const object = Object.fromEntries(entries) as Json;
+  const raw = node as Json;
+  const at = path === '' ? 'props' : path;
+  if (['anyOf', 'oneOf', 'allOf'].some((key) => key in raw)) {
+    problems.push(`${at} is a union`);
+    return raw;
+  }
+  if (Array.isArray(raw.type)) {
+    problems.push(`${at} is nullable or of several types`);
+    return raw;
+  }
+  const open = typeof raw.additionalProperties === 'object' && raw.properties === undefined;
+  if ('propertyNames' in raw || 'patternProperties' in raw || open) {
+    problems.push(`${at} is a record`);
+    return raw;
+  }
+  const object: Json = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (BOUNDS.has(key)) continue;
+    if (key === 'properties') {
+      object[key] = Object.fromEntries(
+        Object.entries(value as Json).map(([name, child]) => [
+          name,
+          hoist(child, defs, path === '' ? name : `${path}.${name}`, problems),
+        ]),
+      );
+    } else {
+      object[key] = hoist(value, defs, key === 'items' ? `${at}[]` : path, problems);
+    }
+  }
   if (Array.isArray(object.enum) && object.enum.length > 12) {
     const values = object.enum as string[];
     const name = `enum${hashValues(values)}`;
@@ -396,17 +502,6 @@ function hoist(node: unknown, defs: Json): unknown {
   if (object.type === 'object' && object.properties) {
     object.required = Object.keys(object.properties as Json);
     object.additionalProperties = false;
-  }
-  // Numeric and length bounds aren't supported by structured outputs; policy enforces them.
-  for (const key of [
-    'minimum',
-    'maximum',
-    'exclusiveMinimum',
-    'exclusiveMaximum',
-    'minLength',
-    'maxLength',
-  ]) {
-    delete object[key];
   }
   return object;
 }

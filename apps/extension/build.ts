@@ -2,7 +2,10 @@
 // (one file, since content scripts can't load modules) and the side panel, plus the manifest.
 //   node build.ts                     dist/, for loading unpacked
 //   node build.ts --out dist-test --fixture <site origin> --api <api origin>   for tests
-import { mkdir, writeFile } from 'node:fs/promises';
+// Test builds are granted the fixture's origins at install; with --ask, the side panel asks for
+// them, as it does for real sites.
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import react from '@vitejs/plugin-react';
 import { build, createServer } from 'vite';
@@ -18,10 +21,11 @@ const { values } = parseArgs({
     out: { type: 'string', default: 'dist' },
     fixture: { type: 'string' },
     api: { type: 'string' },
+    ask: { type: 'boolean', default: false },
   },
 });
-const root = new URL('./', import.meta.url).pathname;
-const out = new URL(`${values.out}/`, import.meta.url).pathname;
+const root = fileURLToPath(new URL('./', import.meta.url));
+const out = fileURLToPath(new URL(`${values.out}/`, import.meta.url));
 const fixture = values.fixture && values.api ? { site: values.fixture, api: values.api } : null;
 
 /** Adapters are written as code against the contract API, and shipped as checked JSON. */
@@ -36,10 +40,10 @@ async function adapters() {
     const module = (await server.ssrLoadModule('/adapters/stripe-dashboard.ts')) as {
       adapter: unknown;
     };
-    await writeFile(
-      new URL('./adapters/stripe-dashboard.json', import.meta.url),
-      `${JSON.stringify(module.adapter, null, 2)}\n`,
-    );
+    const file = new URL('./adapters/stripe-dashboard.json', import.meta.url);
+    const text = `${JSON.stringify(module.adapter, null, 2)}\n`;
+    // The JSON is tracked: a build leaves it alone unless the adapter changed.
+    if ((await readFile(file, 'utf8').catch(() => '')) !== text) await writeFile(file, text);
   } finally {
     await server.close();
   }
@@ -82,9 +86,10 @@ await build({
   base: './',
   build: { ...panel.build, outDir: `${out}panel/`, emptyOutDir: true },
 });
+const granted = fixture && !values.ask ? [fixture.site, fixture.api] : [];
 await writeFile(
   `${out}manifest.json`,
-  `${JSON.stringify(manifest({ origins: fixture ? [fixture.site, fixture.api] : [] }), null, 2)}\n`,
+  `${JSON.stringify(manifest({ origins: granted }), null, 2)}\n`,
 );
 console.log(
   `Built the extension in ${values.out}/${fixture ? `, pointed at ${fixture.site}` : ''}.`,

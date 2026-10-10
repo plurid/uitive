@@ -37,6 +37,20 @@ describe('parseAnswer', () => {
     expect(parseAnswer('Here is the plan: {"a":{"b":2}} Hope it helps.')).toEqual({ a: { b: 2 } });
     expect(() => parseAnswer('No plan today')).toThrow(SyntaxError);
   });
+
+  it('reads a fenced block before more prose, JSON after braces in prose, and trailing commas', () => {
+    const plan = { status: 'done', candidates: [], note: '' };
+    const json = JSON.stringify(plan);
+    const fence = '```';
+    expect(
+      parseAnswer(
+        `Here is the plan:\n${fence}json\n${json}\n${fence}\nTell me if you want {more}.`,
+      ),
+    ).toEqual(plan);
+    expect(parseAnswer(`Using {braces} as asked: ${json} and {that} is all`)).toEqual(plan);
+    expect(parseAnswer('{"status":"done","candidates":[],"note":"",}')).toEqual(plan);
+    expect(parseAnswer('Sure: {"a":[1,2,],"b":"}, {"}')).toEqual({ a: [1, 2], b: '}, {' });
+  });
 });
 
 describe('schemaProblems', () => {

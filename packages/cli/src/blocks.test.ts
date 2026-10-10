@@ -1,10 +1,11 @@
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { BlockSpec } from '@plurid/uitive-core';
 import { describe, expect, it } from 'vitest';
-import { emitBlocks, readBlocks } from './blocks.js';
+import { emitBlocks, generateBlocks, readBlocks } from './blocks.js';
+import { syntaxErrors } from './code.js';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const file = 'tools/fixtures/react/order-summary.tsx';
@@ -61,7 +62,7 @@ describe('readBlocks', () => {
     ]);
   });
 
-  it('reads memoised components, and names what it can not read', () => {
+  it('reads memoized components, and names what it can not read', () => {
     expect(result.blocks[1]).toMatchObject({
       name: 'statusBadge',
       props: [
@@ -73,6 +74,34 @@ describe('readBlocks', () => {
       `${file}#Ambiguous: prop value is string | number, a union a schema can't hold; split the prop or wrap the component`,
       `${file}#Missing: ${file} exports no Missing`,
     ]);
+  });
+});
+
+describe('generateBlocks', () => {
+  it('writes documentation of any shape as strings that parse', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
+    await writeFile(join(cwd, 'package.json'), '{}');
+    await writeFile(
+      join(cwd, 'card.tsx'),
+      [
+        '/**',
+        ' * Shows an order.',
+        " * With its totals, in the shop's \\ style.",
+        ' */',
+        "export function Card(props: { /**\n * How dense.\n * Compact fits more.\n */ mode?: 'compact' | 'full'; 'data-tone': 'calm' | 'loud' }) {",
+        '  return null;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+    const result = await generateBlocks({ components: ['card.tsx#Card'], cwd });
+    expect(result).toMatchObject({ written: true, problems: [] });
+    const code = await readFile(join(cwd, result.file), 'utf8');
+    expect(syntaxErrors(code, result.file)).toEqual([]);
+    expect(code).toContain(
+      "description: 'Shows an order.\\nWith its totals, in the shop\\'s \\\\ style.',",
+    );
+    expect(code).toContain("'data-tone': z.enum(['calm', 'loud'])");
   });
 });
 

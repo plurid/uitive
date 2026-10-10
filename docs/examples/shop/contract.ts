@@ -42,7 +42,8 @@ export const sources = {
     row: z.object({ id: z.string(), name: z.string(), email: z.string() }),
     key: 'id',
     title: 'name',
-    capabilities: { search: true },
+    // Orders show their customer's name, read by key rather than by scanning every customer.
+    capabilities: { search: true, filter: { id: ['in'] }, pagination: 'offset' },
   }),
 };
 // #endregion

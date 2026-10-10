@@ -1,7 +1,9 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
+import { NOW, payments, rows } from './__fixtures__/payments.js';
 import { createUitive } from './client.js';
-import { action, block, defineApp, page } from './contract.js';
+import { action, block, defineApp, page, type AnyPageSpec } from './contract.js';
+import { fromRows } from './data.js';
 import {
   emptyDefinition,
   resolvePage,
@@ -9,7 +11,17 @@ import {
   type Definition,
 } from './definition.js';
 import { field } from './field.js';
-import { fromSections, ui, walk, type AnyPage, type ElementOf } from './page.js';
+import {
+  fromSections,
+  PageProblem,
+  toPage,
+  ui,
+  validatePage,
+  walk,
+  type AnyPage,
+  type ElementOf,
+} from './page.js';
+import { query } from './query.js';
 import type { Planner } from './planner.js';
 import { check } from './policy.js';
 import { source } from './source.js';
@@ -604,5 +616,50 @@ describe('pages in the client', () => {
     expectTypeOf(value.elements[0]!).toEqualTypeOf<
       ElementOf<{ table: typeof table; metric: typeof metric }>
     >();
+  });
+});
+
+describe('pages and the person', () => {
+  it('compare with $me, whoever the bindings say is signed in', async () => {
+    const client = createUitive({
+      contract: payments,
+      now: () => NOW * 1000,
+      bindings: { fetch: fromRows(rows), context: () => ({ me: 'cus_bo' }) },
+    });
+    const mine = query('payments', {
+      fields: ['payments.id'],
+      filter: [{ field: 'payments.customer', op: 'eq', values: ['$me'] }],
+    });
+    const adaptation = client.setPage(
+      'home',
+      ui.page(
+        ui.section('', 'stack', [
+          ui.block('table', {
+            data: 'mine',
+            columns: ['payments.id'],
+            lookups: [],
+            rowActions: [],
+            density: 'compact',
+            link: 'none',
+          }),
+        ]),
+        [{ name: 'mine', query: mine }],
+      ),
+    );
+    expect(adaptation.rejected).toEqual([]);
+    const result = await client.data?.load(mine);
+    expect(result?.rows.map((row) => row['payments.id'])).toEqual(
+      rows.payments.filter((row) => row.customer === 'cus_bo').map((row) => row.id),
+    );
+  });
+
+  it('refuse sections without their blocks as a page problem', () => {
+    const home = payments.surfaces.home as AnyPageSpec;
+    expect(() =>
+      validatePage(payments, home, { sections: [{ title: 'x', layout: 'stack' }] }),
+    ).toThrow(PageProblem);
+    expect(toPage({ sections: [{ title: 'x', layout: 'stack' }] })).toEqual({
+      sections: [{ title: 'x', layout: 'stack' }],
+    });
   });
 });

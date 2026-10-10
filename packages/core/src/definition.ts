@@ -119,6 +119,15 @@ export interface UserPageChange {
 /** One change to one surface, by its kind. */
 export type Change = ListChange | ChoiceChange | CollectionChange | PageChange | UserPageChange;
 
+/** What each kind of change can do. */
+export const CHANGE_OPS: Readonly<Record<Change['kind'], readonly string[]>> = {
+  list: ['promote', 'demote', 'move', 'pin', 'unpin', 'hide', 'restore'],
+  choice: ['set'],
+  collection: ['add', 'update', 'remove'],
+  page: ['set', 'reset'],
+  userPage: ['create', 'rename', 'set', 'delete'],
+};
+
 /**
  * A change with its provenance: who proposed it, on what evidence, against which version, and on
  * which layer.
@@ -141,8 +150,8 @@ export interface Operation {
 }
 
 /**
- * `suggested` operations add collection items for the user to accept; `kept` ones were
- * confirmed by the user and join the user layer.
+ * `suggested` operations add collection items, or redesign pages, for the user to accept; `kept`
+ * ones were confirmed by the user and join the user layer.
  */
 export type Status = 'active' | 'kept' | 'reverted' | 'suggested' | 'dismissed';
 
@@ -225,7 +234,48 @@ export function operationKey(change: Change): string {
   return `${change.surface}||${change.op}|${change.item}`;
 }
 
-/** Whether an operation counts towards the interface: active, or kept by the person. */
+/** Finished operations, reverted or dismissed, a definition keeps besides those still needed. */
+export const KEEP_FINISHED = 100;
+
+/**
+ * Drops the oldest finished operations past `keep`, and cooldowns that have run out. The latest
+ * reverted planned change of each kind stays, so reverting it once more still blocks it.
+ */
+export function compact(definition: Definition, session: number, keep = KEEP_FINISHED): Definition {
+  const cooldowns = definition.cooldowns.filter((entry) => entry.until > session);
+  const finished = definition.operations.filter(
+    (operation) => operation.status === 'reverted' || operation.status === 'dismissed',
+  );
+  let operations = definition.operations;
+  if (finished.length > keep) {
+    const needed = new Set<string>();
+    const keys = new Set<string>();
+    for (const operation of [...definition.operations].reverse()) {
+      if (operation.status !== 'reverted' || operation.origin === 'user') continue;
+      const key = operationKey(operation.change);
+      if (keys.has(key)) continue;
+      keys.add(key);
+      needed.add(operation.id);
+    }
+    let excess = finished.length - keep;
+    const drop = new Set<string>();
+    for (const operation of finished) {
+      if (excess <= 0) break;
+      if (needed.has(operation.id)) continue;
+      drop.add(operation.id);
+      excess--;
+    }
+    if (drop.size > 0) {
+      operations = definition.operations.filter((operation) => !drop.has(operation.id));
+    }
+  }
+  if (operations === definition.operations && cooldowns.length === definition.cooldowns.length) {
+    return definition;
+  }
+  return { ...definition, operations, cooldowns };
+}
+
+/** Whether an operation counts toward the interface: active, or kept by the person. */
 export const isApplied = (operation: AppliedOperation) =>
   operation.status === 'active' || operation.status === 'kept';
 
