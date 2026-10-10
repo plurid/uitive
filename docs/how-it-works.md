@@ -54,7 +54,7 @@ Planners see sources' schemas, never their rows. A page's queries are data: poli
 
 ## Two front doors
 
-The same engine runs in two places. An application integrates it, with a contract it declares and bindings to its own code: the subject of these guides. A private browser extension prototype applies it to sites it doesn't own, through adapters: anchors into the page and official APIs read with the person's own key. Its README is [apps/extension/README.md](../apps/extension/README.md).
+The same engine runs in two places. An application integrates it, with a contract it declares and bindings to its own code: the subject of these guides. A browser extension applies it to sites it doesn't own, through adapters: anchors into the page and official APIs read with the person's own key. Uitive maintains the adapters for real sites; this repository ships the extension with one for a fictional dashboard. Its README is [apps/extension/README.md](../apps/extension/README.md).
 
 ## Decisions
 
@@ -67,3 +67,11 @@ The same engine runs in two places. An application integrates it, with a contrac
 - [ADR 0007](adr/0007-the-agent-kit.md): the agent kit: generated, curated, checked.
 - [ADR 0008](adr/0008-any-model-plans.md): any model plans, from any provider, with the schema still the boundary.
 - [ADR 0009](adr/0009-renamed-to-uitive.md): the product's name, Uitive, everywhere, before publishing.
+- [ADR 0010](adr/0010-the-cli-is-uitive.md): the CLI is published as `uitive`.
+- [ADR 0011](adr/0011-commands-and-what-a-model-may-claim.md): commands apply at once; a model never speaks for the person's pages.
+- [ADR 0012](adr/0012-the-handler-guards-the-spend.md): the planner's handler guards the spend.
+- [ADR 0013](adr/0013-planning-at-scale-revisited.md): planning at scale, revisited.
+- [ADR 0014](adr/0014-the-agent-kit-gate-and-confinement.md): the agent kit's gate, and what confines it.
+- [ADR 0015](adr/0015-data-correctness-at-the-edges.md): data correctness at the edges.
+- [ADR 0016](adr/0016-adapters-for-real-sites-are-the-product.md): adapters for real sites are the product.
+- [ADR 0017](adr/0017-adapter-format-2.md): adapter format 2: a site's modes and keys are data.

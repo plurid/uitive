@@ -1,0 +1,1522 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Acme Payments API",
+    "version": "2026-10-10",
+    "description": "The API of Acme Payments, a fictional payments dashboard for testing Uitive's extension. Read-only: lists page newest first with starting_after, and each object reads by its ID."
+  },
+  "servers": [
+    {
+      "url": "https://api.acme-payments.example"
+    }
+  ],
+  "security": [
+    {
+      "key": []
+    }
+  ],
+  "paths": {
+    "/v1/charges": {
+      "get": {
+        "operationId": "ListCharges",
+        "summary": "List payments",
+        "parameters": [
+          {
+            "name": "created",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only objects created in this range.",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "title": "range",
+                  "properties": {
+                    "gt": {
+                      "type": "integer"
+                    },
+                    "gte": {
+                      "type": "integer"
+                    },
+                    "lt": {
+                      "type": "integer"
+                    },
+                    "lte": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "customer",
+            "in": "query",
+            "description": "Only payments by this customer.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many objects to return, from 1 to 100.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "The ID of the last object of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of objects, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "ChargeList",
+                  "required": ["data", "has_more", "object", "url"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/charge"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": ["list"]
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/charges/{charge}": {
+      "get": {
+        "operationId": "GetCharge",
+        "summary": "Get one of the payments",
+        "parameters": [
+          {
+            "name": "charge",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/charge"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers": {
+      "get": {
+        "operationId": "ListCustomers",
+        "summary": "List customers",
+        "parameters": [
+          {
+            "name": "created",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only objects created in this range.",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "title": "range",
+                  "properties": {
+                    "gt": {
+                      "type": "integer"
+                    },
+                    "gte": {
+                      "type": "integer"
+                    },
+                    "lt": {
+                      "type": "integer"
+                    },
+                    "lte": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many objects to return, from 1 to 100.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "The ID of the last object of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of objects, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "CustomerList",
+                  "required": ["data", "has_more", "object", "url"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/customer"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": ["list"]
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers/{customer}": {
+      "get": {
+        "operationId": "GetCustomer",
+        "summary": "Get one of the customers",
+        "parameters": [
+          {
+            "name": "customer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/customer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/disputes": {
+      "get": {
+        "operationId": "ListDisputes",
+        "summary": "List disputes",
+        "parameters": [
+          {
+            "name": "created",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only objects created in this range.",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "title": "range",
+                  "properties": {
+                    "gt": {
+                      "type": "integer"
+                    },
+                    "gte": {
+                      "type": "integer"
+                    },
+                    "lt": {
+                      "type": "integer"
+                    },
+                    "lte": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "charge",
+            "in": "query",
+            "description": "Only disputes about this payment.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "payment_intent",
+            "in": "query",
+            "description": "Only disputes about this payment intent.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many objects to return, from 1 to 100.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "The ID of the last object of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of objects, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "DisputeList",
+                  "required": ["data", "has_more", "object", "url"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/dispute"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": ["list"]
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/disputes/{dispute}": {
+      "get": {
+        "operationId": "GetDispute",
+        "summary": "Get one of the disputes",
+        "parameters": [
+          {
+            "name": "dispute",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dispute"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payouts": {
+      "get": {
+        "operationId": "ListPayouts",
+        "summary": "List payouts",
+        "parameters": [
+          {
+            "name": "created",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only objects created in this range.",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "title": "range",
+                  "properties": {
+                    "gt": {
+                      "type": "integer"
+                    },
+                    "gte": {
+                      "type": "integer"
+                    },
+                    "lt": {
+                      "type": "integer"
+                    },
+                    "lte": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only payouts in this status.",
+            "schema": {
+              "type": "string",
+              "enum": ["paid", "pending", "in_transit", "canceled", "failed"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many objects to return, from 1 to 100.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "The ID of the last object of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of objects, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "PayoutList",
+                  "required": ["data", "has_more", "object", "url"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/payout"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": ["list"]
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payouts/{payout}": {
+      "get": {
+        "operationId": "GetPayout",
+        "summary": "Get one of the payouts",
+        "parameters": [
+          {
+            "name": "payout",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/payout"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/refunds": {
+      "get": {
+        "operationId": "ListRefunds",
+        "summary": "List refunds",
+        "parameters": [
+          {
+            "name": "created",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only objects created in this range.",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "title": "range",
+                  "properties": {
+                    "gt": {
+                      "type": "integer"
+                    },
+                    "gte": {
+                      "type": "integer"
+                    },
+                    "lt": {
+                      "type": "integer"
+                    },
+                    "lte": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "charge",
+            "in": "query",
+            "description": "Only refunds of this payment.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "payment_intent",
+            "in": "query",
+            "description": "Only refunds of this payment intent.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many objects to return, from 1 to 100.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "The ID of the last object of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of objects, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "RefundList",
+                  "required": ["data", "has_more", "object", "url"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/refund"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": ["list"]
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/refunds/{refund}": {
+      "get": {
+        "operationId": "GetRefund",
+        "summary": "Get one of the refunds",
+        "parameters": [
+          {
+            "name": "refund",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/refund"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/balance_transactions": {
+      "get": {
+        "operationId": "ListBalanceTransactions",
+        "summary": "List balance transactions",
+        "parameters": [
+          {
+            "name": "created",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only objects created in this range.",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "title": "range",
+                  "properties": {
+                    "gt": {
+                      "type": "integer"
+                    },
+                    "gte": {
+                      "type": "integer"
+                    },
+                    "lt": {
+                      "type": "integer"
+                    },
+                    "lte": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many objects to return, from 1 to 100.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "The ID of the last object of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of objects, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "BalanceTransactionList",
+                  "required": ["data", "has_more", "object", "url"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/balance_transaction"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": ["list"]
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/balance_transactions/{balance_transaction}": {
+      "get": {
+        "operationId": "GetBalanceTransaction",
+        "summary": "Get one of the balance transactions",
+        "parameters": [
+          {
+            "name": "balance_transaction",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/balance_transaction"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/invoices": {
+      "get": {
+        "operationId": "ListInvoices",
+        "summary": "List invoices",
+        "parameters": [
+          {
+            "name": "created",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only objects created in this range.",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "title": "range",
+                  "properties": {
+                    "gt": {
+                      "type": "integer"
+                    },
+                    "gte": {
+                      "type": "integer"
+                    },
+                    "lt": {
+                      "type": "integer"
+                    },
+                    "lte": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "customer",
+            "in": "query",
+            "description": "Only this customer's invoices.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only invoices in this status.",
+            "schema": {
+              "type": "string",
+              "enum": ["draft", "open", "paid", "uncollectible", "void"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many objects to return, from 1 to 100.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "The ID of the last object of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of objects, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "InvoiceList",
+                  "required": ["data", "has_more", "object", "url"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/invoice"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": ["list"]
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/invoices/{invoice}": {
+      "get": {
+        "operationId": "GetInvoice",
+        "summary": "Get one of the invoices",
+        "parameters": [
+          {
+            "name": "invoice",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/invoice"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions": {
+      "get": {
+        "operationId": "ListSubscriptions",
+        "summary": "List subscriptions",
+        "parameters": [
+          {
+            "name": "created",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only objects created in this range.",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "title": "range",
+                  "properties": {
+                    "gt": {
+                      "type": "integer"
+                    },
+                    "gte": {
+                      "type": "integer"
+                    },
+                    "lt": {
+                      "type": "integer"
+                    },
+                    "lte": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          {
+            "name": "customer",
+            "in": "query",
+            "description": "Only this customer's subscriptions.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only subscriptions in this status.",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "past_due", "canceled", "incomplete", "trialing", "unpaid"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many objects to return, from 1 to 100.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "The ID of the last object of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of objects, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "SubscriptionList",
+                  "required": ["data", "has_more", "object", "url"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/subscription"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": ["list"]
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions/{subscription}": {
+      "get": {
+        "operationId": "GetSubscription",
+        "summary": "Get one of the subscriptions",
+        "parameters": [
+          {
+            "name": "subscription",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/subscription"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-acme-key",
+        "description": "A key starting acme_test_ for test data, or acme_live_ for live data. Secret keys, starting acme_secret_, are refused."
+      }
+    },
+    "schemas": {
+      "charge": {
+        "type": "object",
+        "title": "Charge",
+        "description": "One attempt to take a payment from a customer's card.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the object."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["charge"]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount the payment asked for, in the currency's smallest unit (cents for euros)."
+          },
+          "amount_refunded": {
+            "type": "integer",
+            "description": "Amount refunded, in the currency's smallest unit (cents for euros)."
+          },
+          "currency": {
+            "type": "string",
+            "format": "currency",
+            "description": "Three-letter ISO currency code, in lowercase."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["failed", "succeeded"]
+          },
+          "created": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the object was created, in seconds since the Unix epoch."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/customer"
+              }
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "What the payment was for."
+          },
+          "receipt_email": {
+            "type": "string",
+            "nullable": true,
+            "description": "Where the receipt went."
+          },
+          "refunded": {
+            "type": "boolean"
+          },
+          "disputed": {
+            "type": "boolean"
+          },
+          "payment_intent": {
+            "type": "string",
+            "nullable": true
+          },
+          "failure_message": {
+            "type": "string",
+            "nullable": true
+          },
+          "failure_code": {
+            "type": "string",
+            "nullable": true
+          },
+          "captured": {
+            "type": "boolean"
+          },
+          "payment_method_details": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "card": {
+                "type": "object",
+                "properties": {
+                  "brand": {
+                    "type": "string"
+                  },
+                  "last4": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "customer": {
+        "type": "object",
+        "title": "Customer",
+        "description": "Someone who pays the business.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the object."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["customer"]
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "created": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the object was created, in seconds since the Unix epoch."
+          },
+          "balance": {
+            "type": "integer",
+            "description": "Credit or debt carried to the next invoice, in the currency's smallest unit."
+          },
+          "currency": {
+            "type": "string",
+            "format": "currency",
+            "description": "Three-letter ISO currency code, in lowercase."
+          },
+          "delinquent": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "dispute": {
+        "type": "object",
+        "title": "Dispute",
+        "description": "A customer questioning a payment with their card's issuer.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the object."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["dispute"]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount disputed, in the currency's smallest unit (cents for euros)."
+          },
+          "currency": {
+            "type": "string",
+            "format": "currency",
+            "description": "Three-letter ISO currency code, in lowercase."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["needs_response", "under_review", "won", "lost"]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "created": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the object was created, in seconds since the Unix epoch."
+          },
+          "charge": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/charge"
+              }
+            ]
+          },
+          "payment_intent": {
+            "type": "string",
+            "nullable": true
+          },
+          "is_charge_refundable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "payout": {
+        "type": "object",
+        "title": "Payout",
+        "description": "Money sent from the balance to the business's bank account.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the object."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["payout"]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount paid out, in the currency's smallest unit (cents for euros)."
+          },
+          "currency": {
+            "type": "string",
+            "format": "currency",
+            "description": "Three-letter ISO currency code, in lowercase."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["paid", "pending", "in_transit", "canceled", "failed"]
+          },
+          "arrival_date": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the payout arrives, in seconds since the Unix epoch."
+          },
+          "created": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the object was created, in seconds since the Unix epoch."
+          },
+          "method": {
+            "type": "string",
+            "enum": ["standard", "instant"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["bank_account", "card"]
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "failure_message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "refund": {
+        "type": "object",
+        "title": "Refund",
+        "description": "Money given back for a payment.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the object."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["refund"]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount refunded, in the currency's smallest unit (cents for euros)."
+          },
+          "currency": {
+            "type": "string",
+            "format": "currency",
+            "description": "Three-letter ISO currency code, in lowercase."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "succeeded", "failed", "canceled"]
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "created": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the object was created, in seconds since the Unix epoch."
+          },
+          "charge": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/charge"
+              }
+            ]
+          },
+          "payment_intent": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "balance_transaction": {
+        "type": "object",
+        "title": "BalanceTransaction",
+        "description": "Money moving in or out of the balance, with its fee.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the object."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["balance_transaction"]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Gross amount, in the currency's smallest unit (cents for euros)."
+          },
+          "fee": {
+            "type": "integer",
+            "description": "Fee, in the currency's smallest unit (cents for euros)."
+          },
+          "net": {
+            "type": "integer",
+            "description": "Net amount, in the currency's smallest unit (cents for euros)."
+          },
+          "currency": {
+            "type": "string",
+            "format": "currency",
+            "description": "Three-letter ISO currency code, in lowercase."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["charge", "refund", "payout", "adjustment"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["available", "pending"]
+          },
+          "created": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the object was created, in seconds since the Unix epoch."
+          },
+          "available_on": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the funds become available, in seconds since the Unix epoch."
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "reporting_category": {
+            "type": "string"
+          }
+        }
+      },
+      "invoice": {
+        "type": "object",
+        "title": "Invoice",
+        "description": "A statement of what a customer owes.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the object."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["invoice"]
+          },
+          "amount_due": {
+            "type": "integer",
+            "description": "Amount due, in the currency's smallest unit (cents for euros)."
+          },
+          "amount_paid": {
+            "type": "integer",
+            "description": "Amount paid, in the currency's smallest unit (cents for euros)."
+          },
+          "amount_remaining": {
+            "type": "integer",
+            "description": "Amount left to pay, in the currency's smallest unit (cents for euros)."
+          },
+          "currency": {
+            "type": "string",
+            "format": "currency",
+            "description": "Three-letter ISO currency code, in lowercase."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "open", "paid", "uncollectible", "void"]
+          },
+          "created": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the object was created, in seconds since the Unix epoch."
+          },
+          "due_date": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When payment is due, in seconds since the Unix epoch.",
+            "nullable": true
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/customer"
+              }
+            ]
+          },
+          "number": {
+            "type": "string",
+            "nullable": true
+          },
+          "customer_email": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "subscription": {
+        "type": "object",
+        "title": "Subscription",
+        "description": "A customer paying again and again for a plan.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the object."
+          },
+          "object": {
+            "type": "string",
+            "enum": ["subscription"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "past_due", "canceled", "incomplete", "trialing", "unpaid"]
+          },
+          "created": {
+            "type": "integer",
+            "format": "unix-time",
+            "description": "When the object was created, in seconds since the Unix epoch."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/customer"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "format": "currency",
+            "description": "Three-letter ISO currency code, in lowercase."
+          },
+          "cancel_at_period_end": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    }
+  }
+}

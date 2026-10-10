@@ -5,7 +5,9 @@ import { startDashboard } from './server.ts';
 
 const dashboard = await startDashboard({ port: 4180, apiPort: 4181 });
 console.log(`Dashboard: ${dashboard.url}/test/dashboard`);
-console.log(`API: ${dashboard.api} (any key starting rk_test_ works)`);
+console.log(
+  `API: ${dashboard.api} (any key starting acme_test_ works; its description is at /openapi.json)`,
+);
 process.on('SIGINT', () => {
   void dashboard.close().then(() => process.exit(0));
 });

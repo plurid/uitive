@@ -1,37 +1,27 @@
 import { action, defineApp, list, page, route, toJson, ui } from '@plurid/uitive-core';
 import type { AdapterInput } from '@plurid/uitive-adapter';
-import { endpoints, sources } from './stripe/api.generated.ts';
+import { endpoints, sources } from './acme-payments/api.generated.ts';
 
-// Hrefs and names are guesses until checked on the real dashboard, in test mode. Paths may start
-// with /test/ in test mode, so every pattern allows it.
+// Acme Payments is fictional: the dashboard in tools/fixtures/payments-dashboard, whose API this
+// adapter's sources are generated from. Test data lives under /test/, so every pattern allows it.
 const mode = '^/(test/)?';
 
 const sidebar = [
-  ['nav.home', 'Home', `${mode}dashboard/?$`, ['Home', 'Accueil', 'Startseite']],
-  ['nav.balances', 'Balances', `${mode}balance(/overview)?/?$`, ['Balances', 'Soldes', 'Salden']],
-  ['nav.transactions', 'Transactions', `${mode}payments/?$`, ['Transactions', 'Transaktionen']],
-  ['nav.customers', 'Customers', `${mode}customers/?$`, ['Customers', 'Clients', 'Kunden']],
-  [
-    'nav.products',
-    'Product catalog',
-    `${mode}products`,
-    ['Product catalog', 'Catalogue de produits', 'Produktkatalog'],
-  ],
-  ['nav.connect', 'Connect', `${mode}connect`, ['Connect']],
-  ['nav.billing', 'Billing', `${mode}billing`, ['Billing', 'Facturation', 'Abrechnung']],
-  [
-    'nav.reporting',
-    'Reporting',
-    `${mode}(reports|reporting)`,
-    ['Reporting', 'Rapports', 'Berichte'],
-  ],
+  ['nav.home', 'Home', `${mode}dashboard/?$`],
+  ['nav.funds', 'Funds', `${mode}funds/?$`],
+  ['nav.payments', 'Payments', `${mode}payments/?$`],
+  ['nav.customers', 'Customers', `${mode}customers/?$`],
+  ['nav.catalog', 'Catalog', `${mode}catalog`],
+  ['nav.partners', 'Partners', `${mode}partners`],
+  ['nav.invoices', 'Invoices', `${mode}invoices`],
+  ['nav.reports', 'Reports', `${mode}reports`],
 ] as const;
 
 export const contract = defineApp({
-  id: 'stripe-dashboard',
+  id: 'acme-payments',
   version: '1',
   description:
-    "A payments dashboard, as the extension sees it: its sidebar, its pages, and data from the payments API with the person's own restricted key.",
+    "A payments dashboard, as the extension sees it: its sidebar, its pages, and data from its API with the person's own read-only key.",
   sources,
   actions: Object.fromEntries(
     sidebar.map(([id, label]) => [
@@ -45,7 +35,7 @@ export const contract = defineApp({
       description: "The dashboard's home page, unchanged",
     },
     'payments.original': {
-      label: 'Transactions as they are',
+      label: 'Payments as they are',
       description: 'The list of payments, unchanged',
     },
     'customer.original': {
@@ -60,7 +50,7 @@ export const contract = defineApp({
     payment: route({ path: '/payments/:id', entity: 'charges', key: 'id' }),
     customers: route({ path: '/customers' }),
     customer: route({ path: '/customers/:id', entity: 'customers', key: 'id', page: 'customer' }),
-    balances: route({ path: '/balance/overview' }),
+    funds: route({ path: '/funds' }),
   },
   surfaces: {
     sidebar: list({
@@ -76,7 +66,7 @@ export const contract = defineApp({
       standard: () => ui.page(ui.region('home.original')),
     }),
     payments: page({})({
-      label: 'Transactions',
+      label: 'Payments',
       description: 'The payments page: the payments the person wants to see, and how',
       standard: () => ui.page(ui.region('payments.original')),
     }),
@@ -90,46 +80,46 @@ export const contract = defineApp({
 });
 
 const permissions: Record<string, string> = {
-  charges: 'Charges and refunds: read',
-  refunds: 'Charges and refunds: read',
+  charges: 'Payments: read',
+  refunds: 'Payments: read',
   customers: 'Customers: read',
   disputes: 'Disputes: read',
-  payouts: 'Payouts: read',
-  'balance-transactions': 'Balance: read',
+  payouts: 'Funds: read',
+  'balance-transactions': 'Funds: read',
   invoices: 'Invoices: read',
-  subscriptions: 'Subscriptions: read',
+  subscriptions: 'Invoices: read',
 };
 
 export const adapter: AdapterInput = {
   format: 'uitive.adapter',
-  formatVersion: 1,
-  id: 'stripe-dashboard',
-  label: 'Stripe Dashboard',
-  origins: ['https://dashboard.stripe.com'],
+  formatVersion: 2,
+  id: 'acme-payments',
+  label: 'Acme Payments (fictional)',
+  origins: ['https://dashboard.acme-payments.example'],
+  testMode: '^/test/',
+  examples: [
+    'hide Partners and Invoices',
+    'make my home a morning check of failed payments, disputes and payouts',
+  ],
   contract: toJson(contract) as unknown as Record<string, unknown>,
   anchors: {
-    sidebar: {
-      match: [
-        { role: 'navigation', name: ['Main', 'Navigation', 'Sidebar'] },
-        { role: 'navigation' },
-      ],
-    },
+    sidebar: { match: [{ role: 'navigation', name: ['Main'] }, { role: 'navigation' }] },
     main: { match: [{ role: 'main' }] },
     notices: { required: true, match: [{ role: 'alert' }] },
     ...Object.fromEntries(
-      sidebar.map(([id, , href, names]) => [
+      sidebar.map(([id, label, href]) => [
         id,
-        { within: 'sidebar', match: [{ href }, { role: 'link', name: [...names] }] },
+        { within: 'sidebar', match: [{ href }, { role: 'link', name: [label] }] },
       ]),
     ),
   },
   routes: [
     { path: `${mode}dashboard/?$`, route: 'home' },
-    { path: `${mode}payments/(?<id>(ch|py|pi)_\\w+)/?$`, route: 'payment' },
+    { path: `${mode}payments/(?<id>ch_\\w+)/?$`, route: 'payment' },
     { path: `${mode}payments/?$`, route: 'payments' },
     { path: `${mode}customers/(?<id>cus_\\w+)/?$`, route: 'customer' },
     { path: `${mode}customers/?$`, route: 'customers' },
-    { path: `${mode}balance(/overview)?/?$`, route: 'balances' },
+    { path: `${mode}funds/?$`, route: 'funds' },
   ],
   lists: {
     sidebar: { container: 'sidebar', items: Object.fromEntries(sidebar.map(([id]) => [id, id])) },
@@ -145,11 +135,22 @@ export const adapter: AdapterInput = {
     customer: { route: 'customer', region: 'customer.original' },
   },
   connectors: {
-    stripe: {
-      label: 'Stripe API',
-      base: 'https://api.stripe.com',
-      keys: { test: '^rk_test_', live: '^rk_live_' },
-      testMode: '^/test/',
+    acme: {
+      label: 'Acme API',
+      base: 'https://api.acme-payments.example',
+      auth: { header: 'x-acme-key', prefix: '' },
+      keys: {
+        test: '^acme_test_',
+        live: '^acme_live_',
+        refuse: [
+          {
+            pattern: '^acme_secret_',
+            reason: 'Secret keys are refused: create a read-only key in Acme',
+          },
+        ],
+        label: 'read-only key',
+        hint: { test: 'acme_test_...', live: 'acme_live_...' },
+      },
       sources: Object.fromEntries(
         Object.entries(endpoints.sources).map(([id, rest]) => [
           id,

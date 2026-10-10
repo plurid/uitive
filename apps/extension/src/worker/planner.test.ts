@@ -8,12 +8,12 @@ import type { PlanReply } from '../messages.ts';
 
 vi.mock('./secrets.ts', () => ({ getSecret: async () => undefined }));
 
-const loaded = adapterById('stripe-dashboard');
+const loaded = adapterById('acme-payments');
 if (!loaded) throw new Error('No adapter');
-const ORIGIN = 'https://dashboard.stripe.com';
+const ORIGIN = 'https://dashboard.acme-payments.example';
 
 /** A request exactly as the content script's client builds one. */
-function request(text = 'hide Connect'): PlanRequest {
+function request(text = 'hide Partners'): PlanRequest {
   const client = createUitive({
     contract: loaded!.contract,
     store: memoryStore(),
@@ -29,7 +29,7 @@ function request(text = 'hide Connect'): PlanRequest {
   return client.request('command', text);
 }
 
-const message = (body: unknown) => ({ adapter: 'stripe-dashboard', request: body });
+const message = (body: unknown) => ({ adapter: 'acme-payments', request: body });
 
 /** A port as a content script on the dashboard opens one, and what the worker posts to it. */
 function port(origin = ORIGIN) {
@@ -100,7 +100,7 @@ describe('the planner port', () => {
     expect(await stranger.post(message(request()))).toMatchObject({ code: 'failed' });
     const forged = port();
     servePlanner(forged.handle);
-    const other = { ...request(), contract: { id: 'stripe-dashboard', hash: 'other' } };
+    const other = { ...request(), contract: { id: 'acme-payments', hash: 'other' } };
     expect(await forged.post(message(other))).toMatchObject({ code: 'failed' });
     const twice = port();
     servePlanner(twice.handle);

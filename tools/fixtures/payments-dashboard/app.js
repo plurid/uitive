@@ -25,13 +25,13 @@ const renamed = sessionStorage.getItem('variant') === 'renamed';
 
 const SIDEBAR = [
   ['Home', '/dashboard'],
-  ['Balances', '/balance/overview'],
-  ['Transactions', '/payments'],
+  ['Funds', '/funds'],
+  ['Payments', '/payments'],
   renamed ? ['Buyers', '/buyers'] : ['Customers', '/customers'],
-  ['Product catalog', '/products'],
-  ['Connect', '/connect'],
-  ['Billing', '/billing'],
-  ['Reporting', '/reports'],
+  ['Catalog', '/catalog'],
+  ['Partners', '/partners'],
+  ['Invoices', '/invoices'],
+  ['Reports', '/reports'],
 ];
 
 function sidebar() {
@@ -77,7 +77,7 @@ const PAGES = [
   ],
   [
     /^\/payments\/?$/,
-    () => `<h1>Transactions</h1>
+    () => `<h1>Payments</h1>
       <div class="toolbar"><button type="button">Filter</button><button type="button">Export</button><button type="button">Create payment</button></div>
       <table><thead><tr><th>Amount</th><th>Status</th><th>Description</th><th>Customer</th><th>Date</th></tr></thead>
       <tbody>${chargeRows(data.charges)}</tbody></table>`,
@@ -113,14 +113,11 @@ const PAGES = [
         <h2>Payments</h2><table><tbody>${chargeRows(data.charges.filter((charge) => charge.customer === id))}</tbody></table>`;
     },
   ],
-  [
-    /^\/balance(\/overview)?\/?$/,
-    () => '<h1>Balances</h1><p>Your balance and upcoming payouts.</p>',
-  ],
-  [/^\/products/, () => '<h1>Product catalog</h1><p>Products and prices you sell.</p>'],
-  [/^\/connect/, () => '<h1>Connect</h1><p>Platforms and marketplaces.</p>'],
-  [/^\/billing/, () => '<h1>Billing</h1><p>Subscriptions and invoices.</p>'],
-  [/^\/reports/, () => '<h1>Reporting</h1><p>Reports about your business.</p>'],
+  [/^\/funds\/?$/, () => '<h1>Funds</h1><p>Your balance and the payouts on their way.</p>'],
+  [/^\/catalog/, () => '<h1>Catalog</h1><p>What you sell, and for how much.</p>'],
+  [/^\/partners/, () => '<h1>Partners</h1><p>Businesses you take payments for.</p>'],
+  [/^\/invoices/, () => '<h1>Invoices</h1><p>Invoices and the plans customers pay for.</p>'],
+  [/^\/reports/, () => '<h1>Reports</h1><p>How the business is doing.</p>'],
 ];
 
 function render() {

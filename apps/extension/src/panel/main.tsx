@@ -13,13 +13,21 @@ interface Site {
 interface Status {
   /** The tab's origin, when the browser shows it to Uitive. */
   origin: string | null;
-  adapter: { id: string; label: string } | null;
+  /** The adapter for this tab: requests to suggest, and whether the site has a test mode. */
+  adapter: { id: string; label: string; examples: string[]; modes: boolean } | null;
   allowed: boolean;
   enabled: boolean;
   access: string[];
   /** Every site Uitive has an adapter for. */
   sites: Site[];
-  connectors: { name: string; label: string; secret: { test: string; live: string } }[];
+  /** The site's APIs: what their keys are called and look like, and their secrets' names by mode. */
+  connectors: {
+    name: string;
+    label: string;
+    key: string;
+    hint: { test?: string; live?: string };
+    secret: { test?: string; live: string };
+  }[];
 }
 
 interface Usage {
@@ -312,7 +320,7 @@ function Panel() {
             <h2>Ask</h2>
             <textarea
               aria-label="What would you like to change?"
-              placeholder="For example: hide Connect and Billing, or make my home a morning check of failed payments, disputes and payouts"
+              placeholder={`For example: ${status.adapter?.examples.length ? status.adapter.examples.join(', or ') : 'hide a link you never use'}`}
               value={text}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={(event) => {
@@ -385,7 +393,9 @@ function Panel() {
           <section>
             <h2>This page</h2>
             <p className="muted">
-              {report ? `${report.route ?? 'An unmapped page'}, ${report.mode} mode. ` : ''}
+              {report
+                ? `${report.route ?? 'An unmapped page'}${status.adapter?.modes ? `, ${report.mode} mode` : ''}. `
+                : ''}
               {anchors.length > 0
                 ? `${anchors.length - missing.length} of ${anchors.length} parts found${missing.length > 0 ? `; not found: ${missing.map(([name, state]) => `${name} (${state})`).join(', ')}` : ''}.`
                 : ''}
@@ -428,7 +438,8 @@ function Panel() {
             <h2>Keys</h2>
             <p className="muted">
               Kept in this browser only. The first model you have a key for plans what you ask:
-              Claude, then OpenAI, then Gemini. Restricted keys read data for redesigned pages.
+              Claude, then OpenAI, then Gemini. A key for the site's own API lets redesigned pages
+              read its data.
             </p>
             <KeyField
               label="Claude API key"
@@ -451,16 +462,20 @@ function Panel() {
               present={secrets.includes('google')}
               onChange={() => void refresh()}
             />
-            {status.connectors.map((connector) => (
-              <KeyField
-                key={connector.name}
-                label={`${connector.label}, ${report?.mode ?? 'test'} mode (restricted, read only)`}
-                hint={report?.mode === 'live' ? 'rk_live_...' : 'rk_test_...'}
-                name={connector.secret[report?.mode ?? 'test']}
-                present={secrets.includes(connector.secret[report?.mode ?? 'test'])}
-                onChange={() => void refresh()}
-              />
-            ))}
+            {status.connectors.map((connector) => {
+              const mode = status.adapter?.modes ? (report?.mode ?? 'test') : 'live';
+              const name = connector.secret[mode] ?? connector.secret.live;
+              return (
+                <KeyField
+                  key={connector.name}
+                  label={`${connector.label}${status.adapter?.modes ? `, ${mode} mode` : ''} (${connector.key})`}
+                  hint={connector.hint[mode] ?? ''}
+                  name={name}
+                  present={secrets.includes(name)}
+                  onChange={() => void refresh()}
+                />
+              );
+            })}
             {usage ? (
               <p className="muted">
                 This month: {usage.reads.toLocaleString()} of {usage.budget.toLocaleString()} reads,{' '}

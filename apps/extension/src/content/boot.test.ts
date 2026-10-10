@@ -3,18 +3,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { adapterById } from '../adapters.ts';
 import { early, lastOf, remember } from './boot.ts';
 
-const loaded = adapterById('stripe-dashboard');
+const loaded = adapterById('acme-payments');
 if (!loaded) throw new Error('No adapter');
 const { adapter } = loaded;
-const KEY = 'uitive:stripe-dashboard';
+const KEY = 'uitive:acme-payments';
 const sidebar = `<nav aria-label="Main">
-  <a href="/test/dashboard">Home</a><a href="/test/connect">Connect</a><a href="/test/billing">Billing</a>
+  <a href="/test/dashboard">Home</a><a href="/test/partners">Partners</a><a href="/test/invoices">Invoices</a>
 </nav>`;
 
 describe('page start', () => {
   it('hides what the page hid last, before the extension storage answers, and as the page renders', async () => {
     remember(window, adapter, {
-      effects: [{ kind: 'hide', anchor: 'nav.connect' }],
+      effects: [{ kind: 'hide', anchor: 'nav.partners' }],
       overrides: {},
     });
     document.body.innerHTML = '';
@@ -22,11 +22,11 @@ describe('page start', () => {
     // The page renders its sidebar later, as frameworks do.
     document.body.innerHTML = sidebar;
     await vi.waitFor(() =>
-      expect(document.querySelector('a[href="/test/connect"]')?.getAttribute('data-uitive')).toBe(
-        'nav.connect',
+      expect(document.querySelector('a[href="/test/partners"]')?.getAttribute('data-uitive')).toBe(
+        'nav.partners',
       ),
     );
-    expect(document.querySelector('a[href="/test/billing"]')?.hasAttribute('data-uitive')).toBe(
+    expect(document.querySelector('a[href="/test/invoices"]')?.hasAttribute('data-uitive')).toBe(
       false,
     );
     boot.stop();
@@ -35,11 +35,11 @@ describe('page start', () => {
   it('keeps hides, orders and replaced regions, without the redesign or the More list', () => {
     const last = lastOf(
       [
-        { kind: 'hide', anchor: 'nav.connect' },
+        { kind: 'hide', anchor: 'nav.partners' },
         {
           kind: 'more',
           container: 'sidebar',
-          items: [{ action: 'nav.connect', anchor: 'nav.connect' }],
+          items: [{ action: 'nav.partners', anchor: 'nav.partners' }],
         },
         {
           kind: 'overlay',
@@ -59,7 +59,7 @@ describe('page start', () => {
       {},
     );
     expect(last.effects).toEqual([
-      { kind: 'hide', anchor: 'nav.connect' },
+      { kind: 'hide', anchor: 'nav.partners' },
       { kind: 'overlay', surface: 'home', region: 'main', mode: 'replace' },
     ]);
   });

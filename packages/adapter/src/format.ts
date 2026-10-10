@@ -3,7 +3,7 @@ import { z } from 'zod';
 /** What an adapter says it is, in its `format` field. */
 export const ADAPTER_FORMAT = 'uitive.adapter';
 /** The adapter format's version. */
-export const ADAPTER_VERSION = 1;
+export const ADAPTER_VERSION = 2;
 
 /**
  * One way to find an element, tried in order: `href` survives translation, then a test id,
@@ -42,7 +42,7 @@ const restSource = z
     path: z.string().startsWith('/'),
     rows: z.string().optional(),
     filters: z.record(z.string(), z.string()).optional(),
-    repeat: z.array(z.string()).optional(),
+    repeat: z.array(z.string()).readonly().optional(),
     limit: z.string().optional(),
     pagination: z
       .union([
@@ -66,15 +66,48 @@ const restSource = z
   })
   .strict();
 
+/**
+ * What a connector's keys must look like, and how the side panel names them. Patterns are
+ * regular expressions; a refused key is turned away with its reason before the patterns apply.
+ */
+const keys = z
+  .object({
+    /** What a key for live data must look like. */
+    live: z.string().min(1),
+    /** What a key for test data must look like; required when the adapter has a test mode. */
+    test: z.string().min(1).optional(),
+    /** Keys refused whatever the mode, such as secret keys where read-only ones do. @default [] */
+    refuse: z
+      .array(z.object({ pattern: z.string().min(1), reason: z.string().min(1).max(200) }).strict())
+      .default([]),
+    /** What the key is called, such as `restricted key`. @default 'API key' */
+    label: z.string().min(1).max(40).default('API key'),
+    /** What a key looks like, shown in the empty field, by mode. */
+    hint: z
+      .object({ test: z.string().max(40).optional(), live: z.string().max(40).optional() })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+/** How a connector sends its key: in a header, after a prefix such as `Bearer `. */
+const auth = z
+  .object({
+    /** The header that carries the key, such as `authorization`. */
+    header: z.string().regex(/^[A-Za-z0-9-]+$/),
+    /** What comes before the key in it. @default '' */
+    prefix: z.string().max(20).default(''),
+  })
+  .strict();
+
 /** An official API the extension may read for a source, with a key the person gives it. */
 const connector = z
   .object({
     label: z.string().min(1),
     base: z.url(),
-    /** What a key must look like, by the page's mode; anything else is refused. */
-    keys: z.object({ test: z.string(), live: z.string() }).strict(),
-    /** Path patterns that mean the page is in test mode. */
-    testMode: z.string().optional(),
+    /** How a request carries the key. @default { header: 'authorization', prefix: 'Bearer ' } */
+    auth: auth.default({ header: 'authorization', prefix: 'Bearer ' }),
+    keys,
     sources: z.record(
       z.string(),
       restSource.extend({
@@ -100,6 +133,13 @@ export const adapterSchema = z
     label: z.string().min(1),
     /** Origins the adapter applies to, such as `https://dashboard.example.com`. */
     origins: z.array(z.url()).min(1),
+    /**
+     * A path pattern that means the page shows test data, such as `^/test/`. Without one, the site
+     * has a single mode, and its connectors' keys are live keys.
+     */
+    testMode: z.string().min(1).optional(),
+    /** Requests the side panel suggests, such as "hide Billing". @default [] */
+    examples: z.array(z.string().min(1).max(160)).max(3).default([]),
     /** The JSON contract (`toJson`), checked when loaded. */
     contract: z.record(z.string(), z.unknown()),
     anchors: z.record(z.string(), anchor),
@@ -129,7 +169,7 @@ export type Anchor = Adapter['anchors'][string];
 /** One way of finding an element: by its link, test ID, role and name, text or CSS selector. */
 export type Strategy = Anchor['match'][number];
 /**
- * An official API an adapter reads with the person's own restricted key: its endpoints, key
- * patterns and rate.
+ * An official API an adapter reads with the person's own key: its endpoints, how it sends the key,
+ * what keys it takes and its rate.
  */
 export type Connector = Adapter['connectors'][string];

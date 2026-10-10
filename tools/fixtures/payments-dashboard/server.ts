@@ -12,21 +12,21 @@ const page = `<!doctype html>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Acme Payments (fictional)</title>
     <style>
-      body { margin: 0; font: 14px/1.5 system-ui, sans-serif; color: #1a1f36; background: #f6f8fa; }
-      .top { padding: 12px 20px; background: #fff; border-bottom: 1px solid #e3e8ee; }
-      .badge { font-size: 11px; padding: 1px 6px; border-radius: 8px; background: #eef; color: #445; }
-      .notice { padding: 8px 20px; background: #fff4e5; border-bottom: 1px solid #f5d9a8; }
+      body { margin: 0; font: 15px/1.55 Georgia, 'Times New Roman', serif; color: #2b2118; background: #fbf7f0; }
+      .top { padding: 14px 24px; background: #2b2118; color: #fbf7f0; }
+      .badge { font: 11px/1.6 system-ui, sans-serif; padding: 1px 7px; border-radius: 3px; background: #e8b04b; color: #2b2118; }
+      .notice { padding: 8px 24px; background: #fde9c8; border-bottom: 1px solid #e8b04b; }
       .layout { display: flex; }
-      .sidebar { display: flex; flex-direction: column; width: 220px; padding: 12px; gap: 2px; }
-      .sidebar a { padding: 6px 10px; border-radius: 6px; color: #1a1f36; text-decoration: none; }
-      .sidebar a[aria-current='page'] { background: #e8ecff; color: #3b4cca; }
-      main { flex: 1; padding: 20px 28px; }
-      .cards { display: flex; gap: 12px; }
-      .card { background: #fff; border: 1px solid #e3e8ee; border-radius: 8px; padding: 12px 16px; min-width: 160px; }
-      .big { font-size: 22px; margin: 0; }
+      .sidebar { display: flex; flex-direction: column; width: 200px; padding: 16px 12px; gap: 4px; border-right: 1px solid #eadfcd; }
+      .sidebar a { padding: 6px 10px; border-radius: 3px; color: #2b2118; text-decoration: none; }
+      .sidebar a[aria-current='page'] { background: #2b2118; color: #fbf7f0; }
+      main { flex: 1; padding: 24px 32px; }
+      .cards { display: flex; gap: 16px; }
+      .card { background: #fff; border: 1px solid #eadfcd; border-radius: 3px; padding: 12px 18px; min-width: 160px; }
+      .big { font-size: 24px; margin: 0; }
       table { width: 100%; border-collapse: collapse; background: #fff; }
-      th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e3e8ee; }
-      .status.failed { color: #c0123c; } .status.succeeded { color: #0e7a3b; }
+      th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eadfcd; }
+      .status.failed { color: #a4301f; } .status.succeeded { color: #3b6e3a; }
       .toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
     </style>
   </head>
@@ -38,6 +38,9 @@ const page = `<!doctype html>
 `;
 
 const script = readFileSync(new URL('./app.js', import.meta.url), 'utf8');
+const description = JSON.parse(
+  readFileSync(new URL('./openapi.json', import.meta.url), 'utf8'),
+) as unknown;
 
 const LISTS: Record<string, keyof Dataset> = {
   charges: 'charges',
@@ -55,8 +58,8 @@ export interface Dashboard {
   url: string;
   /** The API's origin, a different one, as the real thing would be. */
   api: string;
-  /** Every API request, for tests that check what was asked. */
-  requests: { path: string; authorization: string | undefined }[];
+  /** Every API request, for tests that check what was asked, with the key it carried. */
+  requests: { path: string; key: string | undefined }[];
   close(): Promise<void>;
 }
 
@@ -71,22 +74,24 @@ const json = (response: ServerResponse, status: number, body: unknown) => {
   response.writeHead(status, {
     'content-type': 'application/json',
     'access-control-allow-origin': '*',
-    'access-control-allow-headers': 'authorization, content-type',
+    'access-control-allow-headers': 'x-acme-key, content-type',
   });
   response.end(JSON.stringify(body));
 };
 
-/** Answers like the payments API: lists with cursors and created ranges, rows by id, keys checked. */
+/**
+ * Answers as Acme's API does: its description at /openapi.json, lists with cursors and created
+ * ranges, rows by ID, and a read-only key in `x-acme-key` (secret keys are refused).
+ */
 function api(data: Dataset, requests: Dashboard['requests']) {
   return (request: IncomingMessage, response: ServerResponse) => {
     if (request.method === 'OPTIONS') return json(response, 204, {});
     const url = new URL(request.url ?? '/', 'http://localhost');
-    requests.push({
-      path: `${url.pathname}${url.search}`,
-      authorization: request.headers.authorization,
-    });
-    const key = /^Bearer (\S+)$/.exec(request.headers.authorization ?? '')?.[1] ?? '';
-    if (!/^rk_(test|live)_/.test(key)) {
+    if (url.pathname === '/openapi.json') return json(response, 200, description);
+    const header = request.headers['x-acme-key'];
+    const key = typeof header === 'string' ? header : '';
+    requests.push({ path: `${url.pathname}${url.search}`, key: key || undefined });
+    if (!/^acme_(test|live)_/.test(key)) {
       return json(response, 401, {
         error: { type: 'invalid_request_error', message: 'Invalid API key' },
       });

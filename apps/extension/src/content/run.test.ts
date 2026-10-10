@@ -5,7 +5,7 @@ import { adapterById } from '../adapters.ts';
 import { run } from './run.ts';
 import { chromeStore } from './store.ts';
 
-const loaded = adapterById('stripe-dashboard');
+const loaded = adapterById('acme-payments');
 if (!loaded) throw new Error('No adapter');
 
 const fake = fakeChrome({ delay: 1 });
@@ -21,7 +21,7 @@ beforeAll(async () => {
   vi.stubGlobal('chrome', fake.chrome);
   fake.answer(async (message) =>
     (message as { kind: string }).kind === 'keys'
-      ? { ok: true, value: { stripe: { test: true, live: false } } }
+      ? { ok: true, value: { acme: { test: true, live: false } } }
       : { ok: false, problem: 'Not in tests' },
   );
   // Frames run when the test says, so a burst of changes can be counted.
@@ -35,19 +35,19 @@ beforeAll(async () => {
     <div role="alert">CANARY-notice</div>
     <nav aria-label="Main" style="display: flex">
       <a href="/test/dashboard">Home</a>
-      <a href="/test/balance/overview">Balances</a>
-      <a href="/test/payments">Transactions</a>
+      <a href="/test/funds">Funds</a>
+      <a href="/test/payments">Payments</a>
       <a href="/test/customers">Customers</a>
-      <a href="/test/products">Product catalog</a>
-      <a href="/test/connect">Connect</a>
-      <a href="/test/billing">Billing</a>
-      <a href="/test/reports">Reporting</a>
+      <a href="/test/catalog">Catalog</a>
+      <a href="/test/partners">Partners</a>
+      <a href="/test/invoices">Invoices</a>
+      <a href="/test/reports">Reports</a>
     </nav>
     <main>
       <a href="/customers/cus_x">Live customer</a>
       <a href="/test/customers/cus_x">Test customer</a>
     </main>`;
-  const store = await chromeStore('definition:stripe-dashboard');
+  const store = await chromeStore('definition:acme-payments');
   started = run({ window, adapter: loaded.adapter, contract: loaded.contract, store });
   await settle();
 });
@@ -66,15 +66,15 @@ describe('the content script', () => {
     history.pushState({}, '', '/payments');
     expect(sources().charges).toBe('unavailable');
     history.pushState({}, '', '/test/dashboard');
-    fake.answer(async () => ({ ok: true, value: { stripe: { test: false, live: false } } }));
-    await fake.send({ kind: 'ask', text: 'hide Connect' }, {});
+    fake.answer(async () => ({ ok: true, value: { acme: { test: false, live: false } } }));
+    await fake.send({ kind: 'ask', text: 'hide Partners' }, {});
     expect(sources().charges).toBe('unavailable');
   });
 
   it("counts only the person's own clicks and key presses", async () => {
-    const before = uses('nav.billing');
-    document.querySelector<HTMLElement>('a[href="/test/billing"]')?.click();
-    expect(uses('nav.billing')).toBe(before);
+    const before = uses('nav.invoices');
+    document.querySelector<HTMLElement>('a[href="/test/invoices"]')?.click();
+    expect(uses('nav.invoices')).toBe(before);
     window.dispatchEvent(
       new KeyboardEvent('keydown', { altKey: true, shiftKey: true, code: 'KeyA' }),
     );
@@ -121,16 +121,16 @@ describe('the content script', () => {
 
   it('hears repairs and Forget from other tabs', async () => {
     await chrome.storage.local.set({
-      'overrides:stripe-dashboard': { 'nav.customers': { href: '^/test/customers$' } },
+      'overrides:acme-payments': { 'nav.customers': { href: '^/test/customers$' } },
     });
     await settle();
     expect(started.report().repairs).toEqual(['nav.customers']);
     expect(started.report().changes.length).toBeGreaterThan(0);
-    expect(sessionStorage.getItem('uitive:stripe-dashboard')).not.toBeNull();
+    expect(sessionStorage.getItem('uitive:acme-payments')).not.toBeNull();
     await chrome.storage.local.clear();
     await settle();
     expect(started.report().repairs).toEqual([]);
     expect(started.report().changes).toEqual([]);
-    expect(sessionStorage.getItem('uitive:stripe-dashboard')).toBeNull();
+    expect(sessionStorage.getItem('uitive:acme-payments')).toBeNull();
   });
 });

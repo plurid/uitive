@@ -1,32 +1,17 @@
-import { readFileSync } from 'node:fs';
 import { ui } from '@plurid/uitive-core';
 import type { AnyPage } from '@plurid/uitive-core';
 import { describe, expect, it } from 'vitest';
+import { dashboard, sidebar } from './__fixtures__/dashboard.js';
 import { checkAdapter, routeOf } from './checks.js';
 import { compileEffects } from './effects.js';
 import type { Adapter } from './format.js';
 
-const shipped = JSON.parse(
-  readFileSync(
-    new URL('../../../apps/extension/adapters/stripe-dashboard.json', import.meta.url),
-    'utf8',
-  ),
-) as Record<string, unknown>;
+const shipped = structuredClone(dashboard) as Record<string, unknown>;
 
 const checked = checkAdapter(shipped);
 if ('problems' in checked) throw new Error(checked.problems.join('\n'));
 const adapter: Adapter = checked.adapter;
 
-const sidebar = [
-  'nav.home',
-  'nav.balances',
-  'nav.transactions',
-  'nav.customers',
-  'nav.products',
-  'nav.connect',
-  'nav.billing',
-  'nav.reporting',
-];
 const standardHome = ui.page(ui.region('home.original')) as unknown as AnyPage;
 const values = (
   visible: readonly string[],
@@ -38,9 +23,12 @@ const values = (
 });
 
 describe('checkAdapter', () => {
-  it('passes the shipped adapter, whose contract round-trips', () => {
-    expect(checked.contract.id).toBe('stripe-dashboard');
-    expect(checked.contract.sourceIds).toContain('charges');
+  it('passes an adapter whose contract round-trips, filling in what it leaves out', () => {
+    expect(checked.contract.id).toBe('orders-dashboard');
+    expect(checked.contract.sourceIds).toContain('orders');
+    expect(adapter.examples).toEqual([]);
+    expect(adapter.connectors.orders?.auth).toEqual({ header: 'authorization', prefix: 'Bearer ' });
+    expect(adapter.connectors.orders?.keys).toMatchObject({ refuse: [], label: 'API key' });
   });
 
   it('names what doesn’t resolve', () => {
@@ -51,8 +39,8 @@ describe('checkAdapter', () => {
     const result = checkAdapter(broken);
     expect('problems' in result && result.problems).toEqual([
       'anchors.nav.home.within: no anchor "nowhere"',
-      'routes.6: ^/(unclosed doesn’t compile'.replace('’', "'"),
-      'routes.6: the contract has no route "nope"',
+      'routes.3: ^/(unclosed doesn’t compile'.replace('’', "'"),
+      'routes.3: the contract has no route "nope"',
       'anchors.notices: required anchors must sit outside replaceable regions (main)',
     ]);
   });
@@ -61,25 +49,50 @@ describe('checkAdapter', () => {
     const broken = structuredClone(shipped) as Adapter;
     broken.anchors.first = { within: 'second', match: [{ role: 'link' }], required: false };
     broken.anchors.second = { within: 'first', match: [{ role: 'link' }], required: false };
-    const [name = '', connector] = Object.entries(broken.connectors)[0] ?? [];
-    if (!connector) throw new Error('The shipped adapter has a connector');
-    connector.testMode = '^/(test';
+    broken.testMode = '^/(test';
     const result = checkAdapter(broken);
     expect('problems' in result && result.problems).toEqual([
       'anchors.first: "within" loops',
       'anchors.second: "within" loops',
-      `connectors.${name}.testMode: ^/(test doesn't compile`,
+      "testMode: ^/(test doesn't compile",
     ]);
+  });
+
+  it('checks what keys look like, how they are sent, and that test keys go with a test mode', () => {
+    const broken = structuredClone(adapter);
+    const connector = broken.connectors.orders!;
+    connector.keys.refuse = [{ pattern: '^(sk', reason: 'Secret keys are refused' }];
+    connector.auth = { header: 'Cookie', prefix: '' };
+    expect(checkAdapter(broken)).toEqual({
+      problems: [
+        "connectors.orders.keys.refuse.0: ^(sk doesn't compile",
+        "connectors.orders.auth.header: browsers don't let pages set Cookie",
+      ],
+    });
+    const single = structuredClone(adapter);
+    delete single.testMode;
+    expect(checkAdapter(single)).toEqual({
+      problems: ['connectors.orders.keys.test: the adapter has no test mode to use test keys in'],
+    });
+    delete single.connectors.orders!.keys.test;
+    expect('adapter' in checkAdapter(single)).toBe(true);
+    const untested = structuredClone(adapter);
+    delete untested.connectors.orders!.keys.test;
+    expect(checkAdapter(untested)).toEqual({
+      problems: [
+        'connectors.orders.keys.test: the adapter has a test mode, so test keys need a pattern',
+      ],
+    });
   });
 });
 
 describe('routeOf', () => {
   it('matches paths in either mode, with params', () => {
-    expect(routeOf(adapter, '/test/payments/ch_3QxYz12')).toEqual({
-      route: 'payment',
-      params: { id: 'ch_3QxYz12' },
+    expect(routeOf(adapter, '/test/orders/ord_42')).toEqual({
+      route: 'order',
+      params: { id: 'ord_42' },
     });
-    expect(routeOf(adapter, '/payments')).toEqual({ route: 'payments', params: {} });
+    expect(routeOf(adapter, '/orders')).toEqual({ route: 'orders', params: {} });
     expect(routeOf(adapter, '/settings')).toBeUndefined();
   });
 });
@@ -93,17 +106,17 @@ describe('compileEffects', () => {
     const effects = compileEffects(
       adapter,
       values(
-        sidebar.filter((item) => item !== 'nav.connect'),
-        ['nav.connect'],
+        sidebar.filter((item) => item !== 'nav.reports'),
+        ['nav.reports'],
       ),
       'home',
     );
     expect(effects).toEqual([
-      { kind: 'hide', anchor: 'nav.connect' },
+      { kind: 'hide', anchor: 'nav.reports' },
       {
         kind: 'more',
         container: 'sidebar',
-        items: [{ action: 'nav.connect', anchor: 'nav.connect' }],
+        items: [{ action: 'nav.reports', anchor: 'nav.reports' }],
       },
     ]);
   });
@@ -132,7 +145,7 @@ describe('compileEffects', () => {
       mode: 'augment',
     });
     // Off its route, a redesign doesn't apply.
-    expect(compileEffects(adapter, values(sidebar, [], fresh), 'payments')).toEqual([]);
+    expect(compileEffects(adapter, values(sidebar, [], fresh), 'orders')).toEqual([]);
   });
 
   it('never hides a required anchor', () => {
@@ -140,15 +153,15 @@ describe('compileEffects', () => {
       ...adapter,
       anchors: {
         ...adapter.anchors,
-        'nav.connect': { ...adapter.anchors['nav.connect']!, required: true },
+        'nav.reports': { ...adapter.anchors['nav.reports']!, required: true },
       },
     };
     expect(
       compileEffects(
         strict,
         values(
-          sidebar.filter((item) => item !== 'nav.connect'),
-          ['nav.connect'],
+          sidebar.filter((item) => item !== 'nav.reports'),
+          ['nav.reports'],
         ),
         'home',
       ),

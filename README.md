@@ -190,7 +190,7 @@ flowchart LR
 
 Use is recorded as numbers, never as content. A planner proposes operations over the contract's IDs, and policy checks each one against the contract, the person's own changes and the application's rules. Commands apply at once; planned changes wait for a safe moment, when a session starts. The person's definition records every change with its reason, and the application draws its surfaces as it always has. [How it works](docs/how-it-works.md) tells the whole story.
 
-The same engine also runs in a private browser extension prototype, which applies it to sites it doesn't own through adapters, with the person's own key: see [apps/extension](apps/extension/README.md) and [ADR 0006](docs/adr/0006-two-front-doors.md).
+The same engine also runs in a browser extension, which applies it to sites it doesn't own through adapters, with the person's own key: see [apps/extension](apps/extension/README.md) and [ADR 0006](docs/adr/0006-two-front-doors.md). Uitive maintains the adapters for real sites; this repository ships the engine, the adapter format and the tools that write adapters.
 
 ## Demos
 
@@ -203,7 +203,7 @@ pnpm --filter @uitive/cloud-console-react dev   # at localhost:5171
 
 Say what you use the cloud for on the home page, ask for changes with ⌘K, compare Standard and Yours, and open Debug to simulate a week of use as a persona. With a key in `apps/cloud-console-react/.env.local` (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GEMINI_API_KEY`), requests in plain words are planned by that provider's model on the dev server; without one, the deterministic planner answers. Built with `VITE_UITIVE_PLANNER=none pnpm --filter @uitive/cloud-console-react build`, it needs no server and plans in the browser. [uitive.dev/demo](https://uitive.dev/demo) is that build with `--base /demo/`, and `VITE_UITIVE_SITE=/` for a link back to the site.
 
-**The extension** reshapes a fictional payments dashboard: build it and load it unpacked, as [its README](apps/extension/README.md#try-it-on-the-fictional-dashboard) shows.
+**The extension** reshapes Acme Payments, a fictional payments dashboard: build it and load it unpacked, as [its README](apps/extension/README.md#try-it-on-the-fictional-dashboard) shows.
 
 **The proof**: 3 coding agents, each with only the agent kit, integrated Excalidraw in 40 minutes, Medusa Admin in 37 and Grist in 54. [Findings](docs/findings.md) has each run, and every gap found with what changed since.
 
@@ -254,7 +254,7 @@ Development needs Node 24 or later and pnpm 11.
 | Directory  | What lives there                                                         |
 | ---------- | ------------------------------------------------------------------------ |
 | `packages` | The 8 packages                                                           |
-| `apps`     | The Acme Cloud demo and the browser extension prototype                  |
+| `apps`     | The Acme Cloud demo and the browser extension                            |
 | `docs`     | Guides, examples, the API reference, decisions and findings              |
 | `plugins`  | The Claude Code plugin                                                   |
 | `tools`    | Build scripts, shared configuration, fixtures and the repository's tests |

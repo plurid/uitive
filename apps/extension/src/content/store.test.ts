@@ -1,10 +1,10 @@
 import { createUitive, heuristicPlanner } from '@plurid/uitive-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { contract } from '../../adapters/stripe-dashboard.ts';
+import { contract } from '../../adapters/acme-payments.ts';
 import { fakeChrome } from '../__fixtures__/chrome.ts';
 import { chromeStore } from './store.ts';
 
-const KEY = 'definition:stripe-dashboard';
+const KEY = 'definition:acme-payments';
 const settle = () => new Promise((resolve) => setTimeout(resolve, 60));
 let fake: ReturnType<typeof fakeChrome>;
 
@@ -91,10 +91,10 @@ describe('the extension store', () => {
     const client = createUitive({ contract, store, planner: heuristicPlanner() });
     client.resume();
     await client.learn();
-    client.record('nav.billing', { via: 'region', surface: 'sidebar' });
+    client.record('nav.invoices', { via: 'region', surface: 'sidebar' });
     await Promise.resolve();
-    client.record('nav.connect', { via: 'region', surface: 'sidebar' });
-    const asked = await client.ask('hide Reporting');
+    client.record('nav.partners', { via: 'region', surface: 'sidebar' });
+    const asked = await client.ask('hide Reports');
     client.record('nav.home', { via: 'region', surface: 'sidebar' });
     await settle();
     expect(adopted).not.toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe('the extension store', () => {
       definition: { operations: unknown[] };
     };
     expect(stored.events.map((event) => event.action)).toEqual(
-      expect.arrayContaining(['nav.billing', 'nav.connect', 'nav.home']),
+      expect.arrayContaining(['nav.invoices', 'nav.partners', 'nav.home']),
     );
     expect(asked.applied).toHaveLength(1);
     expect(stored.definition.operations).toHaveLength(

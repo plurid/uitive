@@ -17,6 +17,10 @@ export interface EmitOptions {
 }
 
 const strings = (values: readonly string[]) => `[${values.map(quote).join(', ')}]`;
+const record = (value: Readonly<Record<string, number>>) => {
+  const entries = Object.entries(value).map(([name, entry]) => `${property(name)}: ${entry}`);
+  return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`;
+};
 const doc = (value: string, indent: string) =>
   value === '' ? '' : `${indent}/** ${oneLine(value).replace(/\*\//g, '* /')} */\n`;
 
@@ -62,6 +66,7 @@ function schema(field: ApiField, sources: ReadonlySet<string>, siblings: Readonl
           ? [`currency: ${quote(field.currency)}`]
           : []),
         ...(field.minor ? ['minor: true'] : []),
+        ...(field.minor && field.digits !== undefined ? [`digits: ${record(field.digits)}`] : []),
         ...label,
       ])})`;
     case 'ref':

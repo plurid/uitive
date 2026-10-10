@@ -29,23 +29,21 @@ describe('sites', () => {
   it('moves registrations made under the old IDs, by the origin they match', async () => {
     await fake.chrome.scripting.registerContentScripts([
       {
-        id: 'site-https-dashboard-stripe-com',
-        matches: ['https://dashboard.stripe.com/*'],
+        id: 'site-https-dashboard-example',
+        matches: ['https://dashboard.example/*'],
         js: ['content.js'],
         runAt: 'document_start',
         persistAcrossSessions: true,
       },
     ]);
     const { enabled, enabledOrigins } = await import('./sites.ts');
-    expect(await enabled('https://dashboard.stripe.com')).toBe(true);
-    expect(await enabledOrigins()).toEqual(['https://dashboard.stripe.com']);
-    expect([...fake.chrome.scripting.scripts.keys()]).toEqual([
-      'site:https://dashboard.stripe.com',
-    ]);
+    expect(await enabled('https://dashboard.example')).toBe(true);
+    expect(await enabledOrigins()).toEqual(['https://dashboard.example']);
+    expect([...fake.chrome.scripting.scripts.keys()]).toEqual(['site:https://dashboard.example']);
   });
 
   it('refuses a site the person has not allowed', async () => {
     const { enable } = await import('./sites.ts');
-    await expect(enable('https://dashboard.stripe.com')).rejects.toThrow(/Allow Uitive/);
+    await expect(enable('https://dashboard.example')).rejects.toThrow(/Allow Uitive/);
   });
 });

@@ -145,7 +145,12 @@ interface Launched {
 /** Builds the extension and loads it in Chrome, in a throwaway profile that close removes. */
 async function launch(out: string, args: readonly string[]): Promise<Launched> {
   if (!CHROME) throw new Error('No Chrome');
-  await promisify(execFile)(process.execPath, ['build.ts', '--out', out, ...args], { cwd: here });
+  // The fixture stands for the demo adapter, whatever else the folder holds.
+  await promisify(execFile)(
+    process.execPath,
+    ['build.ts', '--out', out, '--fixture-adapter', 'acme-payments', ...args],
+    { cwd: here },
+  );
   // Branded Chrome loads unpacked extensions over the DevTools protocol.
   const profile = mkdtempSync(join(tmpdir(), 'uitive-chrome-'));
   const child = spawn(
@@ -309,56 +314,56 @@ describe.skipIf(!CHROME)(
     it('hides a sidebar link through re-renders and reloads, and shows the original on request', async () => {
       const asked = await tab<{ status: string; applied: number }>({
         kind: 'ask',
-        text: 'hide Connect',
+        text: 'hide Partners',
       });
       expect(asked.ok && asked.value).toMatchObject({ status: 'done', applied: 1 });
-      expect(await display('Connect')).toBe('none');
+      await expect.poll(() => display('Partners')).toBe('none');
       // The page re-renders its sidebar on every navigation; the mark comes back before paint.
-      await site.locator('nav a', { hasText: 'Transactions' }).click();
+      await site.locator('nav a', { hasText: 'Payments' }).click();
       await site.waitForURL(/\/test\/payments$/);
-      expect(await display('Connect')).toBe('none');
+      await expect.poll(() => display('Partners')).toBe('none');
       await site.reload({ waitUntil: 'networkidle' });
       await site.waitForTimeout(300);
-      expect(await display('Connect')).toBe('none');
+      await expect.poll(() => display('Partners')).toBe('none');
       await site.keyboard.press('Alt+Shift+KeyA');
-      expect(await display('Connect')).not.toBe('none');
+      await expect.poll(() => display('Partners')).not.toBe('none');
       await site.keyboard.press('Alt+Shift+KeyA');
-      expect(await display('Connect')).toBe('none');
+      await expect.poll(() => display('Partners')).toBe('none');
       // Typing is never a shortcut, and a script's key presses are not the person's.
       await site.locator('input[type="search"]').focus();
       await site.keyboard.press('Alt+Shift+KeyA');
-      expect(await display('Connect')).toBe('none');
+      await expect.poll(() => display('Partners')).toBe('none');
       await site.locator('input[type="search"]').blur();
       await site.evaluate(() =>
         window.dispatchEvent(
           new KeyboardEvent('keydown', { altKey: true, shiftKey: true, code: 'KeyA' }),
         ),
       );
-      expect(await display('Connect')).toBe('none');
+      await expect.poll(() => display('Partners')).toBe('none');
       const reset = await tab({ kind: 'reset' });
       expect(reset.ok).toBe(true);
-      expect(await display('Connect')).not.toBe('none');
+      await expect.poll(() => display('Partners')).not.toBe('none');
     });
 
     it('offers hidden links in a More list that still navigates', async () => {
       await site.goto(`${dashboard.url}/test/dashboard`, { waitUntil: 'networkidle' });
-      await tab({ kind: 'ask', text: 'hide Connect' });
+      await tab({ kind: 'ask', text: 'hide Partners' });
       await expect.poll(async () => (await accessibleNames(site)).includes('More (1)')).toBe(true);
       await press(site, 'button', 'More (1)');
-      await expect.poll(async () => (await accessibleNames(site)).includes('Connect')).toBe(true);
-      await press(site, 'button', 'Connect');
-      await site.waitForURL(/\/test\/connect$/);
-      expect(await site.locator('main h1').textContent()).toBe('Connect');
+      await expect.poll(async () => (await accessibleNames(site)).includes('Partners')).toBe(true);
+      await press(site, 'button', 'Partners');
+      await site.waitForURL(/\/test\/partners$/);
+      expect(await site.locator('main h1').textContent()).toBe('Partners');
       await tab({ kind: 'reset' });
       await expect.poll(() => site.locator('[data-uitive-more]').count()).toBe(0);
     });
 
     it('keeps the More list last when a link moves to the top', async () => {
       await site.goto(`${dashboard.url}/test/dashboard`, { waitUntil: 'networkidle' });
-      await tab({ kind: 'ask', text: 'hide Connect' });
+      await tab({ kind: 'ask', text: 'hide Partners' });
       const moved = await tab<{ status: string }>({
         kind: 'ask',
-        text: 'move Reporting to the top',
+        text: 'move Reports to the top',
       });
       expect(moved.ok && moved.value.status).toBe('done');
       const shown = () =>
@@ -374,13 +379,13 @@ describe.skipIf(!CHROME)(
       await expect
         .poll(shown)
         .toEqual([
-          'Reporting',
+          'Reports',
           'Home',
-          'Balances',
-          'Transactions',
+          'Funds',
+          'Payments',
           'Customers',
-          'Product catalog',
-          'Billing',
+          'Catalog',
+          'Invoices',
           'More',
         ]);
       await tab({ kind: 'reset' });
@@ -417,22 +422,22 @@ describe.skipIf(!CHROME)(
     });
 
     it('refuses secret keys, and keys for the other mode', async () => {
-      const name = 'connector:stripe-dashboard:stripe:test';
-      expect(await worker({ kind: 'secret.set', name, value: 'sk_test_123' })).toMatchObject({
+      const name = 'connector:acme-payments:acme:test';
+      expect(await worker({ kind: 'secret.set', name, value: 'acme_secret_123' })).toMatchObject({
         ok: false,
         problem: expect.stringMatching(/^Secret keys are refused/),
       });
-      expect(await worker({ kind: 'secret.set', name, value: 'rk_live_123' })).toMatchObject({
+      expect(await worker({ kind: 'secret.set', name, value: 'acme_live_123' })).toMatchObject({
         ok: false,
-        problem: expect.stringMatching(/^That isn't a test restricted key/),
+        problem: expect.stringMatching(/^That isn't a test read-only key/),
       });
       expect(await worker({ kind: 'secret.status' })).toEqual({ ok: true, value: [] });
     });
 
     it('redesigns a page on official API data, drawn in a closed shadow root', async () => {
       await site.goto(`${dashboard.url}/test/dashboard`, { waitUntil: 'networkidle' });
-      const name = 'connector:stripe-dashboard:stripe:test';
-      expect(await worker({ kind: 'secret.set', name, value: 'rk_test_e2e' })).toEqual({
+      const name = 'connector:acme-payments:acme:test';
+      expect(await worker({ kind: 'secret.set', name, value: 'acme_test_e2e' })).toEqual({
         ok: true,
         value: true,
       });
@@ -455,10 +460,10 @@ describe.skipIf(!CHROME)(
       const names = await accessibleNames(site);
       expect(names).toContain('Morning check');
       expect(names.some((entry) => /declined/i.test(entry))).toBe(true);
-      // Rows came from the API with the person's restricted key, never from the page.
+      // Rows came from the API with the person's read-only key, never from the page.
       const reads = dashboard.requests.filter((entry) => entry.path.startsWith('/v1/charges'));
       expect(reads.length).toBeGreaterThan(0);
-      expect(reads.every((entry) => entry.authorization === 'Bearer rk_test_e2e')).toBe(true);
+      expect(reads.every((entry) => entry.key === 'acme_test_e2e')).toBe(true);
       await tab({ kind: 'reset' });
       await expect.poll(() => site.locator('[data-uitive-overlay]').count()).toBe(0);
     });
@@ -467,8 +472,8 @@ describe.skipIf(!CHROME)(
       await site.goto(`${dashboard.url}/test/dashboard`, { waitUntil: 'networkidle' });
       await worker({
         kind: 'secret.set',
-        name: 'connector:stripe-dashboard:stripe:test',
-        value: 'rk_test_e2e',
+        name: 'connector:acme-payments:acme:test',
+        value: 'acme_test_e2e',
       });
       const applied = await tab<{ applied: number }>({
         kind: 'page',
@@ -512,7 +517,7 @@ describe.skipIf(!CHROME)(
       // The fixture's row IDs all end alike.
       expect(sent).not.toContain('Q7M3W2B4A5');
       expect(received[0]).toMatchObject({
-        adapter: 'stripe-dashboard',
+        adapter: 'acme-payments',
         request: {
           kind: 'command',
           text: 'make my home a morning check of what failed overnight',
@@ -523,10 +528,10 @@ describe.skipIf(!CHROME)(
           },
         },
       });
-      // The person's own click on Transactions, earlier on, taught it.
+      // The person's own click on Payments, earlier on, taught it.
       expect(
         received[0]?.request.summary.rows.some(
-          (row) => row.action === 'nav.transactions' && row.uses > 0,
+          (row) => row.action === 'nav.payments' && row.uses > 0,
         ),
       ).toBe(true);
       // The panel's inspector shows exactly what left.
@@ -540,24 +545,24 @@ describe.skipIf(!CHROME)(
       // A key for the local fixture's API only: nothing here may reach a real service.
       await worker({
         kind: 'secret.set',
-        name: 'connector:stripe-dashboard:stripe:test',
-        value: 'rk_test_forget',
+        name: 'connector:acme-payments:acme:test',
+        value: 'acme_test_forget',
       });
-      await tab({ kind: 'ask', text: 'hide Billing' });
-      expect(await display('Billing')).toBe('none');
+      await tab({ kind: 'ask', text: 'hide Invoices' });
+      expect(await display('Invoices')).toBe('none');
       const kept = () =>
         site.evaluate(() => Object.keys(sessionStorage).filter((key) => key.startsWith('uitive:')));
-      expect(await kept()).toEqual(['uitive:stripe-dashboard']);
+      expect(await kept()).toEqual(['uitive:acme-payments']);
       expect(await worker({ kind: 'forget' })).toEqual({ ok: true, value: true });
       expect(await worker({ kind: 'secret.status' })).toEqual({ ok: true, value: [] });
       // The open page hears of it at once, and what its tab kept goes too.
-      await expect.poll(() => display('Billing')).not.toBe('none');
+      await expect.poll(() => display('Invoices')).not.toBe('none');
       expect(await kept()).toEqual([]);
       const status = await worker<{ enabled: boolean }>({ kind: 'site.status', tabId });
       expect(status.ok && status.value.enabled).toBe(false);
       await site.reload({ waitUntil: 'networkidle' });
       await site.waitForTimeout(300);
-      expect(await display('Billing')).not.toBe('none');
+      expect(await display('Invoices')).not.toBe('none');
       // No content script runs here any more.
       expect(
         await panel.evaluate(

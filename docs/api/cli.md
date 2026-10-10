@@ -418,19 +418,20 @@ One field of an API's rows, as the mapper reads it: its type, meaning and where 
 
 Uses: [`FieldType`](core.md#fieldtype).
 
-| Property      | Type                   | Description                                                                       |
-| ------------- | ---------------------- | --------------------------------------------------------------------------------- |
-| `name`        | `string`               | The field's name in the contract.                                                 |
-| `type`        | `FieldType`            | What the value means, which decides how it shows and filters.                     |
-| `nullable`    | `boolean`              | Whether rows may lack a value.                                                    |
-| `description` | `string`               | What the field holds, from the API description.                                   |
-| `values`      | `string[]`             | For enums.                                                                        |
-| `unit?`       | `'iso' \| 's' \| 'ms'` | For times: an ISO string, or seconds or milliseconds since 1970.                  |
-| `currency?`   | `string`               | For money: the field holding the currency.                                        |
-| `minor?`      | `boolean`              | For money: whether amounts are in minor units, such as cents.                     |
-| `source?`     | `string`               | For refs: the source referred to.                                                 |
-| `pointer?`    | `string`               | For a value lifted from a nested object or renamed: where it is in a row.         |
-| `label?`      | `string`               | What people call it, when its name doesn't say, such as "Order" for `display_id`. |
+| Property      | Type                     | Description                                                                                                                                   |
+| ------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | `string`                 | The field's name in the contract.                                                                                                             |
+| `type`        | `FieldType`              | What the value means, which decides how it shows and filters.                                                                                 |
+| `nullable`    | `boolean`                | Whether rows may lack a value.                                                                                                                |
+| `description` | `string`                 | What the field holds, from the API description.                                                                                               |
+| `values`      | `string[]`               | For enums.                                                                                                                                    |
+| `unit?`       | `'iso' \| 's' \| 'ms'`   | For times: an ISO string, or seconds or milliseconds since 1970.                                                                              |
+| `currency?`   | `string`                 | For money: the field holding the currency.                                                                                                    |
+| `minor?`      | `boolean`                | For money: whether amounts are in minor units, such as cents.                                                                                 |
+| `digits?`     | `Record<string, number>` | For money in minor units: decimal places by currency where the API's differ from ISO 4217's, such as `{ ISK: 2, MGA: 0 }`, from the curation. |
+| `source?`     | `string`                 | For refs: the source referred to.                                                                                                             |
+| `pointer?`    | `string`                 | For a value lifted from a nested object or renamed: where it is in a row.                                                                     |
+| `label?`      | `string`                 | What people call it, when its name doesn't say, such as "Order" for `display_id`.                                                             |
 
 ### ApiInventory
 
@@ -451,20 +452,21 @@ Uses: [`ApiAction`](#apiaction), [`ApiSource`](#apisource).
 
 One param of an action, as the mapper reads it.
 
-| Property      | Type                   | Description                                                                       |
-| ------------- | ---------------------- | --------------------------------------------------------------------------------- |
-| `required`    | `boolean`              | Whether a run needs it.                                                           |
-| `name`        | `string`               | The field's name in the contract.                                                 |
-| `type`        | `FieldType`            | What the value means, which decides how it shows and filters.                     |
-| `nullable`    | `boolean`              | Whether rows may lack a value.                                                    |
-| `description` | `string`               | What the field holds, from the API description.                                   |
-| `values`      | `string[]`             | For enums.                                                                        |
-| `unit?`       | `'iso' \| 's' \| 'ms'` | For times: an ISO string, or seconds or milliseconds since 1970.                  |
-| `currency?`   | `string`               | For money: the field holding the currency.                                        |
-| `minor?`      | `boolean`              | For money: whether amounts are in minor units, such as cents.                     |
-| `source?`     | `string`               | For refs: the source referred to.                                                 |
-| `pointer?`    | `string`               | For a value lifted from a nested object or renamed: where it is in a row.         |
-| `label?`      | `string`               | What people call it, when its name doesn't say, such as "Order" for `display_id`. |
+| Property      | Type                     | Description                                                                                                                                   |
+| ------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `required`    | `boolean`                | Whether a run needs it.                                                                                                                       |
+| `name`        | `string`                 | The field's name in the contract.                                                                                                             |
+| `type`        | `FieldType`              | What the value means, which decides how it shows and filters.                                                                                 |
+| `nullable`    | `boolean`                | Whether rows may lack a value.                                                                                                                |
+| `description` | `string`                 | What the field holds, from the API description.                                                                                               |
+| `values`      | `string[]`               | For enums.                                                                                                                                    |
+| `unit?`       | `'iso' \| 's' \| 'ms'`   | For times: an ISO string, or seconds or milliseconds since 1970.                                                                              |
+| `currency?`   | `string`                 | For money: the field holding the currency.                                                                                                    |
+| `minor?`      | `boolean`                | For money: whether amounts are in minor units, such as cents.                                                                                 |
+| `digits?`     | `Record<string, number>` | For money in minor units: decimal places by currency where the API's differ from ISO 4217's, such as `{ ISK: 2, MGA: 0 }`, from the curation. |
+| `source?`     | `string`                 | For refs: the source referred to.                                                                                                             |
+| `pointer?`    | `string`                 | For a value lifted from a nested object or renamed: where it is in a row.                                                                     |
+| `label?`      | `string`                 | What people call it, when its name doesn't say, such as "Order" for `display_id`.                                                             |
 
 ### ApiSource
 

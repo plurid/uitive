@@ -98,9 +98,9 @@ export function run({
   const document = window.document;
   let overrides = initial;
   const repairsKey = `overrides:${adapter.id}`;
-  const connector = Object.values(adapter.connectors)[0];
-  const mode = () =>
-    modePrefix(connector?.testMode, window.location.pathname) !== '' ? 'test' : 'live';
+  // The site's own test mode, if it has one: a site without one shows live data only.
+  const { testMode } = adapter;
+  const mode = () => (modePrefix(testMode, window.location.pathname) !== '' ? 'test' : 'live');
   let anchors = new Map<string, Resolution>();
   let route: string | null = null;
   let lastRequest: PlanRequest | null = null;
@@ -141,7 +141,7 @@ export function run({
       fetch: workerFetch(adapter.id, mode),
       // Links go through the page's own links where it has one, so its router handles them.
       navigate: (href) => {
-        const target = targetOf(href, connector?.testMode, window.location);
+        const target = targetOf(href, testMode, window.location);
         const link = linkTo(document, target.path);
         if (link instanceof HTMLElement) link.click();
         else window.location.assign(target.href);
@@ -431,7 +431,7 @@ export function run({
           return;
         }
         const scope = anchor.within ? (anchors.get(anchor.within)?.element ?? document) : document;
-        const strategy = propose(element, scope, connector?.testMode);
+        const strategy = propose(element, scope, testMode);
         if (!strategy) {
           reply({
             ok: false,

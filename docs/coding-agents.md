@@ -87,6 +87,12 @@ An API description describes everything; an interface shows a part. Past 40 sour
 
 Choices survive every regeneration. An action's effect can be raised freely, and lowered only with a `reason`: destructive stays destructive unless the backend makes it safe. The CLI's README has every key: [Curation](../packages/cli/README.md#curation). In Claude Code, the plugin's `curator` agent does this step: it reads the survey and the frontend's API calls, and writes the curation.
 
+Amounts in minor units are read with ISO 4217's decimal places. When an API's minor units differ for some currencies, such as Icelandic krona in hundredths and Malagasy ariary in whole units, the curation says so once, for every money field and param in minor units:
+
+```json
+{ "money": { "digits": { "ISK": 2, "MGA": 0 } } }
+```
+
 ## Discovery
 
 `uitive discover --url http://localhost:5173/` crawls the running application with Playwright, following same-origin links and never pressing anything. It proposes routes, with row keys turned into parameters, a region per route, lists from navigation and toolbars, which buttons match the contract's actions, and the buttons that open menus it doesn't open, which it asks the page for (`aria-haspopup`, `aria-expanded`), since a snapshot marks a menu's button only while the menu is open. Buttons in dialogs, their toolbars and tables included, and sort buttons are never actions, and a generic verb or a dismissal alone, such as "Create" or "Cancel", never matches a longer action. A table's row buttons count only when their names repeat from row to row, so a button that shows a row's data, such as a customer's name, is never read.

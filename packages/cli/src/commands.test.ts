@@ -76,15 +76,52 @@ describe('uitive', () => {
     expect(code).toContain("'orders.cancel': action({");
   });
 
+  it('writes the minor units an API keeps, and names those that are wrong', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
+    const generate = async (digits: Record<string, unknown>) => {
+      await writeFile(
+        join(cwd, 'curation.json'),
+        JSON.stringify({
+          default: 'exclude',
+          sources: { charges: { include: true } },
+          money: { digits },
+        }),
+      );
+      return cli(
+        'generate',
+        'sources',
+        '--openapi',
+        fixture('payments.json'),
+        '--curation',
+        'curation.json',
+        '--cwd',
+        cwd,
+      );
+    };
+    expect((await generate({ mga: 0, isk: 2 })).code).toBe(0);
+    const code = await readFile(join(cwd, 'uitive/api.generated.ts'), 'utf8');
+    expect(code).toContain(
+      "amount: field.money({ currency: 'currency', minor: true, digits: { ISK: 2, MGA: 0 } }),",
+    );
+    const wrong = await generate({ ISK: 7 });
+    expect(wrong.code).toBe(1);
+    expect(wrong.err).toContain('curation.money.digits.ISK: takes 0 to 4 decimal places');
+  });
+
   it('refuses counts that aren’t whole numbers, and says when problems keep blocks unwritten', async () => {
-    expect(await cli('discover', '--url', 'http://localhost:1/', '--pages', 'abc')).toEqual({
+    // In a folder of its own, so nothing a discovery writes lands in the repository.
+    const away = await mkdtemp(join(tmpdir(), 'uitive-'));
+    const discover = (...argv: string[]) =>
+      cli('discover', '--url', 'http://localhost:1/', '--cwd', away, ...argv);
+    expect(await discover('--pages', 'abc')).toEqual({
       code: 1,
       out: '',
       err: 'uitive: --pages takes a whole number of at least 1, not "abc"\n',
     });
-    expect(await cli('discover', '--url', 'http://localhost:1/', '--per-route', '0')).toMatchObject(
-      { code: 1, err: 'uitive: --per-route takes a whole number of at least 1, not "0"\n' },
-    );
+    expect(await discover('--per-route', '0')).toMatchObject({
+      code: 1,
+      err: 'uitive: --per-route takes a whole number of at least 1, not "0"\n',
+    });
     const cwd = await mkdtemp(join(tmpdir(), 'uitive-'));
     await writeFile(join(cwd, 'package.json'), '{}');
     await writeFile(

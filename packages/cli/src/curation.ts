@@ -40,6 +40,33 @@ const actionCuration = z
   })
   .strict();
 
+const PLACES = 'takes 0 to 4 decimal places';
+
+const moneyCuration = z
+  .object({
+    /**
+     * Decimal places by currency where the API's minor units differ from ISO 4217's, such as
+     * `{ "ISK": 2, "MGA": 0 }`, for every money field and param in minor units.
+     */
+    digits: z
+      .record(
+        z.string().regex(/^[A-Za-z]{3}$/),
+        z.number({ error: PLACES }).int(PLACES).min(0, PLACES).max(4, PLACES),
+        {
+          error: (issue) =>
+            issue.code === 'invalid_key' ? 'is not a three-letter currency code' : undefined,
+        },
+      )
+      .superRefine((digits, context) => {
+        const seen = new Set<string>();
+        for (const code of Object.keys(digits).map((key) => key.toUpperCase())) {
+          if (seen.has(code)) context.addIssue({ code: 'custom', message: `names ${code} twice` });
+          seen.add(code);
+        }
+      }),
+  })
+  .strict();
+
 /** `uitive/curation.json`: what to keep from an API description, kept across regenerations. */
 export const curationSchema = z
   .object({
@@ -48,6 +75,8 @@ export const curationSchema = z
     default: z.enum(['include', 'exclude']).default('include'),
     /** Keeps no actions, for interfaces that only read, such as a browser extension. */
     readOnly: z.boolean().default(false),
+    /** How the API keeps amounts in minor units, where it differs from ISO 4217. */
+    money: moneyCuration.optional(),
     sources: z.record(z.string(), sourceCuration).default({}),
     actions: z.record(z.string(), actionCuration).default({}),
   })
@@ -81,6 +110,14 @@ export function picksOf(curation: Curation): Record<string, Record<string, strin
 
 const RANK = { read: 0, write: 1, destructive: 2 } as const;
 
+/** The curation's minor units by currency, in capitals and in order, so regenerating is stable. */
+function digitsOf(curation: Curation): Record<string, number> | undefined {
+  const entries = Object.entries(curation.money?.digits ?? {})
+    .map(([code, places]) => [code.toUpperCase(), places] as const)
+    .sort(([a], [b]) => (a < b ? -1 : 1));
+  return entries.length === 0 ? undefined : Object.fromEntries(entries);
+}
+
 /**
  * Applies a curation: keeps the sources it chooses and their actions, and its overrides. Effects
  * may be raised freely and lowered only with a stated reason. Problems name every reference that
@@ -91,6 +128,9 @@ export function curate(
   curation: Curation,
 ): { inventory: ApiInventory; problems: string[] } {
   const problems: string[] = [];
+  const digits = digitsOf(curation);
+  const withDigits = <T extends ApiField>(field: T): T =>
+    digits !== undefined && field.type === 'money' && field.minor ? { ...field, digits } : field;
   const byId = new Map(inventory.sources.map((entry) => [entry.id, entry]));
   const actionIds = new Set(inventory.actions.map((entry) => entry.id));
   for (const id of Object.keys(curation.sources)) {
@@ -140,7 +180,7 @@ export function curate(
     }
     fields = fields.map((field) => {
       const label = labels[field.name];
-      return label === undefined ? field : { ...field, label };
+      return withDigits(label === undefined ? field : { ...field, label });
     });
     const title = choice?.title ?? (names.has(entry.title) ? entry.title : entry.key);
     if (!names.has(title)) problems.push(`${where}.title: no field "${title}"`);
@@ -165,7 +205,7 @@ export function curate(
       title,
       summary: summary.length > 0 ? summary : [title],
       fields,
-      extra: [...all.values()].filter((field) => !names.has(field.name)),
+      extra: [...all.values()].filter((field) => !names.has(field.name)).map(withDigits),
       capabilities: {
         ...entry.capabilities,
         filter,
@@ -223,7 +263,7 @@ export function curate(
       ...(choice?.when ? { when: choice.when } : {}),
       effect,
       reason,
-      params,
+      params: params.map(withDigits),
       invalidates: entry.invalidates.filter((id) => kept.has(id)),
     });
   }

@@ -5,9 +5,9 @@ import { adapterById } from '../adapters.ts';
 import { cacheSize, connectorFetch, forgetReads } from './connector.ts';
 import { meter, READ_BUDGET } from './limits.ts';
 
-vi.mock('./secrets.ts', () => ({ getSecret: async () => 'rk_test_unit' }));
+vi.mock('./secrets.ts', () => ({ getSecret: async () => 'acme_test_unit' }));
 
-const loaded = adapterById('stripe-dashboard');
+const loaded = adapterById('acme-payments');
 if (!loaded) throw new Error('No adapter');
 const { adapter, contract } = loaded;
 
@@ -54,6 +54,34 @@ afterEach(() => {
 });
 
 describe('the connector', () => {
+  it('sends the key the way the connector says, and names the key a mode needs', async () => {
+    const sent: Headers[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        sent.push(new Headers(init?.headers));
+        return json({ data: [charge('ch_1')], has_more: false });
+      }),
+    );
+    const custom = {
+      ...adapter,
+      connectors: Object.fromEntries(
+        Object.entries(adapter.connectors).map(([name, connector]) => [
+          name,
+          { ...connector, auth: { header: 'x-api-key', prefix: '' } },
+        ]),
+      ),
+    };
+    await connectorFetch(custom, contract, 'test', list());
+    expect(sent[0]?.get('x-api-key')).toBe('acme_test_unit');
+    expect(sent[0]?.get('x-acme-key')).toBeNull();
+    // On a site without a test mode, the stored test key is no live key, and messages say so.
+    const single = { ...adapter, testMode: undefined };
+    await expect(connectorFetch(single, contract, 'live', list())).rejects.toThrow(
+      "The Acme API key isn't a read-only key for Acme API",
+    );
+  });
+
   it('keeps only the fields the contract declares, lifted ones included', async () => {
     const result = await connectorFetch(adapter, contract, 'test', list());
     expect(result.rows[0]).toEqual({

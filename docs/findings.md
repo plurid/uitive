@@ -14,7 +14,7 @@ Can a coding agent with only the agent kit (the CLI, the `integrate-uitive` skil
 
 Every run met its whole definition of done without help, and each application looked exactly as before for someone who changed nothing. Each run used the kit as it was before that run's fixes. By the agents' own estimates, between half and three quarters of each run went to the kit's gaps, all listed below with what changed.
 
-Not yet measured: planning with a model, since no run had a Claude API key; and the browser extension on the real payments dashboard.
+Not yet measured: planning with a model, since no run had a Claude API key; and the browser extension on a real site.
 
 ## Run 1: Excalidraw (2026-10-03)
 

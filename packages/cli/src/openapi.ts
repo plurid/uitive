@@ -24,6 +24,11 @@ export interface ApiField {
   currency?: string;
   /** For money: whether amounts are in minor units, such as cents. */
   minor?: boolean;
+  /**
+   * For money in minor units: decimal places by currency where the API's differ from ISO 4217's,
+   * such as `{ ISK: 2, MGA: 0 }`, from the curation.
+   */
+  digits?: Record<string, number>;
   /** For refs: the source referred to. */
   source?: string;
   /** For a value lifted from a nested object or renamed: where it is in a row. */

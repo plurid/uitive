@@ -9,6 +9,11 @@ import type { Adapter } from './format.js';
  */
 export type Checked = { adapter: Adapter; contract: AnyContract } | { problems: string[] };
 
+// Headers a page's requests can't set (the Fetch standard's forbidden request headers), so a key
+// put in one would never be sent.
+const FORBIDDEN_HEADER =
+  /^(accept-charset|accept-encoding|access-control-request-.+|connection|content-length|cookie2?|date|dnt|expect|host|keep-alive|origin|referer|set-cookie|te|trailer|transfer-encoding|upgrade|via|proxy-.+|sec-.+)$/i;
+
 const compiles = (pattern: string) => {
   try {
     new RegExp(pattern);
@@ -121,16 +126,35 @@ export function checkAdapter(input: unknown): Checked {
     }
   }
 
+  if (adapter.testMode !== undefined && !compiles(adapter.testMode)) {
+    problems.push(`testMode: ${adapter.testMode} doesn't compile`);
+  }
   for (const [name, connector] of Object.entries(adapter.connectors)) {
-    for (const [mode, pattern] of Object.entries(connector.keys)) {
-      if (!compiles(pattern)) problems.push(`connectors.${name}.keys.${mode}: doesn't compile`);
+    const where = `connectors.${name}`;
+    const { keys } = connector;
+    for (const [mode, pattern] of [
+      ['live', keys.live],
+      ['test', keys.test],
+    ] as const) {
+      if (pattern !== undefined && !compiles(pattern))
+        problems.push(`${where}.keys.${mode}: doesn't compile`);
     }
-    if (connector.testMode !== undefined && !compiles(connector.testMode)) {
-      problems.push(`connectors.${name}.testMode: ${connector.testMode} doesn't compile`);
+    for (const [index, rule] of keys.refuse.entries()) {
+      if (!compiles(rule.pattern))
+        problems.push(`${where}.keys.refuse.${index}: ${rule.pattern} doesn't compile`);
+    }
+    if (adapter.testMode !== undefined && keys.test === undefined) {
+      problems.push(`${where}.keys.test: the adapter has a test mode, so test keys need a pattern`);
+    }
+    if (adapter.testMode === undefined && keys.test !== undefined) {
+      problems.push(`${where}.keys.test: the adapter has no test mode to use test keys in`);
+    }
+    if (FORBIDDEN_HEADER.test(connector.auth.header)) {
+      problems.push(`${where}.auth.header: browsers don't let pages set ${connector.auth.header}`);
     }
     for (const source of Object.keys(connector.sources)) {
       if (!contract.source(source))
-        problems.push(`connectors.${name}.sources.${source}: the contract has no such source`);
+        problems.push(`${where}.sources.${source}: the contract has no such source`);
     }
   }
   return problems.length > 0 ? { problems } : { adapter, contract };

@@ -5,6 +5,7 @@ import type { Loaded } from '../adapters.ts';
 import { toWorker } from '../messages.ts';
 import type { ToWorker } from '../messages.ts';
 import { connectorFetch, ConnectorError, forgetReads, secretName } from './connector.ts';
+import { keyName, keyPattern, refusal } from './keys.ts';
 import { meter, READ_BUDGET, TOKEN_BUDGET } from './limits.ts';
 import { forgetPlans, servePlanner } from './planner.ts';
 import { clearSecret, clearSecrets, secretNames, setSecret } from './secrets.ts';
@@ -17,20 +18,24 @@ chrome.runtime.onInstalled.addListener(() => {
 const fromPanel = (sender: chrome.runtime.MessageSender) =>
   (sender.url ?? '').startsWith(chrome.runtime.getURL('panel/'));
 
-/** Which secret a name is, and the pattern its value must fit. */
-function secretRule(name: string): { pattern: RegExp; label: string } | undefined {
+/** Which secret a name is: the pattern its value must fit, what it's called, and what it refuses. */
+function secretRule(
+  name: string,
+): { pattern: RegExp; label: string; refused?: (value: string) => string | undefined } | undefined {
   if (name === 'anthropic') return { pattern: /^sk-ant-/, label: 'a Claude API key (sk-ant-...)' };
   if (name === 'openai') return { pattern: /^sk-(?!ant-)/, label: 'an OpenAI API key (sk-...)' };
   if (name === 'google') return { pattern: /^AIza/, label: 'a Gemini API key (AIza...)' };
   const [, adapterId, connectorName, mode] =
     /^connector:([^:]+):([^:]+):(test|live)$/.exec(name) ?? [];
-  const connector = adapterId
-    ? adapterById(adapterId)?.adapter.connectors[connectorName ?? '']
-    : undefined;
-  if (!connector || (mode !== 'test' && mode !== 'live')) return undefined;
+  const adapter = adapterId ? adapterById(adapterId)?.adapter : undefined;
+  const connector = adapter?.connectors[connectorName ?? ''];
+  if (!adapter || !connector || (mode !== 'test' && mode !== 'live')) return undefined;
+  const pattern = keyPattern(connector, mode);
+  if (!pattern) return undefined;
   return {
-    pattern: new RegExp(connector.keys[mode]),
-    label: `a ${mode} restricted key for ${connector.label}`,
+    pattern,
+    label: keyName(adapter, connector, mode),
+    refused: (value) => refusal(connector, value),
   };
 }
 
@@ -73,7 +78,9 @@ async function handle(message: ToWorker, sender: chrome.runtime.MessageSender): 
       Object.keys(loaded.adapter.connectors).map((name) => [
         name,
         {
-          test: stored.has(secretName(loaded.adapter.id, name, 'test')),
+          test:
+            loaded.adapter.testMode !== undefined &&
+            stored.has(secretName(loaded.adapter.id, name, 'test')),
           live: stored.has(secretName(loaded.adapter.id, name, 'live')),
         },
       ]),
@@ -98,7 +105,14 @@ async function handle(message: ToWorker, sender: chrome.runtime.MessageSender): 
       );
       return {
         origin,
-        adapter: found ? { id: found.adapter.id, label: found.adapter.label } : null,
+        adapter: found
+          ? {
+              id: found.adapter.id,
+              label: found.adapter.label,
+              examples: found.adapter.examples,
+              modes: found.adapter.testMode !== undefined,
+            }
+          : null,
         allowed: origin ? await chrome.permissions.contains({ origins: [pattern(origin)] }) : false,
         enabled: origin ? await enabled(origin) : false,
         access: origin && found ? accessFor(origin) : [],
@@ -107,8 +121,12 @@ async function handle(message: ToWorker, sender: chrome.runtime.MessageSender): 
           ? Object.entries(found.adapter.connectors).map(([name, connector]) => ({
               name,
               label: connector.label,
+              key: connector.keys.label,
+              hint: connector.keys.hint ?? {},
               secret: {
-                test: secretName(found.adapter.id, name, 'test'),
+                ...(connector.keys.test === undefined
+                  ? {}
+                  : { test: secretName(found.adapter.id, name, 'test') }),
                 live: secretName(found.adapter.id, name, 'live'),
               },
             }))
@@ -126,11 +144,8 @@ async function handle(message: ToWorker, sender: chrome.runtime.MessageSender): 
     case 'secret.set': {
       const rule = secretRule(message.name);
       if (!rule) throw new Error('Unknown key');
-      if (/^sk_(live|test)_/.test(message.value)) {
-        throw new Error(
-          'Secret keys are refused: create a restricted key with read permissions only',
-        );
-      }
+      const refused = rule.refused?.(message.value);
+      if (refused) throw new Error(refused);
       if (!rule.pattern.test(message.value)) throw new Error(`That isn't ${rule.label}`);
       await setSecret(message.name, message.value);
       return true;

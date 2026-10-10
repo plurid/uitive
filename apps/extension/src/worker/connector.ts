@@ -1,6 +1,8 @@
 import { restFetch } from '@plurid/uitive-core';
 import type { AnyContract, FetchRequest, FetchResult } from '@plurid/uitive-core';
 import type { Adapter } from '@plurid/uitive-adapter';
+import { keyName, keyPattern } from './keys.ts';
+import type { Mode } from './keys.ts';
 import { bucket, meter, READ_BUDGET, spend } from './limits.ts';
 import { getSecret } from './secrets.ts';
 
@@ -13,7 +15,7 @@ export class ConnectorError extends Error {
   }
 }
 
-export const secretName = (adapter: string, connector: string, mode: 'test' | 'live') =>
+export const secretName = (adapter: string, connector: string, mode: Mode) =>
   `connector:${adapter}:${connector}:${mode}`;
 
 const buckets = new Map<string, ReturnType<typeof bucket>>();
@@ -79,14 +81,13 @@ const overBudget = () =>
   );
 
 /**
- * Reads a source from the official API with the person's restricted key, matching the page's
- * mode. Paced, metered read by read against a monthly budget, and cached in memory, with only the
+ * Reads a source from the official API with the person's own key, matching the page's mode. Paced, metered read by read against a monthly budget, and cached in memory, with only the
  * fields the contract declares: nothing else could be shown.
  */
 export async function connectorFetch(
   adapter: Adapter,
   contract: AnyContract,
-  mode: 'test' | 'live',
+  mode: Mode,
   request: FetchRequest,
 ): Promise<FetchResult> {
   const found = Object.entries(adapter.connectors).find(
@@ -97,10 +98,12 @@ export async function connectorFetch(
   const spec = connector.sources[request.source];
   if (!spec) throw new ConnectorError('unavailable', `No official API reads ${request.source}`);
   const key = await getSecret(secretName(adapter.id, name, mode));
-  if (!key)
-    throw new ConnectorError('no-key', `Add a ${mode} restricted key for ${connector.label}`);
-  if (!new RegExp(connector.keys[mode]).test(key)) {
-    throw new ConnectorError('refused', `The ${connector.label} key doesn't fit ${mode} mode`);
+  if (!key) throw new ConnectorError('no-key', `Add ${keyName(adapter, connector, mode)}`);
+  if (!keyPattern(connector, mode)?.test(key)) {
+    throw new ConnectorError(
+      'refused',
+      `The ${connector.label} key isn't ${keyName(adapter, connector, mode)}`,
+    );
   }
 
   const cacheKey = `${adapter.id}:${mode}:${JSON.stringify(request)}`;
@@ -132,7 +135,7 @@ export async function connectorFetch(
   const binding = restFetch({
     base: connector.base,
     credentials: 'omit',
-    headers: () => ({ authorization: `Bearer ${key}` }),
+    headers: () => ({ [connector.auth.header]: `${connector.auth.prefix}${key}` }),
     sources: { [request.source]: spec },
     fetch: (url, init) => fetch(url, init as RequestInit),
   });

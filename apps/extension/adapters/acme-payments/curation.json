@@ -5,7 +5,7 @@
     "charges": {
       "include": true,
       "label": "Payments",
-      "description": "Attempts to move money into the account, one per charge: amount, status, customer and card.",
+      "description": "Attempts to take a payment, one per charge: amount, status, customer and card.",
       "keywords": ["charge", "transaction", "sale"],
       "fields": [
         "amount",

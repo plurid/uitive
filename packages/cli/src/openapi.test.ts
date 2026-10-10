@@ -2,7 +2,7 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { defineApp, fromJson, toJson } from '@plurid/uitive-core';
+import { defineApp, describeFields, formatValue, fromJson, toJson } from '@plurid/uitive-core';
 import type { ActionSpec, AnySourceSpec } from '@plurid/uitive-core';
 import { describe, expect, it } from 'vitest';
 import { quote, syntaxErrors } from './code.js';
@@ -303,6 +303,44 @@ describe('curate', () => {
       problems: [expect.stringMatching(/^curation\.sources\.charges: Unrecognized key/)],
     });
   });
+
+  it('gives every money field in minor units the API’s own, and no other field', () => {
+    const choice = curation({ money: { digits: { mga: 0, ISK: 2 } } });
+    const { inventory: kept, problems } = curate(payments, choice);
+    expect(problems).toEqual([]);
+    const amount = fieldOf(source(kept, 'charges'), 'amount');
+    expect(amount).toMatchObject({ type: 'money', minor: true, digits: { ISK: 2, MGA: 0 } });
+    expect(Object.keys(amount?.digits ?? {})).toEqual(['ISK', 'MGA']);
+    expect(fieldOf(source(kept, 'refunds'), 'amount')?.digits).toEqual({ ISK: 2, MGA: 0 });
+    expect(
+      action(kept, 'charges.create')?.params.find((param) => param.name === 'amount'),
+    ).toMatchObject({ type: 'money', minor: true, digits: { ISK: 2, MGA: 0 } });
+    expect(fieldOf(source(kept, 'charges'), 'created')).not.toHaveProperty('digits');
+    // Amounts in major units have no minor units to override.
+    const total = fieldOf(source(curate(shop, choice).inventory, 'orders'), 'total');
+    expect(total).toMatchObject({ type: 'money', minor: false });
+    expect(total).not.toHaveProperty('digits');
+    expect(
+      fieldOf(source(curate(payments, curation({})).inventory, 'charges'), 'amount'),
+    ).not.toHaveProperty('digits');
+  });
+
+  it('refuses minor units that name no currency or no decimal places', () => {
+    expect(parseCuration({ money: { digits: { ISK: 5, MGA: 1.5, EURO: 2, JPY: '0' } } })).toEqual({
+      problems: [
+        'curation.money.digits.ISK: takes 0 to 4 decimal places',
+        'curation.money.digits.MGA: takes 0 to 4 decimal places',
+        'curation.money.digits.EURO: is not a three-letter currency code',
+        'curation.money.digits.JPY: takes 0 to 4 decimal places',
+      ],
+    });
+    expect(parseCuration({ money: { digits: { isk: 2, ISK: 0 } } })).toEqual({
+      problems: ['curation.money.digits: names ISK twice'],
+    });
+    expect(parseCuration({ money: { digits: {}, round: true } })).toEqual({
+      problems: [expect.stringMatching(/^curation\.money: Unrecognized key/)],
+    });
+  });
 });
 
 describe('emit', () => {
@@ -366,6 +404,29 @@ describe('emit', () => {
     expect(code).toMatch(/amount: field\.money\(\{[^}]*label: 'Refunded' \}\)/);
     expect(code).toContain("label: 'State' })");
     expect(code).toContain("charge: field.text({ label: 'Payment' }).nullable(),");
+  });
+
+  it('writes the API’s minor units into money fields, where amounts read at their true size', async () => {
+    const { inventory: kept } = curate(
+      payments,
+      curation({
+        default: 'exclude',
+        sources: { charges: { include: true } },
+        money: { digits: { mga: 0, ISK: 2 } },
+      }),
+    );
+    expect(emit(kept, { from: 'fixture' })).toContain(
+      "amount: field.money({ currency: 'currency', minor: true, digits: { ISK: 2, MGA: 0 } }),",
+    );
+    const { charges } = (await compile(kept)).sources;
+    const amount = charges && describeFields(charges.row).find((entry) => entry.name === 'amount');
+    if (!amount) throw new Error('no amount');
+    expect(amount.digits).toEqual({ ISK: 2, MGA: 0 });
+    const shown = (value: number, code: string) =>
+      new Intl.NumberFormat('en-US', { style: 'currency', currency: code }).format(value);
+    expect(formatValue(amount, 5000, 'MGA', 'en-US')).toBe(shown(5000, 'MGA'));
+    expect(formatValue(amount, 12345, 'ISK', 'en-US')).toBe(shown(123.45, 'ISK'));
+    expect(formatValue(amount, 12345, 'USD', 'en-US')).toBe(shown(123.45, 'USD'));
   });
 
   it('keeps what a description says in comments and strings, whatever characters it holds', async () => {

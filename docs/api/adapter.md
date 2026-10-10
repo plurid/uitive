@@ -234,7 +234,7 @@ const ADAPTER_FORMAT = 'uitive.adapter';
 The adapter format's version.
 
 ```ts
-const ADAPTER_VERSION = 1;
+const ADAPTER_VERSION = 2;
 ```
 
 ### adapterSchema
@@ -343,8 +343,8 @@ Uses: [`Adapter`](#adapter), [`AnyContract`](core.md#anycontract).
 
 ### Connector
 
-An official API an adapter reads with the person's own restricted key: its endpoints, key
-patterns and rate.
+An official API an adapter reads with the person's own key: its endpoints, how it sends the key,
+what keys it takes and its rate.
 
 ```ts
 type Connector = Adapter['connectors'][string];
